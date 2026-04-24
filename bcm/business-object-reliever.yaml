@@ -1,0 +1,1172 @@
+meta:
+  bcm_name: BCM Reliever — Objets métier
+  version: 0.1.0
+  template_version: 1.0.0
+  last_updated: '2026-04-24'
+  owners:
+    - Direction Programme Reliever
+
+resources:
+
+  # ── Zone REFERENTIAL ────────────────────────────────────────────────────────
+
+  - id: OBJ.REF.001.FICHE_BENEFICIAIRE
+    name: Fiche bénéficiaire
+    definition: >-
+      L'enregistrement canonique de l'identité d'un bénéficiaire dans le référentiel
+      partagé de Reliever. Source de vérité unique pour toutes les capacités —
+      golden record. Aucune autre capacité ne peut maintenir sa propre copie d'identité.
+    emitting_capability: CAP.REF.001.BEN
+    data:
+      - name: identifiant_interne
+        type: string
+        description: Identifiant unique du bénéficiaire dans le système Reliever
+        required: true
+      - name: nom
+        type: string
+        description: Nom de famille
+        required: true
+      - name: prenom
+        type: string
+        description: Prénom
+        required: true
+      - name: date_naissance
+        type: date
+        description: Date de naissance
+        required: true
+      - name: coordonnees
+        type: object
+        description: Adresse postale et coordonnées de contact
+        required: true
+      - name: statut_referentiel
+        type: string
+        description: Statut dans le référentiel — actif, archivé
+        required: true
+      - name: date_creation
+        type: date
+        description: Date d'entrée dans le référentiel
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0013
+    tags:
+      - golden-record
+      - master-data
+
+  - id: OBJ.REF.001.FICHE_PRESCRIPTEUR
+    name: Fiche prescripteur
+    definition: >-
+      L'enregistrement canonique de l'identité et des habilitations d'un prescripteur
+      dans le dispositif Reliever. Distingue les types (bancaire, médical, social)
+      et leur organisation d'appartenance.
+    emitting_capability: CAP.REF.001.PRE
+    data:
+      - name: identifiant_interne
+        type: string
+        description: Identifiant unique du prescripteur dans le système Reliever
+        required: true
+      - name: type_prescripteur
+        type: string
+        description: Type de prescripteur — BANCAIRE, MEDICAL, SOCIAL
+        required: true
+      - name: nom_complet
+        type: string
+        description: Nom et prénom du prescripteur
+        required: true
+      - name: organisation
+        type: string
+        description: Établissement ou organisation d'appartenance
+        required: true
+      - name: habilitations
+        type: array
+        description: Liste des habilitations accordées dans le dispositif
+        required: true
+      - name: statut_referentiel
+        type: string
+        description: Statut dans le référentiel — actif, suspendu, archivé
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0013
+    tags:
+      - golden-record
+      - master-data
+
+  - id: OBJ.REF.001.DEFINITION_PALIER
+    name: Définition de palier
+    definition: >-
+      La spécification normative d'un palier d'autonomie financière : règles d'usage,
+      seuils de transition, droits associés. Source de vérité unique consommée par
+      BSP.001, BSP.004 et B2B.001. Toute modification passe obligatoirement par ce L2.
+    emitting_capability: CAP.REF.001.PAL
+    data:
+      - name: code_palier
+        type: string
+        description: Identifiant du palier (ex. PALIER_1, PALIER_2...)
+        required: true
+      - name: libelle
+        type: string
+        description: Libellé métier du palier
+        required: true
+      - name: plafond_journalier
+        type: number
+        description: Plafond de dépense journalier autorisé
+        required: true
+      - name: categories_autorisees
+        type: array
+        description: Catégories de dépenses autorisées à ce palier
+        required: true
+      - name: seuil_franchissement
+        type: number
+        description: Score minimum requis pour passer au palier supérieur
+        required: true
+      - name: seuil_retrogradation
+        type: number
+        description: Score en dessous duquel une rétrogradation est déclenchée
+        required: true
+      - name: version
+        type: string
+        description: Version de la définition (versionning des règles)
+        required: true
+      - name: statut
+        type: string
+        description: Statut de la définition — actif, archivé
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0013
+    tags:
+      - normative
+      - master-data
+      - versioned
+
+  # ── Zone BUSINESS_SERVICE_PRODUCTION ────────────────────────────────────────
+
+  - id: OBJ.BSP.002.PARTICIPATION
+    name: Participation programme
+    definition: >-
+      L'état courant de la participation d'un bénéficiaire au programme Reliever :
+      palier actif, prescripteurs assignés, statut du dossier. Créé à l'enrôlement,
+      archivé à la sortie. Point de référence central pour toutes les capacités BSP.
+    emitting_capability: CAP.BSP.002.CYC
+    data:
+      - name: identifiant_dossier
+        type: string
+        description: Identifiant unique du dossier de participation
+        required: true
+      - name: identifiant_beneficiaire
+        type: string
+        description: Référence vers la fiche bénéficiaire (REF.001.BEN)
+        required: true
+      - name: palier_courant
+        type: string
+        description: Code du palier d'autonomie actif
+        required: true
+      - name: statut_dossier
+        type: string
+        description: Statut du dossier — ACTIF, CLOS_SUCCES, CLOS_ABANDON, CLOS_ADMINISTRATIF
+        required: true
+      - name: date_ouverture
+        type: date
+        description: Date d'enrôlement dans le programme
+        required: true
+      - name: date_cloture
+        type: date
+        description: Date de sortie du programme (null si actif)
+        required: false
+      - name: prescripteurs_assignes
+        type: array
+        description: Liste des identifiants des prescripteurs assignés au dossier
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0006
+    tags:
+      - stateful
+      - core-domain
+
+  - id: OBJ.BSP.001.EVALUATION
+    name: Évaluation comportementale
+    definition: >-
+      Le résultat d'un calcul de score comportemental pour un bénéficiaire :
+      valeur numérique, facteurs contributifs, timestamp. Recalculé après chaque
+      transaction ou signal comportemental significatif.
+    emitting_capability: CAP.BSP.001.SCO
+    data:
+      - name: identifiant_evaluation
+        type: string
+        description: Identifiant unique de cette évaluation
+        required: true
+      - name: identifiant_dossier
+        type: string
+        description: Référence au dossier de participation concerné
+        required: true
+      - name: valeur_score
+        type: number
+        description: Valeur numérique du score comportemental
+        required: true
+      - name: facteurs_contributifs
+        type: array
+        description: Liste des facteurs ayant influencé ce score (types et poids)
+        required: true
+      - name: timestamp_calcul
+        type: date
+        description: Horodatage du calcul
+        required: true
+      - name: version_modele
+        type: string
+        description: Version du modèle de scoring utilisé pour ce calcul
+        required: true
+      - name: type_evaluation
+        type: string
+        description: Type — INITIAL (baseline enrôlement), COURANT (post-transaction)
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - algorithmic
+      - core-domain
+      - real-time
+
+  - id: OBJ.BSP.001.CHANGEMENT_PALIER
+    name: Changement de palier
+    definition: >-
+      L'enregistrement d'une transition de palier pour un bénéficiaire : contexte
+      du déclenchement, déclencheur (algorithme ou surcharge prescripteur), paliers
+      avant et après. Historisé pour audit et analytique.
+    emitting_capability: CAP.BSP.001.PAL
+    data:
+      - name: identifiant_transition
+        type: string
+        description: Identifiant unique de cette transition
+        required: true
+      - name: identifiant_dossier
+        type: string
+        description: Référence au dossier de participation concerné
+        required: true
+      - name: palier_precedent
+        type: string
+        description: Code du palier avant la transition
+        required: true
+      - name: nouveau_palier
+        type: string
+        description: Code du palier après la transition
+        required: true
+      - name: sens
+        type: string
+        description: Sens de la transition — FRANCHISSEMENT (hausse) ou RETROGRADATION
+        required: true
+      - name: declencheur
+        type: string
+        description: Déclencheur — ALGORITHME ou SURCHARGE_PRESCRIPTEUR
+        required: true
+      - name: score_au_moment
+        type: number
+        description: Valeur du score au moment de la transition
+        required: true
+      - name: timestamp_transition
+        type: date
+        description: Horodatage de la transition
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - stateful
+      - core-domain
+      - audit
+
+  - id: OBJ.BSP.001.SURCHARGE_ALGO
+    name: Surcharge algorithme
+    definition: >-
+      La décision d'un prescripteur de forcer un palier contre l'avis algorithmique.
+      L'algorithme surveille les résultats et reprend le contrôle automatiquement
+      si la réalité confirme ou infirme la décision prescripteur.
+    emitting_capability: CAP.BSP.001.ARB
+    data:
+      - name: identifiant_surcharge
+        type: string
+        description: Identifiant unique de cette surcharge
+        required: true
+      - name: identifiant_dossier
+        type: string
+        description: Référence au dossier concerné
+        required: true
+      - name: identifiant_prescripteur
+        type: string
+        description: Prescripteur ayant décidé la surcharge
+        required: true
+      - name: palier_force
+        type: string
+        description: Palier imposé par le prescripteur
+        required: true
+      - name: justification
+        type: string
+        description: Justification métier de la surcharge
+        required: true
+      - name: statut_surcharge
+        type: string
+        description: Statut — ACTIVE (prescripteur aux commandes) ou CLOTUREE (algo reprend)
+        required: true
+      - name: date_surcharge
+        type: date
+        description: Date d'activation de la surcharge
+        required: true
+      - name: date_reprise_algo
+        type: date
+        description: Date à laquelle l'algorithme a repris le contrôle (null si active)
+        required: false
+      - name: resultat_observe
+        type: string
+        description: Évaluation du résultat de la surcharge — CONFIRME, INFIRME, EN_ATTENTE
+        required: false
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - human-override
+      - audit
+      - core-domain
+
+  - id: OBJ.BSP.001.SIGNAL_INTERPRETE
+    name: Signal comportemental interprété
+    definition: >-
+      Un signal comportemental qualifié et contextualisé, produit par l'interprétation
+      des alertes transactionnelles brutes. Alimente directement le scoring et peut
+      déclencher une notification prescripteur.
+    emitting_capability: CAP.BSP.001.SIG
+    data:
+      - name: identifiant_signal
+        type: string
+        description: Identifiant unique du signal
+        required: true
+      - name: identifiant_dossier
+        type: string
+        description: Référence au dossier concerné
+        required: true
+      - name: type_signal
+        type: string
+        description: Type — ENVELOPPE_NON_CONSOMMEE, TENTATIVE_CONTOURNEMENT, REFUS_RECURRENTS, etc.
+        required: true
+      - name: intensite
+        type: string
+        description: Intensité — FAIBLE, MODERE, ELEVE
+        required: true
+      - name: source
+        type: string
+        description: Source — identifiant de l'alerte transactionnelle origine
+        required: true
+      - name: timestamp_detection
+        type: date
+        description: Horodatage de la détection
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - behavioral
+      - counterintuitive
+
+  - id: OBJ.BSP.003.DECISION_CONCERTEE
+    name: Décision concertée
+    definition: >-
+      Une décision formalisée issue de la délibération entre plusieurs prescripteurs
+      sur un dossier bénéficiaire. Produit une résolution validée transmise
+      à BSP.001.PAL ou BSP.001.ARB pour application.
+    emitting_capability: CAP.BSP.003.COD
+    data:
+      - name: identifiant_decision
+        type: string
+        description: Identifiant unique de cette décision
+        required: true
+      - name: identifiant_dossier
+        type: string
+        description: Référence au dossier concerné
+        required: true
+      - name: objet_decision
+        type: string
+        description: Ce sur quoi porte la décision (ex. changement de palier, surcharge)
+        required: true
+      - name: participants
+        type: array
+        description: Liste des prescripteurs impliqués et leur position
+        required: true
+      - name: resolution
+        type: string
+        description: Décision finale validée
+        required: true
+      - name: statut
+        type: string
+        description: Statut — EN_COURS, VALIDEE, ANNULEE
+        required: true
+      - name: date_finalisation
+        type: date
+        description: Date de validation de la décision
+        required: false
+    adrs:
+      - ADR-BCM-FUNC-0007
+    tags:
+      - multi-actor
+      - governance
+
+  - id: OBJ.BSP.004.DECISION_PAIEMENT
+    name: Décision de paiement
+    definition: >-
+      La décision d'autorisation ou de refus d'une transaction à la carte dédiée,
+      prise en temps réel par application des règles du palier courant du bénéficiaire.
+    emitting_capability: CAP.BSP.004.AUT
+    data:
+      - name: identifiant_decision
+        type: string
+        description: Identifiant unique de la décision
+        required: true
+      - name: identifiant_dossier
+        type: string
+        description: Référence au dossier du bénéficiaire
+        required: true
+      - name: montant
+        type: number
+        description: Montant de la transaction tentée
+        required: true
+      - name: categorie_marchand
+        type: string
+        description: Catégorie du marchand (alimentation, transport, etc.)
+        required: true
+      - name: identifiant_marchand
+        type: string
+        description: Identifiant du point de vente
+        required: true
+      - name: resultat
+        type: string
+        description: Résultat — AUTORISEE ou REFUSEE
+        required: true
+      - name: regle_appliquee
+        type: string
+        description: Identifiant de la règle de palier ayant conduit à la décision
+        required: true
+      - name: timestamp_decision
+        type: date
+        description: Horodatage de la décision en temps réel
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0008
+    tags:
+      - real-time
+      - core-domain
+
+  - id: OBJ.BSP.004.ALLOCATION
+    name: Allocation budgétaire
+    definition: >-
+      L'allocation d'une catégorie de dépense pour une période donnée, selon le palier
+      courant du bénéficiaire. L'état de consommation de l'enveloppe est un signal
+      comportemental — y compris sa non-consommation.
+    emitting_capability: CAP.BSP.004.ENV
+    data:
+      - name: identifiant_allocation
+        type: string
+        description: Identifiant unique de cette allocation
+        required: true
+      - name: identifiant_dossier
+        type: string
+        description: Référence au dossier du bénéficiaire
+        required: true
+      - name: categorie
+        type: string
+        description: Catégorie de dépense couverte par cette enveloppe
+        required: true
+      - name: montant_plafond
+        type: number
+        description: Montant maximum autorisé pour la période
+        required: true
+      - name: montant_consomme
+        type: number
+        description: Montant effectivement dépensé à date
+        required: true
+      - name: periode_debut
+        type: date
+        description: Début de la période d'allocation
+        required: true
+      - name: periode_fin
+        type: date
+        description: Fin de la période d'allocation
+        required: true
+      - name: statut
+        type: string
+        description: Statut — OUVERTE, EPUISEE, NON_CONSOMMEE (fin de période sans consommation)
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0008
+    tags:
+      - budget
+      - behavioral-signal
+
+  # ── Zone EXCHANGE_B2B ───────────────────────────────────────────────────────
+
+  - id: OBJ.B2B.001.CARTE_DEDIEE
+    name: Carte dédiée
+    definition: >-
+      La carte de paiement dédiée au bénéficiaire dans le dispositif Reliever.
+      Cycle de vie piloté par les événements du dossier, règles d'usage synchronisées
+      avec le palier courant. Point de contrôle universel des dépenses.
+    emitting_capability: CAP.B2B.001.CRT
+    data:
+      - name: identifiant_carte
+        type: string
+        description: Identifiant unique de la carte (PAN masqué)
+        required: true
+      - name: identifiant_dossier
+        type: string
+        description: Référence au dossier du bénéficiaire porteur
+        required: true
+      - name: statut_carte
+        type: string
+        description: Statut — EMISE, ACTIVE, SUSPENDUE, RESILIEE
+        required: true
+      - name: palier_reference
+        type: string
+        description: Code du palier dont découlent les règles d'usage courantes
+        required: true
+      - name: date_emission
+        type: date
+        description: Date d'émission de la carte
+        required: true
+      - name: date_derniere_maj_regles
+        type: date
+        description: Date du dernier synchronisation des règles avec le palier
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0011
+    tags:
+      - financial-instrument
+      - lifecycle
+
+  # ── Zone SUPPORT ────────────────────────────────────────────────────────────
+
+  - id: OBJ.SUP.001.CONSENTEMENT_RGPD
+    name: Consentement RGPD
+    definition: >-
+      Le consentement d'un bénéficiaire pour un périmètre de partage de ses données
+      sensibles. Précondition obligatoire à l'enrôlement et à tout accès prescripteur.
+      Révocable à tout moment avec effet immédiat.
+    emitting_capability: CAP.SUP.001.CON
+    data:
+      - name: identifiant_consentement
+        type: string
+        description: Identifiant unique du consentement
+        required: true
+      - name: identifiant_beneficiaire
+        type: string
+        description: Référence au bénéficiaire concerné
+        required: true
+      - name: perimetre
+        type: array
+        description: Types de partage couverts (bancaire, médical, social, open-banking)
+        required: true
+      - name: statut
+        type: string
+        description: Statut — ACCORDE ou REVOQUE
+        required: true
+      - name: date_accord
+        type: date
+        description: Date d'accord initial
+        required: true
+      - name: date_revocation
+        type: date
+        description: Date de révocation (null si toujours actif)
+        required: false
+      - name: version_formulaire
+        type: string
+        description: Version du formulaire de consentement utilisé
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0012
+    tags:
+      - RGPD
+      - compliance
+      - blocking-precondition
+
+  # ── Zone DATA_ANALYTIQUE ────────────────────────────────────────────────────
+
+  - id: OBJ.DAT.001.MODELE_SCORE
+    name: Modèle de score versionné
+    definition: >-
+      Le modèle algorithmique de scoring comportemental, versionné. Produit par
+      DAT.001.MOD après analyse des patterns agrégés. Soumis à PIL.001.GOV pour
+      validation avant tout déploiement en production sur BSP.001.SCO.
+    emitting_capability: CAP.DAT.001.MOD
+    data:
+      - name: identifiant_modele
+        type: string
+        description: Identifiant unique du modèle
+        required: true
+      - name: version
+        type: string
+        description: Version sémantique du modèle (ex. 2.3.1)
+        required: true
+      - name: parametres
+        type: object
+        description: Paramètres et pondérations du modèle
+        required: true
+      - name: metriques_performance
+        type: object
+        description: Métriques de performance mesurées (précision, rappel, AUC...)
+        required: true
+      - name: statut_validation
+        type: string
+        description: Statut — EN_VALIDATION, VALIDE, REJETE, ACTIF, ARCHIVE
+        required: true
+      - name: date_soumission
+        type: date
+        description: Date de soumission à PIL.001.GOV
+        required: true
+      - name: date_validation
+        type: date
+        description: Date de validation par PIL.001.GOV (null si en attente)
+        required: false
+    adrs:
+      - ADR-BCM-FUNC-0014
+      - ADR-BCM-FUNC-0015
+    tags:
+      - versioned
+      - governance
+      - algorithmic
+
+  # ── Zone BUSINESS_SERVICE_PRODUCTION — BSP.003 compléments ─────────────────
+
+  - id: OBJ.BSP.003.ROLE_PRESCRIPTEUR
+    name: Rôle prescripteur
+    definition: >-
+      L'attribution et la révocation d'un rôle prescripteur sur un dossier bénéficiaire.
+      Détermine les droits de consultation et d'action du prescripteur sur le dossier.
+    emitting_capability: CAP.BSP.003.ROL
+    data:
+      - name: identifiant_attribution
+        type: string
+        description: Identifiant unique de l'attribution de rôle
+        required: true
+      - name: identifiant_dossier
+        type: string
+        description: Référence au dossier concerné
+        required: true
+      - name: identifiant_prescripteur
+        type: string
+        description: Identifiant du prescripteur
+        required: true
+      - name: type_role
+        type: string
+        description: Type de rôle — BANCAIRE, MEDICAL, SOCIAL
+        required: true
+      - name: statut
+        type: string
+        description: Statut — ATTRIBUE ou REVOQUE
+        required: true
+      - name: date_attribution
+        type: date
+        description: Date d'attribution du rôle
+        required: true
+      - name: date_revocation
+        type: date
+        description: Date de révocation (null si actif)
+        required: false
+    adrs:
+      - ADR-BCM-FUNC-0007
+    tags:
+      - multi-actor
+      - access-control
+
+  - id: OBJ.BSP.003.ALERTE_PRESCRIPTEUR
+    name: Alerte prescripteur
+    definition: >-
+      Une notification adressée à un ou plusieurs prescripteurs en réponse à un signal
+      comportemental significatif ou à un événement du dossier nécessitant attention.
+    emitting_capability: CAP.BSP.003.NOT
+    data:
+      - name: identifiant_alerte
+        type: string
+        description: Identifiant unique de l'alerte
+        required: true
+      - name: identifiant_dossier
+        type: string
+        description: Référence au dossier concerné
+        required: true
+      - name: destinataires
+        type: array
+        description: Liste des prescripteurs destinataires
+        required: true
+      - name: type_alerte
+        type: string
+        description: Type — SIGNAL_RECHUTE, FRANCHISSEMENT_PALIER, INACTIVITE, OVERRIDE_DEMANDE
+        required: true
+      - name: niveau_urgence
+        type: string
+        description: Niveau — INFORMATIF, ATTENTION, URGENT
+        required: true
+      - name: timestamp_emission
+        type: date
+        description: Horodatage d'émission de l'alerte
+        required: true
+      - name: source_evenement
+        type: string
+        description: Identifiant de l'événement déclencheur
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0007
+    tags:
+      - multi-actor
+      - notification
+
+  # ── Zone BUSINESS_SERVICE_PRODUCTION — BSP.004 compléments ─────────────────
+
+  - id: OBJ.BSP.004.ALTERNATIVE_ACHAT
+    name: Alternative d'achat
+    definition: >-
+      Une proposition d'alternative de consommation compatible avec le palier courant,
+      émise en réponse à une transaction refusée. Vise à préserver la dignité et
+      l'autonomie du bénéficiaire face au refus de paiement.
+    emitting_capability: CAP.BSP.004.ALT
+    data:
+      - name: identifiant_alternative
+        type: string
+        description: Identifiant unique de la proposition
+        required: true
+      - name: identifiant_dossier
+        type: string
+        description: Référence au dossier du bénéficiaire
+        required: true
+      - name: identifiant_decision_origine
+        type: string
+        description: Référence à la décision de refus ayant déclenché cette proposition
+        required: true
+      - name: alternatives_proposees
+        type: array
+        description: Liste des alternatives compatibles avec le palier (marchands, catégories)
+        required: true
+      - name: acceptee
+        type: boolean
+        description: True si le bénéficiaire a accepté une alternative proposée
+        required: true
+      - name: timestamp_proposition
+        type: date
+        description: Horodatage de la proposition
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0008
+    tags:
+      - dignity
+      - behavioral-signal
+
+  # ── Zone CHANNEL ────────────────────────────────────────────────────────────
+
+  - id: OBJ.CAN.001.NOTIFICATION
+    name: Notification bénéficiaire
+    definition: >-
+      Un message émis vers le bénéficiaire via son canal applicatif — information sur
+      une décision, une alerte de progression, un rappel d'enveloppe ou une alternative proposée.
+    emitting_capability: CAP.CAN.001.NOT
+    data:
+      - name: identifiant_notification
+        type: string
+        description: Identifiant unique de la notification
+        required: true
+      - name: identifiant_dossier
+        type: string
+        description: Référence au dossier du bénéficiaire destinataire
+        required: true
+      - name: type_notification
+        type: string
+        description: Type — REFUS_PAIEMENT, ALTERNATIVE_PROPOSEE, PROGRESSION_PALIER, ALERTE_ENVELOPPE
+        required: true
+      - name: contenu
+        type: string
+        description: Contenu du message adapté au palier et au profil
+        required: true
+      - name: canal_emission
+        type: string
+        description: Canal utilisé — PUSH, SMS, IN_APP
+        required: true
+      - name: timestamp_emission
+        type: date
+        description: Horodatage d'émission
+        required: true
+      - name: accusee_reception
+        type: boolean
+        description: True si la lecture a été confirmée
+        required: false
+    adrs:
+      - ADR-BCM-FUNC-0009
+    tags:
+      - channel
+      - notification
+
+  - id: OBJ.CAN.002.RAPPORT_PRESCRIPTEUR
+    name: Rapport prescripteur
+    definition: >-
+      Un rapport de synthèse généré à destination d'un prescripteur : progression du
+      bénéficiaire, événements clés de la période, recommandations éventuelles.
+    emitting_capability: CAP.CAN.002.RAP
+    data:
+      - name: identifiant_rapport
+        type: string
+        description: Identifiant unique du rapport
+        required: true
+      - name: identifiant_dossier
+        type: string
+        description: Référence au dossier analysé
+        required: true
+      - name: identifiant_prescripteur
+        type: string
+        description: Prescripteur destinataire
+        required: true
+      - name: periode_couverte
+        type: object
+        description: Période de référence du rapport (début / fin)
+        required: true
+      - name: contenu_synthetique
+        type: object
+        description: Données de progression, signaux clés, palier courant
+        required: true
+      - name: timestamp_generation
+        type: date
+        description: Horodatage de génération du rapport
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0010
+    tags:
+      - channel
+      - reporting
+
+  # ── Zone EXCHANGE_B2B — compléments ─────────────────────────────────────────
+
+  - id: OBJ.B2B.001.SNAPSHOT_FIN
+    name: Snapshot financier open banking
+    definition: >-
+      Un instantané des données financières du compte principal du bénéficiaire,
+      obtenu via DSP2/open banking. Alimente le scoring comportemental et le
+      contrôle de capacité de remboursement.
+    emitting_capability: CAP.B2B.001.OBK
+    data:
+      - name: identifiant_snapshot
+        type: string
+        description: Identifiant unique du snapshot
+        required: true
+      - name: identifiant_dossier
+        type: string
+        description: Référence au dossier du bénéficiaire
+        required: true
+      - name: solde_courant
+        type: number
+        description: Solde du compte principal au moment du snapshot
+        required: true
+      - name: patterns_depenses
+        type: object
+        description: Agrégats de dépenses par catégorie sur la période
+        required: true
+      - name: timestamp_snapshot
+        type: date
+        description: Horodatage du snapshot
+        required: true
+      - name: source_psp
+        type: string
+        description: Identifiant du PSP fournisseur des données DSP2
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0011
+    tags:
+      - open-banking
+      - DSP2
+
+  - id: OBJ.B2B.001.FLUX_FINANCIER
+    name: Flux financier carte
+    definition: >-
+      Un transfert de fonds du compte principal du bénéficiaire vers la carte dédiée,
+      effectué par l'établissement émetteur partenaire selon la définition du palier courant.
+    emitting_capability: CAP.B2B.001.FLX
+    data:
+      - name: identifiant_flux
+        type: string
+        description: Identifiant unique du flux
+        required: true
+      - name: identifiant_dossier
+        type: string
+        description: Référence au dossier du bénéficiaire
+        required: true
+      - name: montant
+        type: number
+        description: Montant transféré vers la carte
+        required: true
+      - name: categorie_enveloppe
+        type: string
+        description: Catégorie d'enveloppe budgétaire alimentée
+        required: true
+      - name: timestamp_flux
+        type: date
+        description: Horodatage du transfert
+        required: true
+      - name: partenaire_emission
+        type: string
+        description: Identifiant de l'établissement partenaire ayant effectué le transfert
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0011
+    tags:
+      - financial-flow
+      - B2B
+
+  # ── Zone SUPPORT — compléments ───────────────────────────────────────────────
+
+  - id: OBJ.SUP.001.TRACE_ACCES
+    name: Trace d'accès
+    definition: >-
+      Un enregistrement d'audit de chaque accès aux données sensibles d'un bénéficiaire
+      par un prescripteur ou une capacité du système. Garantit la traçabilité RGPD complète.
+    emitting_capability: CAP.SUP.001.AUD
+    data:
+      - name: identifiant_trace
+        type: string
+        description: Identifiant unique de la trace
+        required: true
+      - name: identifiant_dossier
+        type: string
+        description: Référence au dossier accédé
+        required: true
+      - name: acteur_acces
+        type: string
+        description: Identifiant de l'acteur ayant effectué l'accès (prescripteur ou capacité SI)
+        required: true
+      - name: type_donnee_accedee
+        type: string
+        description: Type de donnée consultée — BANCAIRE, MEDICAL, SOCIAL, SCORE
+        required: true
+      - name: action
+        type: string
+        description: Action effectuée — LECTURE, MODIFICATION, EXPORT
+        required: true
+      - name: timestamp_acces
+        type: date
+        description: Horodatage précis de l'accès
+        required: true
+      - name: consentement_reference
+        type: string
+        description: Identifiant du consentement RGPD couvrant cet accès
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0012
+    tags:
+      - RGPD
+      - audit
+      - compliance
+
+  - id: OBJ.SUP.001.DROIT_EXERCE
+    name: Droit RGPD exercé
+    definition: >-
+      L'exercice formalisé d'un droit RGPD par un bénéficiaire : accès, rectification,
+      effacement ou portabilité. Traité dans les délais légaux, avec traçabilité complète.
+    emitting_capability: CAP.SUP.001.RET
+    data:
+      - name: identifiant_demande
+        type: string
+        description: Identifiant unique de la demande de droit
+        required: true
+      - name: identifiant_beneficiaire
+        type: string
+        description: Référence au bénéficiaire ayant exercé le droit
+        required: true
+      - name: type_droit
+        type: string
+        description: Type — ACCES, RECTIFICATION, EFFACEMENT, PORTABILITE, OPPOSITION
+        required: true
+      - name: statut_traitement
+        type: string
+        description: Statut — RECU, EN_COURS, TRAITE, REJETE
+        required: true
+      - name: date_reception
+        type: date
+        description: Date de réception de la demande
+        required: true
+      - name: date_traitement
+        type: date
+        description: Date de traitement effectif (null si en cours)
+        required: false
+      - name: reponse
+        type: string
+        description: Résumé de la réponse apportée
+        required: false
+    adrs:
+      - ADR-BCM-FUNC-0012
+    tags:
+      - RGPD
+      - compliance
+
+  # ── Zone DATA_ANALYTIQUE — compléments ──────────────────────────────────────
+
+  - id: OBJ.DAT.001.DONNEES_COMPORTEMENTALES
+    name: Données comportementales agrégées
+    definition: >-
+      Un agrégat anonymisé de données transactionnelles et de signaux comportementaux
+      utilisé pour l'entraînement et l'amélioration du modèle de scoring. Jamais
+      connecté directement au scoring opérationnel.
+    emitting_capability: CAP.DAT.001.ING
+    data:
+      - name: identifiant_lot
+        type: string
+        description: Identifiant unique du lot de données agrégées
+        required: true
+      - name: periode_couverte
+        type: object
+        description: Période de référence des données (début / fin)
+        required: true
+      - name: volume_dossiers
+        type: number
+        description: Nombre de dossiers anonymisés contribuant à ce lot
+        required: true
+      - name: agregats
+        type: object
+        description: Agrégats comportementaux par cohorte et palier
+        required: true
+      - name: timestamp_ingestion
+        type: date
+        description: Horodatage de l'ingestion
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0014
+    tags:
+      - analytics
+      - anonymized
+
+  - id: OBJ.DAT.001.RAPPORT_PROGRAMME
+    name: Rapport programme
+    definition: >-
+      Un rapport analytique de performance globale du programme Reliever : taux de
+      progression, taux de sortie par motif, efficacité des paliers, métriques
+      d'impact social. Destiné à PIL.001.KPI et aux parties prenantes.
+    emitting_capability: CAP.DAT.001.REP
+    data:
+      - name: identifiant_rapport
+        type: string
+        description: Identifiant unique du rapport
+        required: true
+      - name: periode_couverte
+        type: object
+        description: Période de référence du rapport
+        required: true
+      - name: metriques_programme
+        type: object
+        description: KPIs globaux du programme (taux de progression, rechutes, sorties)
+        required: true
+      - name: distribution_paliers
+        type: object
+        description: Distribution des bénéficiaires par palier
+        required: true
+      - name: timestamp_generation
+        type: date
+        description: Horodatage de génération
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0014
+    tags:
+      - analytics
+      - reporting
+
+  # ── Zone STEERING ────────────────────────────────────────────────────────────
+
+  - id: OBJ.PIL.001.POLITIQUE_GOUVERNANCE
+    name: Politique de gouvernance
+    definition: >-
+      Une règle ou un ensemble de règles de gouvernance du programme Reliever, validée
+      par PIL.001.GOV et s'imposant à toutes les capacités du BCM. Inclut les règles
+      de validation des modèles de scoring.
+    emitting_capability: CAP.PIL.001.GOV
+    data:
+      - name: identifiant_politique
+        type: string
+        description: Identifiant unique de la politique
+        required: true
+      - name: domaine
+        type: string
+        description: Domaine couvert — SCORING, PALIERS, ACCES_DONNEES, CONFORMITE
+        required: true
+      - name: contenu
+        type: object
+        description: Règles et contraintes définies par cette politique
+        required: true
+      - name: version
+        type: string
+        description: Version de la politique
+        required: true
+      - name: statut
+        type: string
+        description: Statut — EN_REVISION, ACTIVE, ARCHIVEE
+        required: true
+      - name: date_activation
+        type: date
+        description: Date d'entrée en vigueur
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0015
+    tags:
+      - governance
+      - steering
+
+  - id: OBJ.PIL.001.PERFORMANCE_PROGRAMME
+    name: Performance programme
+    definition: >-
+      Une évaluation périodique des indicateurs de performance du programme Reliever,
+      produite par PIL.001.KPI à partir des données analytiques de DAT.001.
+    emitting_capability: CAP.PIL.001.KPI
+    data:
+      - name: identifiant_evaluation
+        type: string
+        description: Identifiant unique de cette évaluation de performance
+        required: true
+      - name: periode
+        type: object
+        description: Période évaluée (début / fin)
+        required: true
+      - name: kpis
+        type: object
+        description: Valeurs des KPIs programme (taux de progression, impact social, etc.)
+        required: true
+      - name: tendances
+        type: object
+        description: Évolution des KPIs par rapport aux périodes précédentes
+        required: true
+      - name: timestamp_evaluation
+        type: date
+        description: Horodatage de l'évaluation
+        required: true
+    adrs:
+      - ADR-BCM-FUNC-0015
+    tags:
+      - governance
+      - KPI
+
+  - id: OBJ.PIL.001.CONFORMITE_PROGRAMME
+    name: Conformité programme
+    definition: >-
+      Un résultat de vérification de conformité réglementaire et programmatique :
+      RGPD, DSP2, règles de paliers, gouvernance des modèles. Produit par PIL.001.AUD.
+    emitting_capability: CAP.PIL.001.AUD
+    data:
+      - name: identifiant_verification
+        type: string
+        description: Identifiant unique de la vérification
+        required: true
+      - name: domaine_controle
+        type: string
+        description: Domaine contrôlé — RGPD, DSP2, PALIERS, MODELES, ACCES
+        required: true
+      - name: statut_conformite
+        type: string
+        description: Statut — CONFORME, NON_CONFORME, ANOMALIE_MINEURE
+        required: true
+      - name: constats
+        type: array
+        description: Liste des constats d'audit (conformes ou non)
+        required: true
+      - name: date_verification
+        type: date
+        description: Date de la vérification
+        required: true
+      - name: prochaine_verification
+        type: date
+        description: Date planifiée de la prochaine vérification
+        required: false
+    adrs:
+      - ADR-BCM-FUNC-0015
+    tags:
+      - governance
+      - compliance
+      - audit

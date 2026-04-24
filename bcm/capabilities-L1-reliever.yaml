@@ -1,0 +1,155 @@
+meta:
+  bcm_name: BCM Reliever
+  version: 0.1.0
+  template_version: 1.0.0
+  last_updated: '2026-04-24'
+  owners:
+    - Direction Programme Reliever
+
+capabilities:
+  - id: CAP.BSP.001
+    name: Remédiation Comportementale
+    level: L1
+    zoning: BUSINESS_SERVICE_PRODUCTION
+    description: >
+      Évaluer en continu le comportement financier du bénéficiaire, calculer un score,
+      gérer les paliers d'autonomie et arbitrer les décisions de changement de palier
+      entre algorithme et prescripteurs. C'est le core domain de Reliever.
+    owner: Direction Programme Reliever
+    adrs:
+      - ADR-BCM-FUNC-0004
+      - ADR-BCM-FUNC-0005
+
+  - id: CAP.BSP.002
+    name: Accès & Cycle de Vie du Bénéficiaire
+    level: L1
+    zoning: BUSINESS_SERVICE_PRODUCTION
+    description: >
+      Gérer l'ensemble du cycle de vie d'un bénéficiaire dans le dispositif Reliever :
+      vérification de l'éligibilité, enrôlement, suivi, et sortie (y compris transfert
+      vers une application bancaire standard en dernier palier).
+    owner: Direction Programme Reliever
+    adrs:
+      - ADR-BCM-FUNC-0004
+      - ADR-BCM-FUNC-0006
+
+  - id: CAP.BSP.003
+    name: Coordination des Prescripteurs
+    level: L1
+    zoning: BUSINESS_SERVICE_PRODUCTION
+    description: >
+      Orchestrer la collaboration multi-prescripteurs (banquier, médecin, assistant social)
+      en définissant les rôles, en notifiant les prescripteurs des événements pertinents
+      et en formalisant les décisions co-construites impactant le parcours du bénéficiaire.
+    owner: Direction Programme Reliever
+    adrs:
+      - ADR-BCM-FUNC-0004
+      - ADR-BCM-FUNC-0007
+
+  - id: CAP.BSP.004
+    name: Contrôle des Transactions
+    level: L1
+    zoning: BUSINESS_SERVICE_PRODUCTION
+    description: >
+      Autoriser ou refuser chaque transaction à la carte dédiée selon les règles du palier
+      courant, gérer les enveloppes budgétaires, et remonter les signaux comportementaux
+      (notamment les budgets non consommés comme signal de rechute).
+    owner: Direction Programme Reliever
+    adrs:
+      - ADR-BCM-FUNC-0004
+      - ADR-BCM-FUNC-0008
+
+  - id: CAP.CAN.001
+    name: Parcours Bénéficiaire
+    level: L1
+    zoning: CHANNEL
+    description: >
+      Exposer au bénéficiaire une interface adaptée à son palier courant : tableau de bord
+      financier, assistance à l'achat en temps réel, et notifications personnalisées —
+      avec la dignité comme contrainte fonctionnelle non négociable.
+    owner: Direction Expérience Utilisateur
+    adrs:
+      - ADR-BCM-FUNC-0004
+      - ADR-BCM-FUNC-0009
+
+  - id: CAP.CAN.002
+    name: Portail Prescripteur
+    level: L1
+    zoning: CHANNEL
+    description: >
+      Exposer aux prescripteurs une vue filtrée du bénéficiaire selon leur rôle et leurs
+      droits d'accès, leur permettre de prendre des actions (surcharge manuelle, co-décision)
+      et de consulter les rapports de suivi dans le respect du secret professionnel.
+    owner: Direction Expérience Utilisateur
+    adrs:
+      - ADR-BCM-FUNC-0004
+      - ADR-BCM-FUNC-0010
+
+  - id: CAP.B2B.001
+    name: Gestion de l'Instrument Financier
+    level: L1
+    zoning: EXCHANGE_B2B
+    description: >
+      Gérer le cycle de vie de la carte dédiée Reliever, accéder aux données financières
+      du compte principal via open banking (DSP2), et orchestrer les flux de fonds entre
+      le compte principal et la carte — rendant Reliever indépendant des établissements bancaires.
+    owner: Équipe Partenariats Financiers & Paiements
+    adrs:
+      - ADR-BCM-FUNC-0004
+      - ADR-BCM-FUNC-0011
+
+  - id: CAP.SUP.001
+    name: Conformité & Protection des Données
+    level: L1
+    zoning: SUPPORT
+    description: >
+      Gérer les consentements RGPD du bénéficiaire, journaliser l'ensemble des accès aux données
+      (toutes capacités confondues) et traiter les exercices de droits — résolvant la tension
+      transparence/vie privée inhérente à un dispositif concentrant des données financières,
+      médicales et sociales sur un même individu.
+    owner: DPO (Data Protection Officer)
+    adrs:
+      - ADR-BCM-FUNC-0004
+      - ADR-BCM-FUNC-0012
+
+  - id: CAP.REF.001
+    name: Référentiels Communs
+    level: L1
+    zoning: REFERENTIAL
+    description: >
+      Porter et maintenir les données de référence canoniques partagées par l'ensemble du
+      dispositif : l'identité du bénéficiaire, l'identité des prescripteurs, et les définitions
+      des paliers avec leurs règles de transition — garantissant une source de vérité unique
+      pour les trois concepts métier fondateurs de Reliever.
+    owner: Équipe Data & Référentiels
+    adrs:
+      - ADR-BCM-FUNC-0004
+      - ADR-BCM-FUNC-0013
+
+  - id: CAP.DAT.001
+    name: Analytique Comportementale
+    level: L1
+    zoning: DATA_ANALYTIQUE
+    description: >
+      Collecter les événements comportementaux agrégés du dispositif, analyser les patterns
+      pour améliorer le modèle de score dans le temps, et produire les tableaux de bord de
+      pilotage — en séparant strictement le pipeline analytique du pipeline transactionnel
+      opérationnel pour prévenir toute rétroaction incontrôlée.
+    owner: Équipe Data Science & BI
+    adrs:
+      - ADR-BCM-FUNC-0004
+      - ADR-BCM-FUNC-0014
+
+  - id: CAP.PIL.001
+    name: Pilotage du Programme
+    level: L1
+    zoning: STEERING
+    description: >
+      Piloter le programme de remédiation Reliever à l'échelle : définir et faire évoluer
+      les politiques de gouvernance, mesurer l'efficacité du dispositif, valider les évolutions
+      du modèle de score avant déploiement, et certifier la conformité réglementaire d'ensemble
+      (cadres bancaire, médical, social).
+    owner: Direction Programme Reliever / Compliance Officer
+    adrs:
+      - ADR-BCM-FUNC-0004
+      - ADR-BCM-FUNC-0015

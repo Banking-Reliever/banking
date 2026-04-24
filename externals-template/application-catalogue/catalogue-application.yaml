@@ -1,0 +1,175 @@
+meta:
+  bcm_name: BCM Urbanisation
+  version: 0.0.1
+  template_version: 1.0.0
+  last_updated: 'YYYY-MM-DD'
+  owners:
+    - Owner 1
+    - Owner 2
+
+# ──────────────────────────────────────────────────────────────
+# Application Catalogue
+# ──────────────────────────────────────────────────────────────
+#
+# Normative reference: ADR-BCM-URBA-0010
+#
+# This template describes IS applications and their
+# mapping to business capabilities (Business Capabilities).
+#
+# Fundamental rule (ADR-BCM-URBA-0010):
+#   L2 level is the mandatory urbanization pivot.
+#   Every application must be mapped to at least one L2 capability.
+#   Mapping to L1 alone is not sufficient.
+#   Mapping to L3 is allowed as a complement.
+#
+# Anchoring structure:
+#   - primary_capability: Main L2 capability (mandatory)
+#   - secondary_capabilities: Additional L2/L3 capabilities (optional)
+#
+# Identifier conventions:
+#   - Application: APP-<DOMAIN>-<NNN>
+#   - Capability: CAP.<ZONE>.<L1>.<L2>[.<L3>]
+#
+# ──────────────────────────────────────────────────────────────
+
+applications:
+
+  # ──────────────────────────────────────────────
+  # Application example
+  # ──────────────────────────────────────────────
+  - id: APP-EXAMPLE-001
+    name: Application name
+    description: >-
+      Functional description of the application and its role
+      in the information system.
+    
+    # ─── Application metadata ───
+    application_type: backend | frontend | batch | api | integration | mobile
+    lifecycle_status: build | run | decommission | legacy
+    criticality: critical | major | minor
+    
+    # ─── Ownership and contacts ───
+    owner:
+      tribe: Tribe / team name
+      product_owner: First Last
+      tech_lead: First Last
+    contacts:
+      - role: L2 Support
+        email: support-app@domain.com
+      - role: On-call
+        email: oncall@domain.com
+    
+    # ─── Business capabilities mapping (L2 mandatory) ───
+    # Reference: ADR-BCM-URBA-0010
+    capability_mapping:
+      # Main L2 capability: mandatory
+      primary_capability:
+        capability_id: CAP.CORE.005.DSP
+        responsibility: owner | contributor | consumer
+        justification: >-
+          Justification for mapping to this capability.
+          Describe the functional contribution of the application.
+      
+      # Secondary L2/L3 capabilities: optional
+      secondary_capabilities:
+        - capability_id: CAP.CORE.005.OED
+          responsibility: contributor
+          justification: >-
+            The application contributes to case opening
+            by providing initial qualification data.
+        
+        - capability_id: CAP.CORE.005.IND
+          responsibility: consumer
+          justification: >-
+            The application consumes investigation information
+            for display to the policyholder.
+    
+    # ─── Business events ───
+    events:
+      publishes:
+        - event_id: EVT.CORE.005.CLAIM_DECLARATION_RECEIVED
+          description: Publication when a declaration is received
+      subscribes:
+        - event_id: EVT.CORE.005.CLAIM_DECLARED
+          via_subscription: SUB.BUSINESS.CORE.005.OED_ON_CLAIM_DECLARED
+          description: Consumption to trigger case opening
+    
+    # ─── Interfaces and dependencies ───
+    interfaces:
+      apis_exposed:
+        - api_id: API-EXAMPLE-001
+          name: Claim Declaration API
+          type: REST | GraphQL | gRPC | SOAP
+          capability_id: CAP.CORE.005.DSP
+      apis_consumed:
+        - api_id: API-CONTRACT-001
+          name: Contract Repository API
+          provider_app: APP-CONTRACT-001
+          capability_id: CAP.CORE.004
+    
+    # ─── Data and resources ───
+    data:
+      data_domains:
+        - domain: Claims
+          classification: confidential | internal | public
+      resources:
+        - resource_id: RES.CORE.005.CLAIM_CASE
+          access_type: read | write | read_write
+    
+    # ─── Technical information (optional) ───
+    technical_info:
+      technology_stack:
+        - Java 17
+        - Spring Boot 3.x
+        - PostgreSQL
+      deployment:
+        environment: kubernetes | vm | serverless
+        region: eu-west-1
+    
+    # ─── Documentation and traceability ───
+    documentation:
+      architecture_decision_records:
+        - ADR-BCM-URBA-0010
+      external_links:
+        - type: Confluence
+          url: https://confluence.domain.com/app-example
+        - type: Repository
+          url: https://github.com/org/app-example
+    
+    # ─── Governance ───
+    governance:
+      last_review_date: 'YYYY-MM-DD'
+      next_review_date: 'YYYY-MM-DD'
+      review_frequency: quarterly | semi-annual | annual
+      status: active | deprecated | sunset
+
+# ──────────────────────────────────────────────────────────────
+# Responsibility types (responsibility)
+# ──────────────────────────────────────────────────────────────
+#
+# - owner: The application is the system of record for this
+#          capability. It carries the main responsibility.
+#
+# - contributor: The application contributes to the capability without
+#                being its owner. It enriches or complements.
+#
+# - consumer: The application consumes the capability's services
+#             without contributing directly.
+#
+# ──────────────────────────────────────────────────────────────
+
+# ──────────────────────────────────────────────────────────────
+# Governance rules
+# ──────────────────────────────────────────────────────────────
+#
+# 1. Every application must have at least one L2 mapping
+# 2. The "owner" mapping to an L2 capability must be unique
+#    in the catalogue (only one owner application per L2, but
+#    due to legacy systems, exceptions may exist)
+# 3. Mappings are reviewed according to the defined frequency
+# 4. Applications with "deprecated" status must have a
+#    planned sunset date
+# 5. Direct relations outside L2 must be registered
+#    in direct-relations-registry.yaml (cf. ADR-BCM-URBA-0010)
+#
+# ──────────────────────────────────────────────────────────────

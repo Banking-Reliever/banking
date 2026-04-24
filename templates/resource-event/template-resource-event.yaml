@@ -1,0 +1,45 @@
+meta:
+  bcm_name: BCM Urbanisation
+  version: 0.0.1
+  template_version: 1.0.0
+  last_updated: 'YYYY-MM-DD'
+  owners:
+    - Owner 1
+    - Owner 2
+
+# ──────────────────────────────────────────────────────────────
+# Resource events
+# ──────────────────────────────────────────────────────────────
+#
+# A resource event represents a significant business fact carried by an API, data flow, or operational process,
+# emitted by a BCM capability, and carrying a resource.
+#
+# Identifier convention:
+#   EVT.RES.<ZONE>.<L1>.<CODE>   e.g. EVT.RES.CORE.005.VEHICLE_CASE_OPENED
+#
+# Scope:
+#   - public: event broadcast outside the capability (or even outside domain)
+#   - private: internal event to the capability / domain not accessible from outside
+#
+# ──────────────────────────────────────────────────────────────
+
+resource_events:
+
+  - id: EVT.RES.CORE.005.XXX                   # Unique resource event identifier
+    name: Resource event name                  # Short and explicit name
+    definition: >-                             # Business and operational definition of the event
+      Functional description of the resource event:
+      what happens, in what context, and why this event exists.
+
+    emitting_capability: CAP.CORE.005          # BCM capability that emits the event
+                                              # (must match an id in capabilities-*.yaml)
+    carried_resource: RES.CORE.005.XXX         # Resource carried by the event
+                                              # (must match an id in resource-*.yaml)
+    business_event: EVT.CORE.005.XXX           # Associated business event
+                                              # (must match an id in business-event-*.yaml)
+
+    scope: public                              # Event scope: public | private
+
+    # Optional fields
+    adrs: []                                   # Associated ADRs
+    tags: []                                   # Free tags for filtering / search

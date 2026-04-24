@@ -1,0 +1,10 @@
+levels: [L1, L2, L3]
+# DATA_ANALYTIQUE ajouté per ADR-BCM-URBA-0001 (zone 7 du modèle TOGAF étendu)
+zoning:
+  - CHANNEL
+  - BUSINESS_SERVICE_PRODUCTION
+  - SUPPORT
+  - STEERING
+  - REFERENTIAL
+  - EXCHANGE_B2B
+  - DATA_ANALYTIQUE

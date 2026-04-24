@@ -1,0 +1,570 @@
+meta:
+  bcm_name: BCM Reliever — Événements ressource
+  version: 0.1.0
+  template_version: 1.0.0
+  last_updated: '2026-04-24'
+  owners:
+    - Direction Programme Reliever
+
+resource_events:
+
+  # ── BSP.001.SCO — Scoring comportemental ────────────────────────────────────
+
+  - id: RVT.BSP.001.SCORE_ENTREE_CALCULE
+    name: Score d'entrée calculé
+    definition: >-
+      Le score comportemental baseline a été calculé à l'enrôlement du bénéficiaire.
+      Première évaluation, sert de référence pour mesurer la progression tout au long du programme.
+    emitting_capability: CAP.BSP.001.SCO
+    carried_resource: RES.BSP.001.SCORE_ENTREE
+    business_event: EVT.BSP.001.SCORE_RECALCULE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - baseline
+
+  - id: RVT.BSP.001.SCORE_COURANT_RECALCULE
+    name: Score courant recalculé
+    definition: >-
+      Le score comportemental a été recalculé après une transaction ou un signal
+      comportemental significatif. Valeur opérationnelle utilisée pour les décisions de palier.
+    emitting_capability: CAP.BSP.001.SCO
+    carried_resource: RES.BSP.001.SCORE_COURANT
+    business_event: EVT.BSP.001.SCORE_RECALCULE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - real-time
+
+  # ── BSP.001.PAL — Gestion des paliers ───────────────────────────────────────
+
+  - id: RVT.BSP.001.FRANCHISSEMENT_ENREGISTRE
+    name: Franchissement de palier enregistré
+    definition: >-
+      La transition vers un palier supérieur a été enregistrée. Déclenche la mise
+      à jour des règles de la carte dédiée et l'allocation de nouvelles enveloppes.
+    emitting_capability: CAP.BSP.001.PAL
+    carried_resource: RES.BSP.001.FRANCHISSEMENT
+    business_event: EVT.BSP.001.PALIER_HAUSSE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - progression
+
+  - id: RVT.BSP.001.RETROGRADATION_ENREGISTREE
+    name: Rétrogradation de palier enregistrée
+    definition: >-
+      Le retour vers un palier inférieur a été enregistré. Déclenche la mise à jour
+      restrictive des règles de la carte dédiée et une alerte prescripteurs.
+    emitting_capability: CAP.BSP.001.PAL
+    carried_resource: RES.BSP.001.RETROGRADATION
+    business_event: EVT.BSP.001.PALIER_RETROGRADE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - regression
+
+  # ── BSP.001.ARB — Arbitrage algo / prescripteur ──────────────────────────────
+
+  - id: RVT.BSP.001.SURCHARGE_ACTIVEE
+    name: Surcharge prescripteur activée
+    definition: >-
+      Une surcharge prescripteur a été mise en vigueur : l'algorithme est mis en attente,
+      le prescripteur assume le contrôle du palier.
+    emitting_capability: CAP.BSP.001.PAL
+    carried_resource: RES.BSP.001.SURCHARGE_ACTIVE
+    business_event: EVT.BSP.001.PALIER_OVERRIDE_APPLIQUE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - human-override
+
+  - id: RVT.BSP.001.SURCHARGE_CLOTUREE
+    name: Surcharge prescripteur clôturée
+    definition: >-
+      Une surcharge prescripteur s'est terminée : l'algorithme a repris le contrôle,
+      le résultat de la décision humaine est documenté.
+    emitting_capability: CAP.BSP.001.ARB
+    carried_resource: RES.BSP.001.SURCHARGE_CLOTUREE
+    business_event: EVT.BSP.001.ARBITRAGE_ALGO_REAFFIRME
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - audit
+
+  # ── BSP.001.SIG — Signaux comportementaux ───────────────────────────────────
+
+  - id: RVT.BSP.001.SIGNAL_RECHUTE_QUALIFIE
+    name: Signal de rechute qualifié
+    definition: >-
+      Un signal comportemental de rechute potentielle a été qualifié et contextualisé.
+      Alimente le recalcul du score et peut déclencher une alerte prescripteur.
+    emitting_capability: CAP.BSP.001.SIG
+    carried_resource: RES.BSP.001.SIGNAL_COMPORTEMENTAL
+    business_event: EVT.BSP.001.SIGNAL_RECHUTE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - behavioral
+      - counterintuitive
+
+  - id: RVT.BSP.001.SIGNAL_PROGRESSION_QUALIFIE
+    name: Signal de progression qualifié
+    definition: >-
+      Un signal comportemental positif a été qualifié. Contribue positivement
+      au recalcul du score comportemental.
+    emitting_capability: CAP.BSP.001.SIG
+    carried_resource: RES.BSP.001.SIGNAL_COMPORTEMENTAL
+    business_event: EVT.BSP.001.SIGNAL_PROGRESSION
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - behavioral
+
+  # ── BSP.002.ENR — Enrôlement ─────────────────────────────────────────────────
+
+  - id: RVT.BSP.002.DOSSIER_OUVERT
+    name: Dossier de participation ouvert
+    definition: >-
+      Un dossier actif a été créé pour un bénéficiaire enrôlé dans le programme.
+    emitting_capability: CAP.BSP.002.ENR
+    carried_resource: RES.BSP.002.DOSSIER_ACTIF
+    business_event: EVT.BSP.002.BENEFICIAIRE_ENROLE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0006
+    tags:
+      - lifecycle
+      - core-domain
+
+  # ── BSP.002.SOR — Sortie ─────────────────────────────────────────────────────
+
+  - id: RVT.BSP.002.DOSSIER_CLOTURE
+    name: Dossier de participation clôturé
+    definition: >-
+      Le dossier d'un bénéficiaire a été clôturé suite à sa sortie du programme.
+    emitting_capability: CAP.BSP.002.SOR
+    carried_resource: RES.BSP.002.DOSSIER_CLOS
+    business_event: EVT.BSP.002.BENEFICIAIRE_SORTI
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0006
+    tags:
+      - lifecycle
+      - terminal
+
+  # ── BSP.004.AUT — Autorisation de paiement ──────────────────────────────────
+
+  - id: RVT.BSP.004.PAIEMENT_ACCORDE
+    name: Paiement accordé
+    definition: >-
+      Une transaction à la carte dédiée a été autorisée. L'enveloppe budgétaire
+      concernée est mise à jour.
+    emitting_capability: CAP.BSP.004.AUT
+    carried_resource: RES.BSP.004.PAIEMENT_AUTORISE
+    business_event: EVT.BSP.004.TRANSACTION_AUTORISEE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0008
+    tags:
+      - real-time
+
+  - id: RVT.BSP.004.PAIEMENT_BLOQUE
+    name: Paiement bloqué
+    definition: >-
+      Une transaction à la carte dédiée a été refusée. Le refus est un signal
+      comportemental transmis à CAP.BSP.001.SIG.
+    emitting_capability: CAP.BSP.004.AUT
+    carried_resource: RES.BSP.004.PAIEMENT_REFUSE
+    business_event: EVT.BSP.004.TRANSACTION_REFUSEE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0008
+    tags:
+      - real-time
+      - behavioral-signal
+
+  # ── BSP.004.ENV — Enveloppes budgétaires ────────────────────────────────────
+
+  - id: RVT.BSP.004.ENVELOPPE_INITIALISEE
+    name: Enveloppe budgétaire initialisée
+    definition: >-
+      Une enveloppe budgétaire a été ouverte pour la période courante selon la
+      définition du palier du bénéficiaire.
+    emitting_capability: CAP.BSP.004.ENV
+    carried_resource: RES.BSP.004.ENVELOPPE_OUVERTE
+    business_event: EVT.BSP.004.ENVELOPPE_ALLOUEE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0008
+    tags:
+      - budget
+
+  - id: RVT.BSP.004.ENVELOPPE_ATTEINT_PLAFOND
+    name: Enveloppe budgétaire plafonnée
+    definition: >-
+      Une enveloppe budgétaire a atteint son plafond. Signal de consommation normale.
+    emitting_capability: CAP.BSP.004.ENV
+    carried_resource: RES.BSP.004.ENVELOPPE_EPUISEE
+    business_event: EVT.BSP.004.ENVELOPPE_EPUISEE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0008
+    tags:
+      - budget
+
+  - id: RVT.BSP.004.ENVELOPPE_PERIODE_SANS_CONSOMMATION
+    name: Enveloppe clôturée sans consommation
+    definition: >-
+      Une enveloppe budgétaire s'est clôturée à la fin de la période sans consommation
+      ou avec une consommation marginale. Signal de rechute contre-intuitif.
+    emitting_capability: CAP.BSP.004.ENV
+    carried_resource: RES.BSP.004.ENVELOPPE_NON_CONSOMMEE
+    business_event: EVT.BSP.004.ENVELOPPE_NON_CONSOMMEE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0008
+    tags:
+      - behavioral-signal
+      - counterintuitive
+      - relapse-signal
+
+  # ── B2B.001.CRT — Cycle de vie de la carte ──────────────────────────────────
+
+  - id: RVT.B2B.001.CARTE_MISE_EN_SERVICE
+    name: Carte dédiée mise en service
+    definition: >-
+      La carte dédiée a été activée avec les règles d'usage du palier courant.
+    emitting_capability: CAP.B2B.001.CRT
+    carried_resource: RES.B2B.001.CARTE_ACTIVE
+    business_event: EVT.B2B.001.CARTE_ACTIVEE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0011
+    tags:
+      - financial-instrument
+
+  - id: RVT.B2B.001.CARTE_MISE_EN_ATTENTE
+    name: Carte dédiée mise en attente
+    definition: >-
+      La carte dédiée a été temporairement suspendue. Réactivation possible.
+    emitting_capability: CAP.B2B.001.CRT
+    carried_resource: RES.B2B.001.CARTE_SUSPENDUE
+    business_event: EVT.B2B.001.CARTE_SUSPENDUE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0011
+    tags:
+      - lifecycle
+
+  - id: RVT.B2B.001.CARTE_FERMEE_DEFINITIVEMENT
+    name: Carte dédiée fermée définitivement
+    definition: >-
+      La carte dédiée a été résiliée suite à la sortie du bénéficiaire du programme.
+    emitting_capability: CAP.B2B.001.CRT
+    carried_resource: RES.B2B.001.CARTE_RESILIEE
+    business_event: EVT.B2B.001.CARTE_RESILIEE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0011
+    tags:
+      - lifecycle
+      - terminal
+
+  # ── SUP.001.CON — Consentement RGPD ─────────────────────────────────────────
+
+  - id: RVT.SUP.001.CONSENTEMENT_ACTIVE
+    name: Consentement RGPD activé
+    definition: >-
+      Un consentement RGPD valide est en vigueur. Débloque l'enrôlement, l'open
+      banking et les consultations prescripteurs.
+    emitting_capability: CAP.SUP.001.CON
+    carried_resource: RES.SUP.001.CONSENTEMENT_ACTIF
+    business_event: EVT.SUP.001.CONSENTEMENT_ACCORDE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0012
+    tags:
+      - RGPD
+      - blocking-precondition
+
+  - id: RVT.SUP.001.CONSENTEMENT_RETIRE
+    name: Consentement RGPD retiré
+    definition: >-
+      Le consentement RGPD a été révoqué. Tous les accès aux données du bénéficiaire
+      sont immédiatement suspendus.
+    emitting_capability: CAP.SUP.001.CON
+    carried_resource: RES.SUP.001.CONSENTEMENT_REVOQUE
+    business_event: EVT.SUP.001.CONSENTEMENT_REVOQUE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0012
+    tags:
+      - RGPD
+      - compliance
+
+  # ── DAT.001.MOD — Modèle de scoring ─────────────────────────────────────────
+
+  - id: RVT.DAT.001.MODELE_SOUMIS_GOUVERNANCE
+    name: Modèle soumis à gouvernance
+    definition: >-
+      Un nouveau modèle de scoring a été soumis à PIL.001.GOV pour validation.
+      Le déploiement en production est bloqué jusqu'à validation.
+    emitting_capability: CAP.DAT.001.MOD
+    carried_resource: RES.DAT.001.MODELE_EN_VALIDATION
+    business_event: EVT.DAT.001.MODELE_SCORE_MAJ
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0014
+      - ADR-BCM-FUNC-0015
+    tags:
+      - governance
+      - versioned
+
+  - id: RVT.DAT.001.MODELE_DEPLOYE_PRODUCTION
+    name: Modèle déployé en production
+    definition: >-
+      Un modèle de scoring validé par PIL.001.GOV a été déployé en production
+      sur CAP.BSP.001.SCO. Un seul modèle actif à la fois.
+    emitting_capability: CAP.DAT.001.MOD
+    carried_resource: RES.DAT.001.MODELE_ACTIF
+    business_event: EVT.DAT.001.MODELE_SCORE_MAJ
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0014
+      - ADR-BCM-FUNC-0015
+    tags:
+      - governance
+      - production
+
+  # ── RVTs ajoutés pour compléter la couverture des abonnements ────────────────
+
+  # BSP.001.SCO — seuil de score
+  - id: RVT.BSP.001.SEUIL_SCORE_ATTEINT
+    name: Seuil de score atteint
+    definition: >-
+      Le score courant d'un bénéficiaire a franchi un seuil de transition de palier.
+      Déclenche l'évaluation d'un changement de palier dans CAP.BSP.001.PAL.
+    emitting_capability: CAP.BSP.001.SCO
+    carried_resource: RES.BSP.001.SCORE_COURANT
+    business_event: EVT.BSP.001.SCORE_SEUIL_ATTEINT
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - algorithmic
+      - trigger
+
+  # BSP.002.ELI — éligibilité validée
+  - id: RVT.BSP.002.ELIGIBILITE_ENREGISTREE
+    name: Éligibilité enregistrée
+    definition: >-
+      Un candidat a été formellement enregistré comme éligible au programme.
+      L'état ELIGIBLE du dossier autorise le démarrage de l'enrôlement par CAP.BSP.002.ENR.
+    emitting_capability: CAP.BSP.002.ELI
+    carried_resource: RES.BSP.002.DOSSIER_ELIGIBLE
+    business_event: EVT.BSP.002.ELIGIBILITE_VALIDEE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0006
+    tags:
+      - lifecycle
+      - pre-enrollment
+
+  # BSP.002.SOR — transfert vers app standard
+  - id: RVT.BSP.002.TRANSFERT_APP_ENREGISTRE
+    name: Transfert vers application standard enregistré
+    definition: >-
+      La clôture succès d'un dossier suite au transfert vers l'application bancaire standard.
+      C'est l'issue nominale du programme : autonomie financière complète atteinte.
+    emitting_capability: CAP.BSP.002.SOR
+    carried_resource: RES.BSP.002.DOSSIER_CLOS
+    business_event: EVT.BSP.002.BENEFICIAIRE_TRANSFERE_APP_STANDARD
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0006
+    tags:
+      - lifecycle
+      - success
+      - terminal
+
+  # BSP.003.COD — co-décision ouverte
+  - id: RVT.BSP.003.CODECISION_OUVERTE
+    name: Co-décision ouverte
+    definition: >-
+      Une demande de co-décision a été ouverte et les positions des prescripteurs
+      commencent à être collectées. La surcharge n'est pas encore appliquée.
+    emitting_capability: CAP.BSP.003.COD
+    carried_resource: RES.BSP.003.CODECISION_EN_COURS
+    business_event: EVT.BSP.003.OVERRIDE_DEMANDE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0007
+    tags:
+      - multi-actor
+      - human-override
+
+  # BSP.003.ROL — rôle attribué
+  - id: RVT.BSP.003.HABILITATION_ACTIVEE
+    name: Habilitation prescripteur activée
+    definition: >-
+      Un rôle prescripteur est désormais actif sur un dossier bénéficiaire.
+      Les droits de consultation et d'action sont immédiatement effectifs.
+    emitting_capability: CAP.BSP.003.ROL
+    carried_resource: RES.BSP.003.ROLE_ATTRIBUE
+    business_event: EVT.BSP.003.ROLE_ATTRIBUE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0007
+    tags:
+      - multi-actor
+      - access-control
+
+  # BSP.003.COD — co-décision validée
+  - id: RVT.BSP.003.DECISION_COVALIDEE
+    name: Co-décision validée
+    definition: >-
+      La résolution d'une délibération multi-prescripteurs est validée.
+      La surcharge est transmise à CAP.BSP.001.PAL ou BSP.001.ARB pour application.
+    emitting_capability: CAP.BSP.003.COD
+    carried_resource: RES.BSP.003.CODECISION_VALIDEE
+    business_event: EVT.BSP.003.OVERRIDE_COVALIDÉ
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0007
+    tags:
+      - multi-actor
+      - audit
+
+  # BSP.003.COD — co-décision rejetée
+  - id: RVT.BSP.003.DECISION_REJETEE
+    name: Co-décision rejetée
+    definition: >-
+      La délibération multi-prescripteurs s'est conclue par un rejet.
+      L'algorithme conserve le contrôle du palier.
+    emitting_capability: CAP.BSP.003.COD
+    carried_resource: RES.BSP.003.CODECISION_REJETEE
+    business_event: EVT.BSP.003.OVERRIDE_REFUSE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0007
+    tags:
+      - multi-actor
+      - audit
+
+  # BSP.004.ENV — consommation d'enveloppe
+  - id: RVT.BSP.004.CONSOMMATION_ENREGISTREE
+    name: Consommation d'enveloppe enregistrée
+    definition: >-
+      Une transaction a été imputée à une enveloppe budgétaire en cours.
+      Le solde disponible est mis à jour. Signal neutre de comportement normal.
+    emitting_capability: CAP.BSP.004.ENV
+    carried_resource: RES.BSP.004.ENVELOPPE_OUVERTE
+    business_event: EVT.BSP.004.ENVELOPPE_CONSOMMEE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0008
+    tags:
+      - budget
+
+  # BSP.004.ALT — alternative identifiée
+  - id: RVT.BSP.004.ALTERNATIVE_IDENTIFIEE
+    name: Alternative d'achat identifiée
+    definition: >-
+      Une ou plusieurs alternatives commerciales compatibles avec le palier ont été
+      identifiées et proposées au bénéficiaire suite à un refus de paiement.
+    emitting_capability: CAP.BSP.004.ALT
+    carried_resource: RES.BSP.004.ALTERNATIVE_PROPOSEE
+    business_event: EVT.BSP.004.ALTERNATIVE_PROPOSEE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0008
+    tags:
+      - dignity
+
+  # CAN.002.ACT — override UX initié
+  - id: RVT.CAN.002.OVERRIDE_UX_INITIE
+    name: Override UX initié
+    definition: >-
+      Une action de demande de surcharge algorithmique a été enregistrée depuis
+      l'interface prescripteur. La co-décision est transmise à CAP.BSP.003.COD.
+    emitting_capability: CAP.CAN.002.ACT
+    carried_resource: RES.BSP.003.CODECISION_EN_COURS
+    business_event: EVT.CAN.002.OVERRIDE_UX_DECLENCHE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0010
+    tags:
+      - channel
+      - human-override
+
+  # CAN.002.VUE — consultation dossier prescripteur
+  - id: RVT.CAN.002.DOSSIER_VU_PRESCRIPTEUR
+    name: Dossier consulté par prescripteur
+    definition: >-
+      La consultation d'un dossier bénéficiaire par un prescripteur a été enregistrée
+      dans l'interface canal. Déclenche la production du rapport dans CAP.CAN.002.RAP.
+    emitting_capability: CAP.CAN.002.VUE
+    carried_resource: RES.BSP.002.DOSSIER_ACTIF
+    business_event: EVT.CAN.002.DOSSIER_CONSULTE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0010
+    tags:
+      - channel
+      - audit
+
+  # DAT.001.ING — lot comportemental disponible
+  - id: RVT.DAT.001.LOT_DISPONIBLE
+    name: Lot comportemental disponible
+    definition: >-
+      Un lot de données comportementales anonymisées est disponible dans la plateforme
+      analytique pour alimenter le modèle de score (DAT.001.MOD) et le reporting (DAT.001.REP).
+    emitting_capability: CAP.DAT.001.ING
+    carried_resource: RES.DAT.001.LOT_INGERE
+    business_event: EVT.DAT.001.DONNEES_COMPORTEMENTALES_INGEREES
+    scope: internal
+    adrs:
+      - ADR-BCM-FUNC-0014
+    tags:
+      - analytics
+
+  # DAT.001.REP — rapport analytique disponible
+  - id: RVT.DAT.001.RAPPORT_DISPONIBLE
+    name: Rapport analytique programme disponible
+    definition: >-
+      Un rapport de performance globale du programme est disponible pour
+      les instances de pilotage (PIL.001.KPI).
+    emitting_capability: CAP.DAT.001.REP
+    carried_resource: RES.DAT.001.RAPPORT_ANALYTIQUE
+    business_event: EVT.DAT.001.RAPPORT_PROGRAMME_GENERE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0014
+    tags:
+      - analytics
+      - reporting
+
+  # SUP.001.AUD — trace d'accès enregistrée
+  - id: RVT.SUP.001.TRACE_ENREGISTREE
+    name: Trace d'accès enregistrée
+    definition: >-
+      Un accès aux données sensibles d'un bénéficiaire a été tracé dans le journal RGPD.
+      Consommé par PIL.001.AUD pour les audits de conformité réglementaire.
+    emitting_capability: CAP.SUP.001.AUD
+    carried_resource: RES.SUP.001.TRACE_ACCES_PRESCRIPTEUR
+    business_event: EVT.SUP.001.ACCES_JOURNALISE
+    scope: public
+    adrs:
+      - ADR-BCM-FUNC-0012
+    tags:
+      - RGPD
+      - audit

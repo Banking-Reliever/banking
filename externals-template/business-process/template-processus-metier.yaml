@@ -1,0 +1,136 @@
+meta:
+  bcm_name: BCM Urbanisation
+  version: 0.0.1
+  template_version: 1.0.0
+  last_updated: 'YYYY-MM-DD'
+  owners:
+    - Owner 1
+    - Owner 2
+
+# ──────────────────────────────────────────────────────────────
+# Business process
+# ──────────────────────────────────────────────────────────────
+#
+# Normative reference: ADR-BCM-URBA-0013
+#
+# A business process is an external orchestration view, based on:
+#   - business objects (OBJ.*)
+#   - business events (EVT.*)
+#   - business subscriptions (SUB.BUSINESS.*)
+#
+# This template describes generic business processes.
+# It must not carry applied operational constraints
+# (which belong to the resource process template).
+#
+# The process start is not necessarily an event:
+# it can begin with a business interaction, then produce
+# a first formal business event.
+#
+# Identifier conventions:
+#   - Process: PRC.BUSINESS.<ZONE>.<L1>.<CODE>
+#   - Capability: CAP.<ZONE>.<L1>.<L2>[.<L3>]
+#   - Event: EVT.<ZONE>.<L1>.<CODE>
+#   - Business object: OBJ.<ZONE>.<L1>.<CODE>
+#   - Business subscription: SUB.BUSINESS.<ZONE>.<L1>.<CODE>
+#   - Rule: RULE.<DOMAIN>.<NNN>
+#
+# ──────────────────────────────────────────────────────────────
+
+business_process:
+  id: PRC.BUSINESS.DOM.000.EXAMPLE
+  name: Business process name
+  process_type: business
+
+  # Expected documentation (recommended: fill systematically)
+  documentation:
+    objective: >-
+      Business purpose of the process (why it exists).
+    business_value: >-
+      Value provided to the policyholder, management, and organization.
+    scope:
+      includes:
+        - Included step/scope 1
+        - Included step/scope 2
+      excludes:
+        - Excluded step/scope 1
+        - Excluded step/scope 2
+    stakeholders:
+      - Business actor 1
+      - Business actor 2
+    preconditions:
+      - Precondition 1
+      - Precondition 2
+    postconditions:
+      - Postcondition 1
+      - Postcondition 2
+    scenarios:
+      nominal: >-
+        Describe the nominal scenario from start to main exit.
+      alternative: >-
+        Describe at least one significant alternative branch.
+    monitoring_indicators:
+      - Indicator 1
+      - Indicator 2
+
+  # Contextual anchoring (optional): does not structure the BCM
+  parent_capability: CAP.DOM.000.SUB
+
+  start:
+    type: interaction                         # interaction | event
+    interaction: Call or visit from a policyholder # Fill if type=interaction
+  entry_event: EVT.DOM.000.PROCESSING_STARTED    # First formal business event (if applicable)
+
+  business_assets:
+    business_objects:
+      - OBJ.DOM.000.OBJECT_1
+    business_events:
+      - EVT.DOM.000.EVENT_1
+      - EVT.DOM.000.EVENT_2
+    business_subscriptions:
+      - SUB.BUSINESS.DOM.000.SUBSCRIPTION_1
+
+  # Business orchestration chain (business abstractions only)
+  event_subscription_chain:
+    - step_id: STEP.DOM.001
+      consumes_trigger: interaction:policyholder-call-or-visit
+      via_subscription: SUB.BUSINESS.DOM.000.SUBSCRIPTION_1
+      emits_business_event: EVT.DOM.000.EVENT_1
+      carries_business_object: OBJ.DOM.000.OBJECT_1
+      note: First step of the business process.
+
+    - step_id: STEP.DOM.002
+      consumes_business_event: EVT.DOM.000.EVENEMENT_1
+      emits_business_event: EVT.DOM.000.EVENEMENT_2
+      carries_business_object: OBJ.DOM.000.OBJET_1
+      note: Deuxième étape du processus métier.
+
+  orchestration_rules:
+    - id: RULE.ABO.001
+      rule: >-
+        Décrire ici la règle d'enchaînement métier généraliste.
+
+    - id: RULE.ABO.002
+      rule: >-
+        Vérifier l'absence de contraintes opérationnelles appliquées
+        dans ce processus métier.
+
+  exits_metier:
+    - to_business_event: EVT.DOM.000.SORTIE_1
+      meaning: Signification métier de la sortie 1.
+
+    - to_business_event: EVT.DOM.000.SORTIE_2
+      meaning: Signification métier de la sortie 2.
+
+  traceability:
+    adrs:
+      - ADR-BCM-XXXX
+
+  # Champs optionnels
+  tags:
+    - processus-metier
+
+  # Critères de complétude documentaire (guideline)
+  # - Le lecteur comprend l'objectif et la valeur métier sans lire le code SI.
+  # - Le périmètre inclus/exclu est explicite et non ambigu.
+  # - Les scénarios nominal/alternatif sont retraçables dans event_subscription_chain.
+  # - Les indicateurs proposés permettent un suivi du processus dans le temps.

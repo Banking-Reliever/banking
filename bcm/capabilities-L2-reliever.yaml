@@ -1,0 +1,485 @@
+meta:
+  bcm_name: BCM Reliever — L2
+  version: 0.1.0
+  template_version: 1.0.0
+  last_updated: '2026-04-24'
+  owners:
+    - Direction Programme Reliever
+
+capabilities:
+
+  # ── CAP.BSP.001 — Remédiation Comportementale ───────────────────────────────
+
+  - id: CAP.BSP.001.SCO
+    name: Scoring Comportemental
+    level: L2
+    parent: CAP.BSP.001
+    zoning: BUSINESS_SERVICE_PRODUCTION
+    description: >
+      Calculer en temps réel le score comportemental du bénéficiaire à partir de chaque
+      transaction et signal entrant. Le score est l'unique source de vérité pour les
+      décisions de changement de palier, sauf surcharge prescripteur explicitement validée.
+    owner: Direction Programme Reliever
+    adrs:
+      - ADR-BCM-FUNC-0005
+
+  - id: CAP.BSP.001.PAL
+    name: Gestion des Paliers
+    level: L2
+    parent: CAP.BSP.001
+    zoning: BUSINESS_SERVICE_PRODUCTION
+    description: >
+      Gérer les transitions de palier (franchissement hausse, rétrogradation) en appliquant
+      les seuils définis dans CAP.REF.001.PAL. Déclenche les mises à jour des règles de
+      la carte dédiée (B2B.001.CRT) à chaque changement de palier.
+    owner: Direction Programme Reliever
+    adrs:
+      - ADR-BCM-FUNC-0005
+
+  - id: CAP.BSP.001.SIG
+    name: Détection des Signaux
+    level: L2
+    parent: CAP.BSP.001
+    zoning: BUSINESS_SERVICE_PRODUCTION
+    description: >
+      Détecter les signaux comportementaux anormaux remontés par BSP.004 (notamment les
+      budgets non consommés comme signal de rechute) et les transformer en événements
+      exploitables par le scoring et la coordination prescripteurs.
+    owner: Direction Programme Reliever
+    adrs:
+      - ADR-BCM-FUNC-0005
+
+  - id: CAP.BSP.001.ARB
+    name: Arbitrage Prescripteur
+    level: L2
+    parent: CAP.BSP.001
+    zoning: BUSINESS_SERVICE_PRODUCTION
+    description: >
+      Gérer les surcharges manuelles initiées par un prescripteur via CAN.002.ACT :
+      appliquer la décision humaine, surveiller les résultats réels, et redonner la main
+      à l'algorithme si la réalité confirme ou infirme la décision prescripteur.
+    owner: Direction Programme Reliever
+    adrs:
+      - ADR-BCM-FUNC-0005
+
+  # ── CAP.BSP.002 — Accès & Cycle de Vie du Bénéficiaire ─────────────────────
+
+  - id: CAP.BSP.002.ELI
+    name: Éligibilité
+    level: L2
+    parent: CAP.BSP.002
+    zoning: BUSINESS_SERVICE_PRODUCTION
+    description: >
+      Vérifier qu'un individu répond aux critères d'entrée dans le dispositif Reliever
+      (fragilité financière avérée, prescription valide) avant tout enrôlement.
+    owner: Direction Programme Reliever
+    adrs:
+      - ADR-BCM-FUNC-0006
+
+  - id: CAP.BSP.002.ENR
+    name: Enrôlement
+    level: L2
+    parent: CAP.BSP.002
+    zoning: BUSINESS_SERVICE_PRODUCTION
+    description: >
+      Formaliser l'entrée du bénéficiaire dans le dispositif après vérification de
+      l'éligibilité et accord du consentement RGPD. Déclenche la création de la carte
+      dédiée (B2B.001.CRT) et l'initialisation de l'accès open banking (B2B.001.OBK).
+    owner: Direction Programme Reliever
+    adrs:
+      - ADR-BCM-FUNC-0006
+
+  - id: CAP.BSP.002.CYC
+    name: Suivi du Cycle de Vie
+    level: L2
+    parent: CAP.BSP.002
+    zoning: BUSINESS_SERVICE_PRODUCTION
+    description: >
+      Maintenir l'état courant du bénéficiaire dans le dispositif : palier actif,
+      statut des prescripteurs, historique des événements clés. Point de référence
+      pour tous les autres L2 ayant besoin de l'état courant du bénéficiaire.
+    owner: Direction Programme Reliever
+    adrs:
+      - ADR-BCM-FUNC-0006
+
+  - id: CAP.BSP.002.SOR
+    name: Sortie du Dispositif
+    level: L2
+    parent: CAP.BSP.002
+    zoning: BUSINESS_SERVICE_PRODUCTION
+    description: >
+      Gérer la sortie du bénéficiaire : sortie par succès (transfert vers application
+      bancaire standard au dernier palier), sortie administrative, ou sortie par abandon.
+      Déclenche la résiliation de la carte (B2B.001.CRT) et la revue des droits (SUP.001.RET).
+    owner: Direction Programme Reliever
+    adrs:
+      - ADR-BCM-FUNC-0006
+
+  # ── CAP.BSP.003 — Coordination des Prescripteurs ───────────────────────────
+
+  - id: CAP.BSP.003.ROL
+    name: Gestion des Rôles Prescripteurs
+    level: L2
+    parent: CAP.BSP.003
+    zoning: BUSINESS_SERVICE_PRODUCTION
+    description: >
+      Définir et maintenir les rôles des prescripteurs sur chaque dossier bénéficiaire :
+      qui peut voir quoi, qui peut agir, qui co-décide. La visibilité est filtrée par rôle
+      pour respecter les secrets professionnels distincts (médical, social, bancaire).
+    owner: Direction Programme Reliever
+    adrs:
+      - ADR-BCM-FUNC-0007
+
+  - id: CAP.BSP.003.NOT
+    name: Notification & Communication Prescripteur
+    level: L2
+    parent: CAP.BSP.003
+    zoning: BUSINESS_SERVICE_PRODUCTION
+    description: >
+      Notifier les prescripteurs concernés des événements significatifs du parcours
+      bénéficiaire (alerte comportementale, changement de palier, demande de co-décision)
+      selon leurs droits et préférences de canal.
+    owner: Direction Programme Reliever
+    adrs:
+      - ADR-BCM-FUNC-0007
+
+  - id: CAP.BSP.003.COD
+    name: Co-Décision
+    level: L2
+    parent: CAP.BSP.003
+    zoning: BUSINESS_SERVICE_PRODUCTION
+    description: >
+      Formaliser les décisions qui nécessitent l'accord de plusieurs prescripteurs :
+      collecte des positions, résolution des désaccords, production d'une décision
+      collective validée transmise à BSP.001.PAL pour application.
+    owner: Direction Programme Reliever
+    adrs:
+      - ADR-BCM-FUNC-0007
+
+  # ── CAP.BSP.004 — Contrôle des Transactions ────────────────────────────────
+
+  - id: CAP.BSP.004.AUT
+    name: Autorisation des Transactions
+    level: L2
+    parent: CAP.BSP.004
+    zoning: BUSINESS_SERVICE_PRODUCTION
+    description: >
+      Autoriser ou refuser chaque transaction à la carte dédiée en appliquant les règles
+      du palier courant (plafonds, catégories autorisées, marchands autorisés) en temps réel.
+      C'est le point de contrôle universel et non contournable du dispositif.
+    owner: Direction Programme Reliever
+    adrs:
+      - ADR-BCM-FUNC-0008
+
+  - id: CAP.BSP.004.ENV
+    name: Gestion des Enveloppes Budgétaires
+    level: L2
+    parent: CAP.BSP.004
+    zoning: BUSINESS_SERVICE_PRODUCTION
+    description: >
+      Allouer et suivre les enveloppes budgétaires par catégorie de dépense selon le palier
+      courant. Déclenche l'alimentation de la carte (B2B.001.FLX) et produit les signaux
+      d'épuisement. Un budget non consommé déclenche un signal de rechute potentielle.
+    owner: Direction Programme Reliever
+    adrs:
+      - ADR-BCM-FUNC-0008
+
+  - id: CAP.BSP.004.ALT
+    name: Alertes Comportementales
+    level: L2
+    parent: CAP.BSP.004
+    zoning: BUSINESS_SERVICE_PRODUCTION
+    description: >
+      Détecter et remonter les patterns comportementaux anormaux issus du flux transactionnel
+      vers BSP.001.SIG : tentatives de contournement, refus récurrents, budget systématiquement
+      non consommé. Ces signaux alimentent le scoring sans modifier directement l'opérationnel.
+    owner: Direction Programme Reliever
+    adrs:
+      - ADR-BCM-FUNC-0008
+
+  # ── CAP.CAN.001 — Parcours Bénéficiaire ────────────────────────────────────
+
+  - id: CAP.CAN.001.TAB
+    name: Tableau de Bord Bénéficiaire
+    level: L2
+    parent: CAP.CAN.001
+    zoning: CHANNEL
+    description: >
+      Exposer au bénéficiaire une vue synthétique de sa situation financière adaptée à
+      son palier : solde disponible, enveloppes, historique des transactions. L'interface
+      est calibrée pour encourager sans infantiliser — la dignité est une contrainte fonctionnelle.
+    owner: Direction Expérience Utilisateur
+    adrs:
+      - ADR-BCM-FUNC-0009
+
+  - id: CAP.CAN.001.ACH
+    name: Assistance à l'Achat
+    level: L2
+    parent: CAP.CAN.001
+    zoning: CHANNEL
+    description: >
+      Fournir une assistance contextualisée au moment de l'achat : vérification de
+      disponibilité budgétaire avant paiement, alternatives moins coûteuses, comparaison
+      de prix. Cette capacité est la manifestation UX du contrôle comportemental en temps réel.
+    owner: Direction Expérience Utilisateur
+    adrs:
+      - ADR-BCM-FUNC-0009
+
+  - id: CAP.CAN.001.NOT
+    name: Notifications Bénéficiaire
+    level: L2
+    parent: CAP.CAN.001
+    zoning: CHANNEL
+    description: >
+      Notifier le bénéficiaire des événements pertinents de son parcours : transaction
+      refusée, changement de palier, message d'un prescripteur, alerte budgétaire.
+      Le ton et le contenu respectent la contrainte de dignité.
+    owner: Direction Expérience Utilisateur
+    adrs:
+      - ADR-BCM-FUNC-0009
+
+  # ── CAP.CAN.002 — Portail Prescripteur ─────────────────────────────────────
+
+  - id: CAP.CAN.002.VUE
+    name: Vue Bénéficiaire Prescripteur
+    level: L2
+    parent: CAP.CAN.002
+    zoning: CHANNEL
+    description: >
+      Exposer aux prescripteurs une vue filtrée du dossier bénéficiaire selon leur rôle
+      et leurs droits. Un médecin ne voit pas les mêmes données qu'un banquier. L'accès
+      requiert Consentement.Accordé (SUP.001.CON) comme précondition.
+    owner: Direction Expérience Utilisateur
+    adrs:
+      - ADR-BCM-FUNC-0010
+
+  - id: CAP.CAN.002.ACT
+    name: Actions Prescripteur
+    level: L2
+    parent: CAP.CAN.002
+    zoning: CHANNEL
+    description: >
+      Permettre aux prescripteurs habilités de prendre des actions sur le dossier :
+      surcharge manuelle d'un palier, initiation d'une co-décision, ajustement d'une
+      règle d'enveloppe. Ces actions sont transmises à BSP.003.COD ou BSP.001.ARB.
+    owner: Direction Expérience Utilisateur
+    adrs:
+      - ADR-BCM-FUNC-0010
+
+  - id: CAP.CAN.002.RAP
+    name: Reporting Prescripteur
+    level: L2
+    parent: CAP.CAN.002
+    zoning: CHANNEL
+    description: >
+      Fournir aux prescripteurs les rapports de suivi agrégés du bénéficiaire : évolution
+      du score, historique des paliers, tendances comportementales. Les données sont issues
+      de DAT.001.REP et filtrées par les droits du prescripteur.
+    owner: Direction Expérience Utilisateur
+    adrs:
+      - ADR-BCM-FUNC-0010
+
+  # ── CAP.B2B.001 — Gestion de l'Instrument Financier ────────────────────────
+
+  - id: CAP.B2B.001.CRT
+    name: Gestion de la Carte Dédiée
+    level: L2
+    parent: CAP.B2B.001
+    zoning: EXCHANGE_B2B
+    description: >
+      Piloter le cycle de vie complet de la carte dédiée Reliever — émission, activation,
+      suspension, résiliation — en liaison avec un partenaire d'émission agréé. Les règles
+      d'usage de la carte (plafonds, catégories) sont synchronisées avec le palier courant.
+    owner: Équipe Partenariats Financiers & Paiements
+    adrs:
+      - ADR-BCM-FUNC-0011
+
+  - id: CAP.B2B.001.OBK
+    name: Intégration Open Banking
+    level: L2
+    parent: CAP.B2B.001
+    zoning: EXCHANGE_B2B
+    description: >
+      Accéder et rafraîchir les données financières du compte principal du bénéficiaire
+      via les APIs open banking (DSP2/PSD2). Requiert Consentement.Accordé préalable.
+      Rend Reliever indépendant des accords inter-bancaires.
+    owner: Équipe Partenariats Financiers & Paiements
+    adrs:
+      - ADR-BCM-FUNC-0011
+
+  - id: CAP.B2B.001.FLX
+    name: Gestion des Flux Financiers
+    level: L2
+    parent: CAP.B2B.001
+    zoning: EXCHANGE_B2B
+    description: >
+      Orchestrer l'alimentation de la carte dédiée depuis le compte principal du bénéficiaire,
+      assurer le rapprochement des flux et gérer les anomalies. Déclenché par les événements
+      d'enveloppe de BSP.004.ENV.
+    owner: Équipe Partenariats Financiers & Paiements
+    adrs:
+      - ADR-BCM-FUNC-0011
+
+  # ── CAP.SUP.001 — Conformité & Protection des Données ──────────────────────
+
+  - id: CAP.SUP.001.CON
+    name: Gestion des Consentements
+    level: L2
+    parent: CAP.SUP.001
+    zoning: SUPPORT
+    description: >
+      Recueillir, stocker, gérer et honorer les consentements RGPD du bénéficiaire pour
+      chaque type de partage de données. Consentement.Accordé est une précondition bloquante
+      pour l'enrôlement, l'open banking, et toute consultation prescripteur.
+    owner: DPO (Data Protection Officer)
+    adrs:
+      - ADR-BCM-FUNC-0012
+
+  - id: CAP.SUP.001.AUD
+    name: Audit & Traçabilité
+    level: L2
+    parent: CAP.SUP.001
+    zoning: SUPPORT
+    description: >
+      Journaliser l'ensemble des accès et actions sur les données bénéficiaires, toutes
+      capacités confondues. Capacité transverse : 100% des accès aux données bénéficiaires
+      doivent produire AccèsDonnées.Journalisé — obligation réglementaire RGPD.
+    owner: DPO (Data Protection Officer)
+    adrs:
+      - ADR-BCM-FUNC-0012
+
+  - id: CAP.SUP.001.RET
+    name: Droits des Bénéficiaires
+    level: L2
+    parent: CAP.SUP.001
+    zoning: SUPPORT
+    description: >
+      Traiter les exercices de droits RGPD du bénéficiaire (accès, rectification, effacement,
+      portabilité, opposition) dans les délais légaux (1 mois). Déclenché notamment par
+      la sortie du dispositif (BSP.002.SOR).
+    owner: DPO (Data Protection Officer)
+    adrs:
+      - ADR-BCM-FUNC-0012
+
+  # ── CAP.REF.001 — Référentiels Communs ─────────────────────────────────────
+
+  - id: CAP.REF.001.BEN
+    name: Référentiel Bénéficiaire
+    level: L2
+    parent: CAP.REF.001
+    zoning: REFERENTIAL
+    description: >
+      Porter et maintenir l'identité canonique du bénéficiaire, source de vérité unique
+      pour toutes les capacités. Aucune autre capacité ne peut maintenir sa propre copie
+      de l'identité bénéficiaire — golden record rule.
+    owner: Équipe Data & Référentiels
+    adrs:
+      - ADR-BCM-FUNC-0013
+
+  - id: CAP.REF.001.PRE
+    name: Référentiel Prescripteur
+    level: L2
+    parent: CAP.REF.001
+    zoning: REFERENTIAL
+    description: >
+      Porter et maintenir l'identité canonique des prescripteurs et de leurs organisations.
+      Distingue les types de prescripteurs (banquier, médecin, assistant social) et leurs
+      habilitations respectives dans le dispositif.
+    owner: Équipe Data & Référentiels
+    adrs:
+      - ADR-BCM-FUNC-0013
+
+  - id: CAP.REF.001.PAL
+    name: Référentiel Paliers
+    level: L2
+    parent: CAP.REF.001
+    zoning: REFERENTIAL
+    description: >
+      Porter et maintenir les définitions canoniques des paliers : règles d'usage, seuils
+      de transition, droits associés. Toute modification passe par ce L2 et déclenche
+      Palier.DéfinitionMisÀJour, consommé en cascade par BSP.001, BSP.004 et B2B.001.
+    owner: Équipe Data & Référentiels
+    adrs:
+      - ADR-BCM-FUNC-0013
+
+  # ── CAP.DAT.001 — Analytique Comportementale ───────────────────────────────
+
+  - id: CAP.DAT.001.ING
+    name: Ingestion des Événements
+    level: L2
+    parent: CAP.DAT.001
+    zoning: DATA_ANALYTIQUE
+    description: >
+      Collecter et consolider en mode analytique décorrélé tous les événements comportementaux
+      produits par le dispositif (BSP.001, BSP.002, BSP.003, BSP.004) pour alimenter les
+      pipelines analytiques. Séparation stricte du pipeline transactionnel opérationnel.
+    owner: Équipe Data Science & BI
+    adrs:
+      - ADR-BCM-FUNC-0014
+
+  - id: CAP.DAT.001.MOD
+    name: Modèle Analytique du Score
+    level: L2
+    parent: CAP.DAT.001
+    zoning: DATA_ANALYTIQUE
+    description: >
+      Analyser les patterns comportementaux agrégés, améliorer le modèle de score et proposer
+      des évolutions des seuils de palier. ModèleScore.MisÀJour est transmis à PIL.001.GOV
+      pour validation — jamais directement à BSP.001.SCO, prévenant toute rétroaction incontrôlée.
+    owner: Équipe Data Science & BI
+    adrs:
+      - ADR-BCM-FUNC-0014
+
+  - id: CAP.DAT.001.REP
+    name: Reporting Programme
+    level: L2
+    parent: CAP.DAT.001
+    zoning: DATA_ANALYTIQUE
+    description: >
+      Produire les tableaux de bord et rapports de suivi de l'efficacité globale du programme
+      de remédiation : taux de progression, taux de rechute, taux de sortie. Ces données
+      alimentent PIL.001.KPI pour les décisions de gouvernance programme.
+    owner: Équipe Data Science & BI
+    adrs:
+      - ADR-BCM-FUNC-0014
+
+  # ── CAP.PIL.001 — Pilotage du Programme ────────────────────────────────────
+
+  - id: CAP.PIL.001.GOV
+    name: Gouvernance du Programme
+    level: L2
+    parent: CAP.PIL.001
+    zoning: STEERING
+    description: >
+      Définir et faire évoluer les politiques de gouvernance du programme : règles d'éligibilité,
+      seuils de palier, protocoles de co-décision. Valide les évolutions du modèle de score
+      (ModèleScore.MisÀJour de DAT.001.MOD) avant tout déploiement en production.
+    owner: Direction Programme Reliever / Compliance Officer
+    adrs:
+      - ADR-BCM-FUNC-0015
+
+  - id: CAP.PIL.001.KPI
+    name: Suivi de Performance
+    level: L2
+    parent: CAP.PIL.001
+    zoning: STEERING
+    description: >
+      Mesurer l'efficacité du dispositif à l'échelle : taux de progression, taux de rechute,
+      taux de sortie par succès, dignité perçue. Consomme les rapports de DAT.001.REP et
+      produit PerformanceProgramme.Évaluée pour les décisions de gouvernance.
+    owner: Direction Programme Reliever
+    adrs:
+      - ADR-BCM-FUNC-0015
+
+  - id: CAP.PIL.001.AUD
+    name: Audit Conformité Programme
+    level: L2
+    parent: CAP.PIL.001
+    zoning: STEERING
+    description: >
+      Vérifier la conformité réglementaire du programme dans son ensemble (cadres bancaire,
+      médical, social). Distinct de SUP.001.AUD (audit RGPD technique) : PIL.001.AUD certifie
+      la conformité réglementaire programme, avec le Compliance Officer comme acteur principal.
+    owner: Compliance Officer
+    adrs:
+      - ADR-BCM-FUNC-0015

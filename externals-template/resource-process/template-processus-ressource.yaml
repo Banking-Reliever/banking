@@ -1,0 +1,137 @@
+meta:
+  bcm_name: BCM Urbanisation
+  version: 0.0.1
+  template_version: 1.0.0
+  last_updated: 'YYYY-MM-DD'
+  owners:
+    - Owner 1
+    - Owner 2
+
+# ──────────────────────────────────────────────────────────────
+# Resource process
+# ──────────────────────────────────────────────────────────────
+#
+# Normative reference: ADR-BCM-URBA-0013
+#
+# A resource process is an applied external orchestration view,
+# based on:
+#   - resources (RES.*)
+#   - resource events (EVT.RES.*)
+#   - resource subscriptions (SUB.RESOURCE.*)
+#
+# This template describes processes subject to strong and explicit
+# operational constraints (SLA, technical channels,
+# execution sequencing, runtime dependencies, etc.).
+#
+# Identifier conventions:
+#   - Process: PRC.RESOURCE.<ZONE>.<L1>.<CODE>
+#   - Resource: RES.<ZONE>.<L1>.<CODE>
+#   - Resource event: EVT.RES.<ZONE>.<L1>.<CODE>
+#   - Resource subscription: SUB.RESOURCE.<ZONE>.<L1>.<CODE>
+#   - Rule: RULE.<DOMAIN>.<NNN>
+#
+# ──────────────────────────────────────────────────────────────
+
+resource_process:
+  id: PRC.RESOURCE.DOM.000.EXAMPLE
+  name: Resource process name
+  process_type: resource
+
+  # Expected documentation (recommended: fill systematically)
+  documentation:
+    objective: >-
+      Operational purpose of the process (what must be executed).
+    operational_value: >-
+      Expected value in terms of robustness, compliance, and operability.
+    scope:
+      includes:
+        - Included step/scope 1
+        - Included step/scope 2
+      excludes:
+        - Excluded step/scope 1
+        - Excluded step/scope 2
+    stakeholders:
+      - Operational actor 1
+      - Operational actor 2
+    preconditions:
+      - Precondition 1
+      - Precondition 2
+    postconditions:
+      - Postcondition 1
+      - Postcondition 2
+    scenarios:
+      nominal: >-
+        Describe the nominal flow to the target operational exit.
+      alternative: >-
+        Describe at least one alternative path (rejection, exception, retry).
+    monitoring_indicators:
+      - Indicator 1
+      - Indicator 2
+
+  # Contextual anchoring (optional): does not structure the BCM
+  parent_capability: CAP.DOM.000.SUB
+
+  start:
+    type: event                               # interaction | event
+    event: EVT.RES.DOM.000.PROCESSING_STARTED
+
+  resource_assets:
+    resources:
+      - RES.DOM.000.RESOURCE_1
+    resource_events:
+      - EVT.RES.DOM.000.EVENT_1
+      - EVT.RES.DOM.000.EVENT_2
+    resource_subscriptions:
+      - SUB.RESOURCE.DOM.000.SUBSCRIPTION_1
+
+  event_subscription_chain:
+    - step_id: STEP.DOM.001
+      consumes_resource_event: EVT.RES.DOM.000.EVENT_1
+      via_subscription: SUB.RESOURCE.DOM.000.SUBSCRIPTION_1
+      emits_resource_event: EVT.RES.DOM.000.EVENT_2
+      carries_resource: RES.DOM.000.RESOURCE_1
+      note: First step of the resource process.
+
+  operational_constraints:
+    sla:
+      max_processing_delay: PT30M
+      availability_target: "99.9%"
+    execution:
+      ordering: strict                        # strict | eventual | parallel
+      retry_policy: "3 tentatives / backoff exponentiel"
+      idempotency_required: true
+    observability:
+      trace_required: true
+      mandatory_fields:
+        - correlation_id
+        - causation_id
+
+  orchestration_rules:
+    - id: RULE.RES.001
+      rule: >-
+        Décrire ici les règles opérationnelles explicites d'enchaînement.
+
+    - id: RULE.RES.002
+      rule: >-
+        Vérifier que le processus ne référence que des abstractions ressource.
+
+  exits_ressource:
+    - to_resource_event: EVT.RES.DOM.000.SORTIE_1
+      meaning: Signification opérationnelle de la sortie 1.
+
+    - to_resource_event: EVT.RES.DOM.000.SORTIE_2
+      meaning: Signification opérationnelle de la sortie 2.
+
+  traceability:
+    adrs:
+      - ADR-BCM-URBA-0013
+
+  # Champs optionnels
+  tags:
+    - processus-ressource
+
+  # Critères de complétude documentaire (guideline)
+  # - Le lecteur comprend l'objectif opérationnel et la valeur d'exécution.
+  # - Le périmètre et les frontières du processus sont explicites.
+  # - Les scénarios nominal/alternatif sont alignés avec event_subscription_chain.
+  # - Les indicateurs proposés permettent un pilotage opérationnel effectif.

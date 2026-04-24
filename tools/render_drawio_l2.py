@@ -1,0 +1,773 @@
+#!/usr/bin/env python3
+"""
+render_drawio_l2.py — Génère un diagramme draw.io (.drawio) montrant les
+capacités L2 regroupées dans leurs capacités L1, elles-mêmes dans leurs zones.
+
+Le script :
+  1. Lit tous les fichiers capabilities-*.yaml du répertoire bcm/
+  2. Regroupe les capacités par zoning → L1 → L2
+  3. Génère un fichier .drawio avec un diagramme Business Capability Map
+     où chaque L1 est un groupe draw.io contenant ses boîtes L2.
+
+Usage :
+    python tools/render_drawio_l2.py
+    python tools/render_drawio_l2.py --input-dir bcm --output views/BCM-L2-generated.drawio
+    python tools/render_drawio_l2.py --l2-cols 3
+    python tools/render_drawio_l2.py --help
+
+Pré-requis :
+    pip install pyyaml
+"""
+
+from __future__ import annotations
+
+import argparse
+import html
+import math
+import uuid
+import xml.etree.ElementTree as ET
+from collections import defaultdict
+from pathlib import Path
+
+import yaml
+
+ROOT = Path(__file__).resolve().parents[1]
+
+# ──────────────────────────────────────────────────────────────
+# Configuration visuelle des zones  (identique à render_drawio.py)
+# ──────────────────────────────────────────────────────────────
+
+ZONE_CONFIG = {
+    "PILOTAGE": {
+        "label": "Pilotage",
+        "zone_fill": "#A9C4EB",
+        "zone_stroke": "#6c8ebf",
+    },
+    "SERVICES_COEUR": {
+        "label": "Business Service Production",
+        "zone_fill": "#d5e8d4",
+        "zone_stroke": "#82b366",
+    },
+    "SUPPORT": {
+        "label": "Support",
+        "zone_fill": "#f5f5f5",
+        "zone_stroke": "#666666",
+    },
+    "REFERENTIEL": {
+        "label": "Referentiel",
+        "zone_fill": "#f8cecc",
+        "zone_stroke": "#b85450",
+    },
+    "ECHANGE_B2B": {
+        "label": "B2B Exchange",
+        "zone_fill": "#ffe6cc",
+        "zone_stroke": "#d79b00",
+    },
+    "CANAL": {
+        "label": "Canal",
+        "zone_fill": "#fff2cc",
+        "zone_stroke": "#d6b656",
+    },
+    "DATA_ANALYTIQUE": {
+        "label": "Data & Analytique",
+        "zone_fill": "#e1d5e7",
+        "zone_stroke": "#9673a6",
+    },
+}
+
+# ──────────────────────────────────────────────────────────────
+# Palette pastels pour les fonds de groupe L1
+# (identique à render_drawio.py)
+# ──────────────────────────────────────────────────────────────
+
+CAPABILITY_PALETTE = [
+    ("#fff2cc", "#d6b656"),   # jaune pâle
+    ("#dae8fc", "#6c8ebf"),   # bleu ciel
+    ("#ffe6cc", "#d79b00"),   # pêche
+    ("#e1d5e7", "#9673a6"),   # lavande
+    ("#f8cecc", "#b85450"),   # rose
+    ("#d5e8d4", "#82b366"),   # vert d'eau
+    ("#f5f5f5", "#666666"),   # gris clair
+    ("#d4e1f5", "#3a7bbf"),   # bleu pervenche
+    ("#fce5cd", "#c27b30"),   # abricot
+    ("#cfe2f3", "#6fa8dc"),   # bleu pastel
+    ("#d9ead3", "#6aa84f"),   # vert amande
+    ("#ead1dc", "#a64d79"),   # rose ancien
+    ("#d0e0e3", "#45818e"),   # turquoise pâle
+    ("#fce8b2", "#bf9000"),   # doré doux
+    ("#e6d8f0", "#7b57a0"),   # violet pastel
+    ("#c9daf8", "#3d78d8"),   # bleu layette
+]
+
+# ──────────────────────────────────────────────────────────────
+# Couleurs L2 par zone  (extraites du fichier BCM L2 template.drawio)
+# ──────────────────────────────────────────────────────────────
+
+L2_ZONE_COLORS: dict[str, tuple[str, str]] = {
+    "PILOTAGE":                    ("#dae8fc", "#6c8ebf"),  # bleu ciel
+    "SERVICES_COEUR": ("#ffe6cc", "#d79b00"),  # pêche
+    "SUPPORT":                     ("#ffe6cc", "#d79b00"),  # pêche
+    "REFERENTIEL":                 ("#ffe6cc", "#d79b00"),  # pêche
+    "ECHANGE_B2B":                ("#FFE599", "#d6b656"),  # doré
+    "CANAL":                     ("#FFE599", "#d6b656"),  # doré
+    "DATA_ANALYTIQUE":              ("#e1d5e7", "#9673a6"),  # lavande pastel
+}
+
+# ──────────────────────────────────────────────────────────────
+# Disposition des zones  (identique à render_drawio.py)
+# ──────────────────────────────────────────────────────────────
+#
+#   ┌──────────────────────────────────────────────────────┐
+#   │                    PILOTAGE                          │
+#   ├──────────┬──────────────────────────────┬────────────┤
+#   │          │  SERVICES_COEUR  │            │
+#   │  B2B     ├──────────────────────────────┤  CANAL   │
+#   │ EXCHANGE │       SUPPORT                │            │
+#   │          ├──────────────────────────────┤            │
+#   │          │      REFERENTIEL             │            │
+#   ├──────────┴──────────────────────────────┴────────────┤
+#   │                 DATA_ANALYTIQUE                       │
+#   └──────────────────────────────────────────────────────┘
+
+CENTER_ZONES = [
+    "SERVICES_COEUR",
+    "SUPPORT",
+    "REFERENTIEL",
+]
+LEFT_ZONE = "ECHANGE_B2B"
+RIGHT_ZONE = "CANAL"
+TOP_ZONE = "PILOTAGE"
+BOTTOM_ZONE = "DATA_ANALYTIQUE"
+
+# ──────────────────────────────────────────────────────────────
+# Dimensions
+# ──────────────────────────────────────────────────────────────
+
+# Boîtes L2 à l'intérieur d'un groupe L1
+L2_BOX_W = 130       # largeur d'une boîte L2
+L2_BOX_H = 50        # hauteur d'une boîte L2
+L2_GAP = 10          # espacement entre boîtes L2
+L2_COLS = 2          # colonnes L2 par groupe L1
+
+# Groupes L1
+GROUP_PAD = 15       # padding interne d'un groupe L1
+GROUP_TITLE_H = 35   # hauteur du titre L1 dans le groupe
+GROUP_GAP = 20       # espacement entre groupes L1
+
+# Zones
+ZONE_PAD = 30        # padding interne d'une zone
+ZONE_LABEL_H = 35    # hauteur réservée au label de zone
+ZONE_GAP = 15        # espacement entre zones
+
+# Groupes L1 par ligne selon la position de la zone
+L1_COLS_CENTER = 3   # zones centrales (COEUR, Support, Referentiel)
+L1_COLS_SIDE = 1     # zones latérales (B2B, Canal)
+L1_COLS_FULL = 4     # zones pleine largeur (Pilotage, Data)
+
+# ──────────────────────────────────────────────────────────────
+# Helpers
+# ──────────────────────────────────────────────────────────────
+
+
+def _uid() -> str:
+    """Génère un identifiant unique pour une cellule draw.io."""
+    return "cell-" + uuid.uuid4().hex[:12]
+
+
+# ──────────────────────────────────────────────────────────────
+# Chargement YAML
+# ──────────────────────────────────────────────────────────────
+
+
+def load_all_capabilities(input_dir: Path) -> list[dict]:
+    """Charge toutes les capacités depuis les fichiers capabilities-*.yaml."""
+    caps: list[dict] = []
+    found_files: list[Path] = []
+    for f in sorted(input_dir.glob("capabilities-*.yaml")):
+        data = yaml.safe_load(f.read_text(encoding="utf-8"))
+        file_caps = data.get("capabilities", [])
+        caps.extend(file_caps)
+        found_files.append(f)
+        print(f"  • {f.name}: {len(file_caps)} capacité(s)")
+    if not found_files:
+        print(f"[WARN] Aucun fichier capabilities-*.yaml trouvé dans {input_dir}")
+    return caps
+
+
+def build_hierarchy(caps: list[dict]) -> dict[str, list[dict]]:
+    """
+    Construit la hiérarchie zoning → L1 → L2.
+
+    Retourne un dict  zone_key → [L1 caps], chaque L1 ayant une clé
+    "children" contenant la liste ordonnée de ses L2.
+    """
+    l1_map: dict[str, dict] = {}
+    l2_list: list[dict] = []
+
+    for c in caps:
+        level = c.get("level", "L1")
+        if level == "L1":
+            c = dict(c)  # copie pour ne pas muter l'original
+            c["children"] = []
+            l1_map[c["id"]] = c
+        elif level == "L2":
+            l2_list.append(c)
+
+    # Rattache les L2 à leur parent L1
+    orphans = 0
+    for l2 in l2_list:
+        parent_id = l2.get("parent")
+        if parent_id and parent_id in l1_map:
+            l1_map[parent_id]["children"].append(l2)
+        else:
+            orphans += 1
+    if orphans:
+        print(f"[WARN] {orphans} capacité(s) L2 sans parent L1 valide (ignorée(s))")
+
+    # Groupe par zone
+    by_zone: dict[str, list[dict]] = defaultdict(list)
+    for l1 in l1_map.values():
+        zone = l1.get("zoning", "UNKNOWN")
+        by_zone[zone].append(l1)
+
+    # Tri par id
+    for zone in by_zone:
+        by_zone[zone].sort(key=lambda c: c["id"])
+        for l1 in by_zone[zone]:
+            l1["children"].sort(key=lambda c: c["id"])
+
+    return dict(by_zone)
+
+
+# ──────────────────────────────────────────────────────────────
+# Calcul de taille
+# ──────────────────────────────────────────────────────────────
+
+
+def _l1_group_size(l1: dict) -> tuple[int, int]:
+    """Retourne (largeur, hauteur) d'un groupe L1 incluant ses L2."""
+    n = len(l1.get("children", []))
+    if n == 0:
+        # L1 sans L2 : espace minimal (1 boîte placeholder)
+        content_w = L2_BOX_W
+        content_h = L2_BOX_H
+    else:
+        rows = math.ceil(n / L2_COLS)
+        content_w = L2_COLS * (L2_BOX_W + L2_GAP) - L2_GAP
+        content_h = rows * (L2_BOX_H + L2_GAP) - L2_GAP
+
+    w = content_w + 2 * GROUP_PAD
+    h = content_h + 2 * GROUP_PAD + GROUP_TITLE_H
+    return (w, h)
+
+
+def _zone_l2_size(l1s: list[dict], group_cols: int) -> tuple[int, int]:
+    """Retourne (largeur, hauteur) d'une zone contenant des groupes L1."""
+    if not l1s:
+        return (300, 100)
+
+    sizes = [_l1_group_size(l1) for l1 in l1s]
+
+    # Arrange les groupes en lignes de `group_cols`
+    rows_of_sizes: list[list[tuple[int, int]]] = []
+    for i in range(0, len(sizes), group_cols):
+        rows_of_sizes.append(sizes[i : i + group_cols])
+
+    max_row_w = 0
+    total_h = 0
+    for row in rows_of_sizes:
+        row_w = sum(s[0] for s in row) + GROUP_GAP * (len(row) - 1)
+        max_row_w = max(max_row_w, row_w)
+        row_h = max(s[1] for s in row)
+        total_h += row_h
+    total_h += GROUP_GAP * max(0, len(rows_of_sizes) - 1)
+
+    w = max_row_w + 2 * ZONE_PAD
+    h = total_h + 2 * ZONE_PAD + ZONE_LABEL_H
+    return (w, h)
+
+
+# ──────────────────────────────────────────────────────────────
+# Construction XML draw.io
+# ──────────────────────────────────────────────────────────────
+
+
+def _add_cell(
+    root_el: ET.Element,
+    cell_id: str,
+    value: str,
+    style: str,
+    x: int,
+    y: int,
+    w: int,
+    h: int,
+    parent: str = "1",
+) -> ET.Element:
+    """Ajoute un mxCell (vertex) au XML."""
+    cell = ET.SubElement(root_el, "mxCell")
+    cell.set("id", cell_id)
+    cell.set("value", value)
+    cell.set("style", style)
+    cell.set("vertex", "1")
+    cell.set("parent", parent)
+    geo = ET.SubElement(cell, "mxGeometry")
+    geo.set("x", str(x))
+    geo.set("y", str(y))
+    geo.set("width", str(w))
+    geo.set("height", str(h))
+    geo.set("as", "geometry")
+    return cell
+
+
+def _add_group(
+    root_el: ET.Element,
+    group_id: str,
+    x: int,
+    y: int,
+    w: int,
+    h: int,
+    parent: str = "1",
+) -> ET.Element:
+    """Ajoute un groupe draw.io (conteneur L1)."""
+    cell = ET.SubElement(root_el, "mxCell")
+    cell.set("id", group_id)
+    cell.set("value", "")
+    cell.set("style", "group")
+    cell.set("vertex", "1")
+    cell.set("connectable", "0")
+    cell.set("parent", parent)
+    geo = ET.SubElement(cell, "mxGeometry")
+    geo.set("x", str(x))
+    geo.set("y", str(y))
+    geo.set("width", str(w))
+    geo.set("height", str(h))
+    geo.set("as", "geometry")
+    return cell
+
+
+# ── Styles ──────────────────────────────────────────────────
+
+
+def _zone_bg_style(fill: str, stroke: str) -> str:
+    return (
+        f"rounded=1;whiteSpace=wrap;html=1;"
+        f"fillColor={fill};strokeColor={stroke};"
+        f"verticalAlign=top;align=left;"
+        f"movable=1;resizable=1;rotatable=1;deletable=1;"
+        f"editable=1;locked=0;connectable=1;"
+    )
+
+
+def _zone_label_style() -> str:
+    return (
+        "text;html=1;align=center;verticalAlign=middle;"
+        "whiteSpace=wrap;rounded=0;"
+    )
+
+
+def _group_bg_style(fill: str, stroke: str) -> str:
+    return (
+        f"rounded=1;whiteSpace=wrap;html=1;"
+        f"fillColor={fill};strokeColor={stroke};"
+    )
+
+
+def _group_label_style() -> str:
+    return (
+        "text;html=1;align=center;verticalAlign=middle;"
+        "whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=13;"
+    )
+
+
+def _l2_box_style(fill: str, stroke: str) -> str:
+    return (
+        f"rounded=1;whiteSpace=wrap;html=1;"
+        f"fillColor={fill};strokeColor={stroke};"
+        f"fontSize=11;"
+    )
+
+
+# ── Build ──────────────────────────────────────────────────
+
+
+def build_drawio_l2(by_zone: dict[str, list[dict]]) -> str:
+    """Construit le XML draw.io complet pour la vue L2."""
+
+    def _group_cols(zone: str) -> int:
+        if zone in (LEFT_ZONE, RIGHT_ZONE):
+            return L1_COLS_SIDE
+        if zone in (TOP_ZONE, BOTTOM_ZONE):
+            return L1_COLS_FULL
+        return L1_COLS_CENTER
+
+    def _l1s(zone: str) -> list[dict]:
+        return by_zone.get(zone, [])
+
+    # ── Calcul des tailles ──────────────────────────────────
+
+    center_sizes: dict[str, tuple[int, int]] = {}
+    for z in CENTER_ZONES:
+        center_sizes[z] = _zone_l2_size(_l1s(z), _group_cols(z))
+
+    center_w = max((s[0] for s in center_sizes.values()), default=400)
+    center_total_h = (
+        sum(s[1] for s in center_sizes.values())
+        + ZONE_GAP * max(0, len(CENTER_ZONES) - 1)
+    )
+
+    left_l1s = _l1s(LEFT_ZONE)
+    right_l1s = _l1s(RIGHT_ZONE)
+    left_w = _zone_l2_size(left_l1s, L1_COLS_SIDE)[0] if left_l1s else 200
+    right_w = _zone_l2_size(right_l1s, L1_COLS_SIDE)[0] if right_l1s else 200
+
+    total_w = left_w + ZONE_GAP + center_w + ZONE_GAP + right_w
+
+    top_l1s = _l1s(TOP_ZONE)
+    bottom_l1s = _l1s(BOTTOM_ZONE)
+    top_h = _zone_l2_size(top_l1s, _group_cols(TOP_ZONE))[1] if top_l1s else 120
+    bottom_h = (
+        _zone_l2_size(bottom_l1s, _group_cols(BOTTOM_ZONE))[1]
+        if bottom_l1s
+        else 120
+    )
+
+    # ── Positions absolues ──────────────────────────────────
+
+    top_x, top_y = 0, 0
+    mid_y = top_y + top_h + ZONE_GAP
+
+    left_x = 0
+    left_y = mid_y
+    center_x = left_x + left_w + ZONE_GAP
+    center_y = mid_y
+    right_x = center_x + center_w + ZONE_GAP
+    right_y = mid_y
+
+    bottom_x = 0
+    bottom_y = mid_y + center_total_h + ZONE_GAP
+
+    # ── Construction XML ────────────────────────────────────
+
+    mxfile = ET.Element("mxfile")
+    mxfile.set("host", "render_drawio_l2.py")
+    mxfile.set("agent", "BCM tools")
+    mxfile.set("version", "1.0")
+
+    diagram = ET.SubElement(mxfile, "diagram")
+    diagram.set("name", "BCM L2")
+    diagram.set("id", "bcm-l2")
+
+    model = ET.SubElement(diagram, "mxGraphModel")
+    for attr, val in [
+        ("dx", "1600"),
+        ("dy", "1200"),
+        ("grid", "1"),
+        ("gridSize", "10"),
+        ("guides", "1"),
+        ("tooltips", "1"),
+        ("connect", "1"),
+        ("arrows", "1"),
+        ("fold", "1"),
+        ("page", "1"),
+        ("pageScale", "1"),
+        ("pageWidth", "2400"),
+        ("pageHeight", "1800"),
+        ("math", "0"),
+        ("shadow", "0"),
+    ]:
+        model.set(attr, val)
+
+    root = ET.SubElement(model, "root")
+    ET.SubElement(root, "mxCell").set("id", "0")
+    cell1 = ET.SubElement(root, "mxCell")
+    cell1.set("id", "1")
+    cell1.set("parent", "0")
+
+    # Compteur global pour la palette (partagé entre toutes les zones)
+    palette_idx = [0]
+
+    def _render_zone(
+        zone_key: str,
+        zx: int,
+        zy: int,
+        zw: int,
+        zh: int,
+        group_cols: int,
+    ) -> None:
+        """Rend une zone : fond + label + groupes L1 contenant les L2."""
+        cfg = ZONE_CONFIG.get(
+            zone_key,
+            {"label": zone_key, "zone_fill": "#f5f5f5", "zone_stroke": "#999999"},
+        )
+        l1s = by_zone.get(zone_key, [])
+        l2_fill, l2_stroke = L2_ZONE_COLORS.get(zone_key, ("#ffe6cc", "#d79b00"))
+
+        # Fond de zone
+        _add_cell(
+            root,
+            _uid(),
+            "",
+            _zone_bg_style(cfg["zone_fill"], cfg["zone_stroke"]),
+            zx,
+            zy,
+            zw,
+            zh,
+        )
+
+        # Label de zone
+        label_html = (
+            f'<font style="font-size: 18px;">'
+            f"{html.escape(cfg['label'])}</font>"
+        )
+        _add_cell(
+            root,
+            _uid(),
+            label_html,
+            _zone_label_style(),
+            zx + zw // 2 - 140,
+            zy + ZONE_PAD // 2,
+            280,
+            30,
+        )
+
+        if not l1s:
+            return
+
+        # ── Disposition des groupes L1 ──────────────────────
+        sizes = [_l1_group_size(l1) for l1 in l1s]
+
+        content_x0 = zx + ZONE_PAD
+        content_y0 = zy + ZONE_PAD + ZONE_LABEL_H
+
+        gx, gy = content_x0, content_y0
+        col_idx = 0
+        row_max_h = 0
+
+        for i, l1 in enumerate(l1s):
+            gw, gh = sizes[i]
+            fill, stroke = CAPABILITY_PALETTE[
+                palette_idx[0] % len(CAPABILITY_PALETTE)
+            ]
+            palette_idx[0] += 1
+
+            # Groupe draw.io (conteneur L1)
+            group_id = _uid()
+            _add_group(root, group_id, gx, gy, gw, gh)
+
+            # Fond du groupe L1
+            _add_cell(
+                root,
+                _uid(),
+                "",
+                _group_bg_style(fill, stroke),
+                0,
+                0,
+                gw,
+                gh,
+                parent=group_id,
+            )
+
+            # Titre L1
+            l1_label = f"<b>{html.escape(l1['name'])}</b>"
+            _add_cell(
+                root,
+                _uid(),
+                l1_label,
+                _group_label_style(),
+                0,
+                5,
+                gw,
+                GROUP_TITLE_H - 5,
+                parent=group_id,
+            )
+
+            # Boîtes L2
+            children = l1.get("children", [])
+            if children:
+                for j, l2 in enumerate(children):
+                    l2_col = j % L2_COLS
+                    l2_row = j // L2_COLS
+                    bx = GROUP_PAD + l2_col * (L2_BOX_W + L2_GAP)
+                    by = GROUP_TITLE_H + GROUP_PAD + l2_row * (L2_BOX_H + L2_GAP)
+                    l2_label = html.escape(l2["name"])
+                    _add_cell(
+                        root,
+                        _uid(),
+                        l2_label,
+                        _l2_box_style(l2_fill, l2_stroke),
+                        bx,
+                        by,
+                        L2_BOX_W,
+                        L2_BOX_H,
+                        parent=group_id,
+                    )
+            else:
+                # L1 sans L2 : une boîte placeholder
+                bx = GROUP_PAD
+                by = GROUP_TITLE_H + GROUP_PAD
+                _add_cell(
+                    root,
+                    _uid(),
+                    "<i>(pas de L2 défini)</i>",
+                    _l2_box_style("#f5f5f5", "#999999"),
+                    bx,
+                    by,
+                    L2_BOX_W,
+                    L2_BOX_H,
+                    parent=group_id,
+                )
+
+            # Avance position
+            gx += gw + GROUP_GAP
+            row_max_h = max(row_max_h, gh)
+            col_idx += 1
+            if col_idx >= group_cols:
+                col_idx = 0
+                gx = content_x0
+                gy += row_max_h + GROUP_GAP
+                row_max_h = 0
+
+    # ── Rendu de chaque zone ────────────────────────────────
+
+    # TOP — Pilotage
+    _render_zone(TOP_ZONE, top_x, top_y, total_w, top_h, _group_cols(TOP_ZONE))
+
+    # LEFT — B2B Exchange
+    _render_zone(LEFT_ZONE, left_x, left_y, left_w, center_total_h, L1_COLS_SIDE)
+
+    # CENTER — COEUR, Support, Referentiel
+    cy = center_y
+    for z in CENTER_ZONES:
+        _, zh = center_sizes[z]
+        _render_zone(z, center_x, cy, center_w, zh, _group_cols(z))
+        cy += zh + ZONE_GAP
+
+    # RIGHT — Canal
+    _render_zone(
+        RIGHT_ZONE, right_x, right_y, right_w, center_total_h, L1_COLS_SIDE
+    )
+
+    # BOTTOM — Data & Analytique
+    _render_zone(
+        BOTTOM_ZONE, bottom_x, bottom_y, total_w, bottom_h, _group_cols(BOTTOM_ZONE)
+    )
+
+    # ── Sérialisation ──────────────────────────────────────
+
+    ET.indent(mxfile, space="  ")
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(
+        mxfile, encoding="unicode"
+    )
+
+
+# ──────────────────────────────────────────────────────────────
+# CLI
+# ──────────────────────────────────────────────────────────────
+
+
+def parse_args() -> argparse.Namespace:
+    p = argparse.ArgumentParser(
+        description=(
+            "Génère un diagramme draw.io L2 à partir des fichiers "
+            "capabilities-*.yaml du répertoire bcm/."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Exemples :
+  python tools/render_drawio_l2.py
+  python tools/render_drawio_l2.py --input-dir bcm
+  python tools/render_drawio_l2.py --input-dir bcm --output views/BCM-L2.drawio
+  python tools/render_drawio_l2.py --l2-cols 3
+  python tools/render_drawio_l2.py --l1-cols 4
+
+Couleurs :
+  • Zones       : codes couleur identiques à render_drawio.py (ZONE_CONFIG)
+  • Groupes L1  : palette pastel tournante (CAPABILITY_PALETTE)
+  • Boîtes L2   : couleur par zone issue de BCM L2 template.drawio
+                   (ex. pêche #ffe6cc pour COEUR, bleu ciel #dae8fc pour Pilotage)
+        """,
+    )
+    p.add_argument(
+        "-d",
+        "--input-dir",
+        type=Path,
+        default=ROOT / "bcm",
+        help="Répertoire contenant les fichiers capabilities-*.yaml (défaut : bcm/)",
+    )
+    p.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        default=ROOT / "views" / "BCM-L2-generated.drawio",
+        help="Chemin de sortie du fichier .drawio (défaut : views/BCM-L2-generated.drawio)",
+    )
+    p.add_argument(
+        "--l2-cols",
+        type=int,
+        default=L2_COLS,
+        help=f"Nombre de colonnes L2 dans un groupe L1 (défaut : {L2_COLS})",
+    )
+    p.add_argument(
+        "--l1-cols",
+        type=int,
+        default=L1_COLS_CENTER,
+        help=f"Nombre de groupes L1 par ligne dans les zones centrales (défaut : {L1_COLS_CENTER})",
+    )
+    return p.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+
+    global L2_COLS, L1_COLS_CENTER
+    L2_COLS = args.l2_cols
+    L1_COLS_CENTER = args.l1_cols
+
+    input_dir: Path = args.input_dir
+    if not input_dir.is_absolute():
+        input_dir = ROOT / input_dir
+
+    output_path: Path = args.output
+    if not output_path.is_absolute():
+        output_path = ROOT / output_path
+
+    if not input_dir.exists():
+        print(f"[ERREUR] Répertoire introuvable : {input_dir}")
+        raise SystemExit(1)
+
+    print(f"[INFO] Lecture des capacités depuis {input_dir}/capabilities-*.yaml …")
+    caps = load_all_capabilities(input_dir)
+    if not caps:
+        print("[ERREUR] Aucune capacité trouvée.")
+        raise SystemExit(1)
+
+    by_zone = build_hierarchy(caps)
+
+    xml_str = build_drawio_l2(by_zone)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(xml_str, encoding="utf-8")
+
+    # ── Résumé ──────────────────────────────────────────────
+    total_l1 = sum(len(v) for v in by_zone.values())
+    total_l2 = sum(
+        len(l1.get("children", []))
+        for l1s in by_zone.values()
+        for l1 in l1s
+    )
+    zones_used = [z for z in ZONE_CONFIG if by_zone.get(z)]
+    print(
+        f"\n[OK] {total_l1} L1, {total_l2} L2 dans {len(zones_used)} zone(s) "
+        f"→ {output_path}"
+    )
+    for z in ZONE_CONFIG:
+        l1s = by_zone.get(z, [])
+        if l1s:
+            n_l2 = sum(len(l1.get("children", [])) for l1 in l1s)
+            print(
+                f"  • {ZONE_CONFIG[z]['label']}: "
+                f"{len(l1s)} L1, {n_l2} L2"
+            )
+
+
+if __name__ == "__main__":
+    main()

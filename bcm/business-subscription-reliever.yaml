@@ -1,0 +1,956 @@
+meta:
+  bcm_name: BCM Reliever — Abonnements métier
+  version: 0.1.0
+  template_version: 1.0.0
+  last_updated: '2026-04-24'
+  owners:
+    - Direction Programme Reliever
+
+business_subscriptions:
+
+  # ── CAP.BSP.001.SCO — Scoring comportemental ────────────────────────────────
+
+  - id: SUB.BUSINESS.BSP.001.001
+    consumer_capability: CAP.BSP.001.SCO
+    subscribed_event:
+      id: EVT.BSP.004.TRANSACTION_AUTORISEE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.004.AUT
+    scope: public
+    rationale: >-
+      Chaque transaction autorisée est un signal comportemental positif qui déclenche
+      le recalcul du score courant du bénéficiaire.
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.BSP.001.002
+    consumer_capability: CAP.BSP.001.SCO
+    subscribed_event:
+      id: EVT.BSP.004.TRANSACTION_REFUSEE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.004.AUT
+    scope: public
+    rationale: >-
+      Chaque transaction refusée est un signal comportemental exploitable qui déclenche
+      le recalcul du score courant du bénéficiaire.
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.BSP.001.003
+    consumer_capability: CAP.BSP.001.SCO
+    subscribed_event:
+      id: EVT.BSP.001.SIGNAL_RECHUTE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.SIG
+    scope: public
+    rationale: >-
+      Un signal de rechute qualifié alimente négativement le recalcul du score
+      comportemental du bénéficiaire.
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.BSP.001.004
+    consumer_capability: CAP.BSP.001.SCO
+    subscribed_event:
+      id: EVT.BSP.001.SIGNAL_PROGRESSION
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.SIG
+    scope: public
+    rationale: >-
+      Un signal de progression qualifié alimente positivement le recalcul du score
+      comportemental du bénéficiaire.
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - business
+
+  # ── CAP.BSP.001.PAL — Gestion des paliers ───────────────────────────────────
+
+  - id: SUB.BUSINESS.BSP.001.005
+    consumer_capability: CAP.BSP.001.PAL
+    subscribed_event:
+      id: EVT.BSP.001.SCORE_SEUIL_ATTEINT
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.SCO
+    scope: public
+    rationale: >-
+      Le franchissement d'un seuil de score déclenche l'évaluation d'une transition
+      de palier algorithmique dans CAP.BSP.001.PAL.
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.BSP.001.006
+    consumer_capability: CAP.BSP.001.PAL
+    subscribed_event:
+      id: EVT.BSP.003.OVERRIDE_DEMANDE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.003.COD
+    scope: public
+    rationale: >-
+      Une demande de surcharge prescripteur co-validée force une transition de palier
+      indépendamment du score algorithmique.
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - business
+
+  # ── CAP.BSP.001.SIG — Détection des signaux ─────────────────────────────────
+
+  - id: SUB.BUSINESS.BSP.001.007
+    consumer_capability: CAP.BSP.001.SIG
+    subscribed_event:
+      id: EVT.BSP.004.ENVELOPPE_NON_CONSOMMEE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.004.ENV
+    scope: public
+    rationale: >-
+      Une enveloppe non consommée en fin de période est un signal de rechute
+      contre-intuitif — indication d'un contournement du canal contrôlé.
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.BSP.001.008
+    consumer_capability: CAP.BSP.001.SIG
+    subscribed_event:
+      id: EVT.BSP.004.TRANSACTION_AUTORISEE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.004.AUT
+    scope: public
+    rationale: >-
+      Les transactions autorisées constituent les données primaires pour la détection
+      des patterns de comportement et de contournement éventuel.
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - business
+
+  # ── CAP.BSP.001.ARB — Arbitrage algo / prescripteur ─────────────────────────
+
+  - id: SUB.BUSINESS.BSP.001.009
+    consumer_capability: CAP.BSP.001.ARB
+    subscribed_event:
+      id: EVT.BSP.001.PALIER_OVERRIDE_APPLIQUE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.PAL
+    scope: public
+    rationale: >-
+      Tout override de palier appliqué ouvre une fenêtre d'arbitrage dans laquelle
+      CAP.BSP.001.ARB surveille si la décision prescripteur est confirmée ou infirmée.
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.BSP.001.010
+    consumer_capability: CAP.BSP.001.ARB
+    subscribed_event:
+      id: EVT.BSP.001.SCORE_RECALCULE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.SCO
+    scope: public
+    rationale: >-
+      Chaque recalcul de score pendant une période de surcharge active permet à
+      CAP.BSP.001.ARB d'évaluer si les conditions de reprise algorithmique sont réunies.
+    adrs:
+      - ADR-BCM-FUNC-0005
+    tags:
+      - business
+
+  # ── CAP.BSP.002.ELI — Qualification de l'éligibilité ───────────────────────
+
+  - id: SUB.BUSINESS.BSP.002.001
+    consumer_capability: CAP.BSP.002.ELI
+    subscribed_event:
+      id: EVT.BSP.003.OVERRIDE_DEMANDE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.003.COD
+    scope: public
+    rationale: >-
+      Un prescripteur peut demander une surcharge de la décision d'éligibilité pour
+      forcer l'entrée d'un candidat dont l'éligibilité algorithmique est borderline.
+    adrs:
+      - ADR-BCM-FUNC-0006
+    tags:
+      - business
+
+  # ── CAP.BSP.002.ENR — Enrôlement ────────────────────────────────────────────
+
+  - id: SUB.BUSINESS.BSP.002.002
+    consumer_capability: CAP.BSP.002.ENR
+    subscribed_event:
+      id: EVT.BSP.002.ELIGIBILITE_VALIDEE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.002.ELI
+    scope: public
+    rationale: >-
+      L'éligibilité validée est la précondition obligatoire pour démarrer le processus
+      d'enrôlement formel d'un bénéficiaire dans le programme.
+    adrs:
+      - ADR-BCM-FUNC-0006
+    tags:
+      - business
+
+  # ── CAP.BSP.002.CYC — Cycle de vie du bénéficiaire ─────────────────────────
+
+  - id: SUB.BUSINESS.BSP.002.003
+    consumer_capability: CAP.BSP.002.CYC
+    subscribed_event:
+      id: EVT.BSP.002.BENEFICIAIRE_ENROLE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.002.ENR
+    scope: public
+    rationale: >-
+      L'enrôlement d'un bénéficiaire ouvre son cycle de vie opérationnel dans
+      CAP.BSP.002.CYC — le dossier passe à l'état ACTIF.
+    adrs:
+      - ADR-BCM-FUNC-0006
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.BSP.002.004
+    consumer_capability: CAP.BSP.002.CYC
+    subscribed_event:
+      id: EVT.BSP.001.SIGNAL_RECHUTE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.SIG
+    scope: public
+    rationale: >-
+      Un signal de rechute détecté peut déclencher une suspension temporaire du dossier
+      bénéficiaire dans CAP.BSP.002.CYC selon les règles de gouvernance du programme.
+    adrs:
+      - ADR-BCM-FUNC-0006
+    tags:
+      - business
+
+  # ── CAP.BSP.002.SOR — Sortie du dispositif ──────────────────────────────────
+
+  - id: SUB.BUSINESS.BSP.002.005
+    consumer_capability: CAP.BSP.002.SOR
+    subscribed_event:
+      id: EVT.BSP.001.PALIER_HAUSSE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.PAL
+    scope: public
+    rationale: >-
+      Le franchissement du dernier palier déclenche la procédure de sortie du dispositif
+      et le transfert vers l'application bancaire standard dans CAP.BSP.002.SOR.
+    adrs:
+      - ADR-BCM-FUNC-0006
+    tags:
+      - business
+
+  # ── CAP.BSP.003.ROL — Gestion des rôles prescripteurs ───────────────────────
+
+  - id: SUB.BUSINESS.BSP.003.001
+    consumer_capability: CAP.BSP.003.ROL
+    subscribed_event:
+      id: EVT.BSP.002.BENEFICIAIRE_ENROLE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.002.ENR
+    scope: public
+    rationale: >-
+      L'enrôlement d'un bénéficiaire déclenche l'attribution des rôles prescripteurs
+      et l'activation de leurs droits de consultation et d'action sur le dossier.
+    adrs:
+      - ADR-BCM-FUNC-0007
+    tags:
+      - business
+
+  # ── CAP.BSP.003.NOT — Alertes & notifications prescripteurs ─────────────────
+
+  - id: SUB.BUSINESS.BSP.003.002
+    consumer_capability: CAP.BSP.003.NOT
+    subscribed_event:
+      id: EVT.BSP.001.SIGNAL_RECHUTE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.SIG
+    scope: public
+    rationale: >-
+      Un signal de rechute qualifié doit être communiqué aux prescripteurs du dossier
+      pour permettre une réaction clinique ou sociale appropriée.
+    adrs:
+      - ADR-BCM-FUNC-0007
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.BSP.003.003
+    consumer_capability: CAP.BSP.003.NOT
+    subscribed_event:
+      id: EVT.BSP.001.PALIER_HAUSSE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.PAL
+    scope: public
+    rationale: >-
+      Un franchissement de palier est un événement de progression à signaler aux
+      prescripteurs — il modifie le niveau d'autonomie du bénéficiaire.
+    adrs:
+      - ADR-BCM-FUNC-0007
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.BSP.003.004
+    consumer_capability: CAP.BSP.003.NOT
+    subscribed_event:
+      id: EVT.BSP.001.PALIER_RETROGRADE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.PAL
+    scope: public
+    rationale: >-
+      Une rétrogradation de palier est un événement critique à signaler aux prescripteurs
+      — elle indique une dégradation comportementale nécessitant un suivi renforcé.
+    adrs:
+      - ADR-BCM-FUNC-0007
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.BSP.003.005
+    consumer_capability: CAP.BSP.003.NOT
+    subscribed_event:
+      id: EVT.BSP.004.ENVELOPPE_NON_CONSOMMEE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.004.ENV
+    scope: public
+    rationale: >-
+      Une enveloppe non consommée est un signal de contournement à porter à la connaissance
+      des prescripteurs — contre-intuitif, il nécessite une interprétation clinique.
+    adrs:
+      - ADR-BCM-FUNC-0007
+    tags:
+      - business
+
+  # ── CAP.BSP.003.COD — Co-décision inter-prescripteurs ───────────────────────
+
+  - id: SUB.BUSINESS.BSP.003.006
+    consumer_capability: CAP.BSP.003.COD
+    subscribed_event:
+      id: EVT.CAN.002.OVERRIDE_UX_DECLENCHE
+      version: 1.0.0
+      emitting_capability: CAP.CAN.002.ACT
+    scope: public
+    rationale: >-
+      Une action de demande de surcharge initiée depuis l'interface prescripteur
+      ouvre le processus de co-décision métier dans CAP.BSP.003.COD.
+    adrs:
+      - ADR-BCM-FUNC-0007
+    tags:
+      - business
+
+  # ── CAP.BSP.004.AUT — Autorisation à l'achat ────────────────────────────────
+
+  - id: SUB.BUSINESS.BSP.004.001
+    consumer_capability: CAP.BSP.004.AUT
+    subscribed_event:
+      id: EVT.BSP.001.PALIER_HAUSSE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.PAL
+    scope: public
+    rationale: >-
+      Un franchissement de palier élargit les règles d'autorisation actives —
+      CAP.BSP.004.AUT doit mettre à jour ses règles de décision en temps réel.
+    adrs:
+      - ADR-BCM-FUNC-0008
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.BSP.004.002
+    consumer_capability: CAP.BSP.004.AUT
+    subscribed_event:
+      id: EVT.BSP.001.PALIER_RETROGRADE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.PAL
+    scope: public
+    rationale: >-
+      Une rétrogradation de palier restreint les règles d'autorisation actives —
+      CAP.BSP.004.AUT doit immédiatement appliquer les règles restrictives du nouveau palier.
+    adrs:
+      - ADR-BCM-FUNC-0008
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.BSP.004.003
+    consumer_capability: CAP.BSP.004.AUT
+    subscribed_event:
+      id: EVT.BSP.001.PALIER_OVERRIDE_APPLIQUE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.PAL
+    scope: public
+    rationale: >-
+      Un override de palier prescripteur modifie les règles d'autorisation actives —
+      CAP.BSP.004.AUT applique les règles du palier forcé par le prescripteur.
+    adrs:
+      - ADR-BCM-FUNC-0008
+    tags:
+      - business
+
+  # ── CAP.BSP.004.ENV — Gestion des enveloppes ────────────────────────────────
+
+  - id: SUB.BUSINESS.BSP.004.004
+    consumer_capability: CAP.BSP.004.ENV
+    subscribed_event:
+      id: EVT.BSP.002.BENEFICIAIRE_ENROLE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.002.ENR
+    scope: public
+    rationale: >-
+      L'enrôlement d'un bénéficiaire déclenche l'allocation initiale des enveloppes
+      budgétaires selon la définition du palier initial activé.
+    adrs:
+      - ADR-BCM-FUNC-0008
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.BSP.004.005
+    consumer_capability: CAP.BSP.004.ENV
+    subscribed_event:
+      id: EVT.BSP.001.PALIER_HAUSSE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.PAL
+    scope: public
+    rationale: >-
+      Un franchissement de palier déclenche le recalibrage des enveloppes budgétaires —
+      le nouveau palier définit de nouvelles catégories et de nouveaux plafonds.
+    adrs:
+      - ADR-BCM-FUNC-0008
+    tags:
+      - business
+
+  # ── CAP.BSP.004.ALT — Comparaison & alternatives ────────────────────────────
+
+  - id: SUB.BUSINESS.BSP.004.006
+    consumer_capability: CAP.BSP.004.ALT
+    subscribed_event:
+      id: EVT.BSP.004.TRANSACTION_REFUSEE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.004.AUT
+    scope: public
+    rationale: >-
+      Un refus de transaction déclenche la recherche d'alternatives commerciales
+      compatibles avec le palier pour préserver la dignité fonctionnelle du bénéficiaire.
+    adrs:
+      - ADR-BCM-FUNC-0008
+    tags:
+      - business
+
+  # ── CAP.CAN.001.TAB — Tableau de progression ────────────────────────────────
+
+  - id: SUB.BUSINESS.CAN.001.001
+    consumer_capability: CAP.CAN.001.TAB
+    subscribed_event:
+      id: EVT.BSP.001.SCORE_RECALCULE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.SCO
+    scope: public
+    rationale: >-
+      Chaque recalcul de score met à jour la progression affichée dans le tableau de
+      bord bénéficiaire — le score est la donnée centrale de la gamification.
+    adrs:
+      - ADR-BCM-FUNC-0009
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.CAN.001.002
+    consumer_capability: CAP.CAN.001.TAB
+    subscribed_event:
+      id: EVT.BSP.001.PALIER_HAUSSE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.PAL
+    scope: public
+    rationale: >-
+      Un franchissement de palier est un événement de progression majeur à afficher
+      de façon valorisante dans le tableau de bord bénéficiaire.
+    adrs:
+      - ADR-BCM-FUNC-0009
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.CAN.001.003
+    consumer_capability: CAP.CAN.001.TAB
+    subscribed_event:
+      id: EVT.BSP.004.ENVELOPPE_CONSOMMEE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.004.ENV
+    scope: public
+    rationale: >-
+      Chaque consommation d'enveloppe met à jour le solde disponible affiché dans
+      le tableau de bord en temps quasi-réel.
+    adrs:
+      - ADR-BCM-FUNC-0009
+    tags:
+      - business
+
+  # ── CAP.CAN.001.ACH — Assistance à l'achat ──────────────────────────────────
+
+  - id: SUB.BUSINESS.CAN.001.004
+    consumer_capability: CAP.CAN.001.ACH
+    subscribed_event:
+      id: EVT.BSP.004.TRANSACTION_AUTORISEE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.004.AUT
+    scope: public
+    rationale: >-
+      Une autorisation de transaction déclenche le feedback UX d'achat réussi
+      dans l'interface bénéficiaire.
+    adrs:
+      - ADR-BCM-FUNC-0009
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.CAN.001.005
+    consumer_capability: CAP.CAN.001.ACH
+    subscribed_event:
+      id: EVT.BSP.004.TRANSACTION_REFUSEE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.004.AUT
+    scope: public
+    rationale: >-
+      Un refus de transaction déclenche le feedback UX de refus dans l'interface
+      bénéficiaire, accompagné si disponible de l'alternative proposée.
+    adrs:
+      - ADR-BCM-FUNC-0009
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.CAN.001.006
+    consumer_capability: CAP.CAN.001.ACH
+    subscribed_event:
+      id: EVT.BSP.004.ALTERNATIVE_PROPOSEE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.004.ALT
+    scope: public
+    rationale: >-
+      Une alternative proposée par BSP.004.ALT doit être affichée immédiatement
+      dans l'interface d'achat pour permettre au bénéficiaire de la consulter.
+    adrs:
+      - ADR-BCM-FUNC-0009
+    tags:
+      - business
+
+  # ── CAP.CAN.001.NOT — Notifications bénéficiaire ────────────────────────────
+
+  - id: SUB.BUSINESS.CAN.001.007
+    consumer_capability: CAP.CAN.001.NOT
+    subscribed_event:
+      id: EVT.BSP.004.TRANSACTION_REFUSEE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.004.AUT
+    scope: public
+    rationale: >-
+      Un refus de transaction génère une notification push/SMS au bénéficiaire
+      avec explication motivée et alternative si disponible.
+    adrs:
+      - ADR-BCM-FUNC-0009
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.CAN.001.008
+    consumer_capability: CAP.CAN.001.NOT
+    subscribed_event:
+      id: EVT.BSP.001.PALIER_HAUSSE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.PAL
+    scope: public
+    rationale: >-
+      Un franchissement de palier génère une notification de félicitations motivante
+      au bénéficiaire — événement clé de la gamification du dispositif.
+    adrs:
+      - ADR-BCM-FUNC-0009
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.CAN.001.009
+    consumer_capability: CAP.CAN.001.NOT
+    subscribed_event:
+      id: EVT.BSP.004.ENVELOPPE_EPUISEE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.004.ENV
+    scope: public
+    rationale: >-
+      L'épuisement d'une enveloppe budgétaire génère une notification au bénéficiaire
+      pour l'informer qu'il a atteint son plafond de dépenses sur cette catégorie.
+    adrs:
+      - ADR-BCM-FUNC-0009
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.CAN.001.010
+    consumer_capability: CAP.CAN.001.NOT
+    subscribed_event:
+      id: EVT.BSP.002.BENEFICIAIRE_TRANSFERE_APP_STANDARD
+      version: 1.0.0
+      emitting_capability: CAP.BSP.002.SOR
+    scope: public
+    rationale: >-
+      Le transfert vers l'application bancaire standard est l'événement terminal
+      du programme — il déclenche la notification de félicitations finale au bénéficiaire.
+    adrs:
+      - ADR-BCM-FUNC-0009
+    tags:
+      - business
+
+  # ── CAP.CAN.002.VUE — Vue bénéficiaire prescripteur ─────────────────────────
+
+  - id: SUB.BUSINESS.CAN.002.001
+    consumer_capability: CAP.CAN.002.VUE
+    subscribed_event:
+      id: EVT.BSP.001.SCORE_RECALCULE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.SCO
+    scope: public
+    rationale: >-
+      Chaque recalcul de score met à jour la vue de progression du dossier affichée
+      aux prescripteurs dans le portail.
+    adrs:
+      - ADR-BCM-FUNC-0010
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.CAN.002.002
+    consumer_capability: CAP.CAN.002.VUE
+    subscribed_event:
+      id: EVT.BSP.001.PALIER_HAUSSE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.PAL
+    scope: public
+    rationale: >-
+      Un franchissement de palier modifie l'état du dossier affiché au prescripteur
+      et peut débloquer des actions nouvelles dans le portail.
+    adrs:
+      - ADR-BCM-FUNC-0010
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.CAN.002.003
+    consumer_capability: CAP.CAN.002.VUE
+    subscribed_event:
+      id: EVT.BSP.001.SIGNAL_RECHUTE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.SIG
+    scope: public
+    rationale: >-
+      Un signal de rechute doit être visible dans la vue prescripteur pour permettre
+      une réaction clinique ou sociale rapide.
+    adrs:
+      - ADR-BCM-FUNC-0010
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.CAN.002.004
+    consumer_capability: CAP.CAN.002.VUE
+    subscribed_event:
+      id: EVT.BSP.003.ROLE_ATTRIBUE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.003.ROL
+    scope: public
+    rationale: >-
+      L'attribution d'un rôle prescripteur détermine ce que ce prescripteur
+      peut voir dans la vue bénéficiaire, selon ses droits différenciés.
+    adrs:
+      - ADR-BCM-FUNC-0010
+    tags:
+      - business
+
+  # ── CAP.CAN.002.ACT — Actions prescripteur ──────────────────────────────────
+
+  - id: SUB.BUSINESS.CAN.002.005
+    consumer_capability: CAP.CAN.002.ACT
+    subscribed_event:
+      id: EVT.BSP.003.OVERRIDE_COVALIDÉ
+      version: 1.0.0
+      emitting_capability: CAP.BSP.003.COD
+    scope: public
+    rationale: >-
+      Un override co-validé dans le COEUR doit être reflété dans l'interface prescripteur
+      pour confirmer visuellement que la décision collective a été prise.
+    adrs:
+      - ADR-BCM-FUNC-0010
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.CAN.002.006
+    consumer_capability: CAP.CAN.002.ACT
+    subscribed_event:
+      id: EVT.BSP.003.OVERRIDE_REFUSE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.003.COD
+    scope: public
+    rationale: >-
+      Un override refusé dans le COEUR doit être reflété dans l'interface prescripteur
+      pour confirmer que la demande de surcharge n'a pas été accordée.
+    adrs:
+      - ADR-BCM-FUNC-0010
+    tags:
+      - business
+
+  # ── CAP.CAN.002.RAP — Rapports & exports ────────────────────────────────────
+
+  - id: SUB.BUSINESS.CAN.002.007
+    consumer_capability: CAP.CAN.002.RAP
+    subscribed_event:
+      id: EVT.CAN.002.DOSSIER_CONSULTE
+      version: 1.0.0
+      emitting_capability: CAP.CAN.002.VUE
+    scope: public
+    rationale: >-
+      La consultation d'un dossier par un prescripteur peut déclencher la génération
+      d'un rapport de suivi adapté à son rôle et à la période consultée.
+    adrs:
+      - ADR-BCM-FUNC-0010
+    tags:
+      - business
+
+  # ── CAP.B2B.001.CRT — Gestion de la carte dédiée ────────────────────────────
+
+  - id: SUB.BUSINESS.B2B.001.001
+    consumer_capability: CAP.B2B.001.CRT
+    subscribed_event:
+      id: EVT.BSP.002.BENEFICIAIRE_ENROLE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.002.ENR
+    scope: public
+    rationale: >-
+      L'enrôlement d'un bénéficiaire déclenche l'émission de la carte dédiée par
+      l'établissement partenaire et son activation avec les règles du palier initial.
+    adrs:
+      - ADR-BCM-FUNC-0011
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.B2B.001.002
+    consumer_capability: CAP.B2B.001.CRT
+    subscribed_event:
+      id: EVT.BSP.001.PALIER_HAUSSE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.PAL
+    scope: public
+    rationale: >-
+      Un franchissement de palier met à jour les règles de la carte dédiée pour
+      refléter les nouvelles catégories autorisées et le nouveau plafond journalier.
+    adrs:
+      - ADR-BCM-FUNC-0011
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.B2B.001.003
+    consumer_capability: CAP.B2B.001.CRT
+    subscribed_event:
+      id: EVT.BSP.001.PALIER_RETROGRADE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.001.PAL
+    scope: public
+    rationale: >-
+      Une rétrogradation de palier restreint immédiatement les règles de la carte dédiée
+      pour appliquer les contraintes du palier inférieur.
+    adrs:
+      - ADR-BCM-FUNC-0011
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.B2B.001.004
+    consumer_capability: CAP.B2B.001.CRT
+    subscribed_event:
+      id: EVT.BSP.002.BENEFICIAIRE_SORTI
+      version: 1.0.0
+      emitting_capability: CAP.BSP.002.SOR
+    scope: public
+    rationale: >-
+      La sortie du dispositif déclenche la résiliation définitive de la carte dédiée
+      par l'établissement partenaire.
+    adrs:
+      - ADR-BCM-FUNC-0011
+    tags:
+      - business
+
+  # ── CAP.B2B.001.OBK — Intégration open banking ──────────────────────────────
+
+  - id: SUB.BUSINESS.B2B.001.005
+    consumer_capability: CAP.B2B.001.OBK
+    subscribed_event:
+      id: EVT.BSP.002.BENEFICIAIRE_ENROLE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.002.ENR
+    scope: public
+    rationale: >-
+      L'enrôlement d'un bénéficiaire initialise l'accès open banking DSP2 et déclenche
+      le premier snapshot des données financières du compte principal.
+    adrs:
+      - ADR-BCM-FUNC-0011
+    tags:
+      - business
+
+  # ── CAP.B2B.001.FLX — Gestion des flux financiers ───────────────────────────
+
+  - id: SUB.BUSINESS.B2B.001.006
+    consumer_capability: CAP.B2B.001.FLX
+    subscribed_event:
+      id: EVT.BSP.004.ENVELOPPE_ALLOUEE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.004.ENV
+    scope: public
+    rationale: >-
+      L'allocation d'une enveloppe budgétaire déclenche le transfert de fonds du compte
+      principal vers la carte dédiée pour alimenter la catégorie correspondante.
+    adrs:
+      - ADR-BCM-FUNC-0011
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.B2B.001.007
+    consumer_capability: CAP.B2B.001.FLX
+    subscribed_event:
+      id: EVT.BSP.004.ENVELOPPE_EPUISEE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.004.ENV
+    scope: public
+    rationale: >-
+      L'épuisement d'une enveloppe déclenche le rapprochement des flux financiers
+      pour cette catégorie sur la période écoulée.
+    adrs:
+      - ADR-BCM-FUNC-0011
+    tags:
+      - business
+
+  # ── CAP.SUP.001.CON — Gestion des consentements RGPD ────────────────────────
+
+  - id: SUB.BUSINESS.SUP.001.001
+    consumer_capability: CAP.SUP.001.CON
+    subscribed_event:
+      id: EVT.BSP.002.BENEFICIAIRE_ENROLE
+      version: 1.0.0
+      emitting_capability: CAP.BSP.002.ENR
+    scope: public
+    rationale: >-
+      L'enrôlement déclenche la collecte et la formalisation du consentement RGPD
+      du bénéficiaire — précondition que CAP.BSP.002.ENR ne peut émettre qu'après
+      l'accord explicite géré par CAP.SUP.001.CON.
+    adrs:
+      - ADR-BCM-FUNC-0012
+    tags:
+      - business
+
+  # ── CAP.SUP.001.RET — Droits des bénéficiaires RGPD ─────────────────────────
+
+  - id: SUB.BUSINESS.SUP.001.002
+    consumer_capability: CAP.SUP.001.RET
+    subscribed_event:
+      id: EVT.BSP.002.BENEFICIAIRE_SORTI
+      version: 1.0.0
+      emitting_capability: CAP.BSP.002.SOR
+    scope: public
+    rationale: >-
+      La sortie du dispositif déclenche la revue des droits RGPD post-sortie — droit
+      à l'effacement, à la portabilité des données collectées pendant le programme.
+    adrs:
+      - ADR-BCM-FUNC-0012
+    tags:
+      - business
+
+  # ── CAP.DAT.001.MOD — Modèle analytique du score ────────────────────────────
+
+  - id: SUB.BUSINESS.DAT.001.001
+    consumer_capability: CAP.DAT.001.MOD
+    subscribed_event:
+      id: EVT.DAT.001.DONNEES_COMPORTEMENTALES_INGEREES
+      version: 1.0.0
+      emitting_capability: CAP.DAT.001.ING
+    scope: internal
+    rationale: >-
+      Chaque lot de données comportementales ingéré alimente le pipeline d'entraînement
+      du modèle analytique de score dans CAP.DAT.001.MOD.
+    adrs:
+      - ADR-BCM-FUNC-0014
+    tags:
+      - business
+
+  # ── CAP.DAT.001.REP — Reporting programme ───────────────────────────────────
+
+  - id: SUB.BUSINESS.DAT.001.002
+    consumer_capability: CAP.DAT.001.REP
+    subscribed_event:
+      id: EVT.DAT.001.DONNEES_COMPORTEMENTALES_INGEREES
+      version: 1.0.0
+      emitting_capability: CAP.DAT.001.ING
+    scope: internal
+    rationale: >-
+      Les données comportementales ingérées alimentent également les pipelines de
+      reporting programme dans CAP.DAT.001.REP pour la production des tableaux de bord.
+    adrs:
+      - ADR-BCM-FUNC-0014
+    tags:
+      - business
+
+  - id: SUB.BUSINESS.DAT.001.003
+    consumer_capability: CAP.DAT.001.REP
+    subscribed_event:
+      id: EVT.DAT.001.MODELE_SCORE_MAJ
+      version: 1.0.0
+      emitting_capability: CAP.DAT.001.MOD
+    scope: public
+    rationale: >-
+      Une mise à jour du modèle de score enrichit les métriques de performance programme
+      affichées dans les rapports de CAP.DAT.001.REP.
+    adrs:
+      - ADR-BCM-FUNC-0014
+    tags:
+      - business
+
+  # ── CAP.PIL.001.GOV — Gouvernance du programme ──────────────────────────────
+
+  - id: SUB.BUSINESS.PIL.001.001
+    consumer_capability: CAP.PIL.001.GOV
+    subscribed_event:
+      id: EVT.DAT.001.MODELE_SCORE_MAJ
+      version: 1.0.0
+      emitting_capability: CAP.DAT.001.MOD
+    scope: public
+    rationale: >-
+      Toute mise à jour du modèle de score doit être validée par CAP.PIL.001.GOV
+      avant déploiement — aucun modèle ne passe en production sans PolitiqueGouvernance.MisÀJour.
+    adrs:
+      - ADR-BCM-FUNC-0015
+    tags:
+      - business
+
+  # ── CAP.PIL.001.KPI — Suivi de performance ──────────────────────────────────
+
+  - id: SUB.BUSINESS.PIL.001.002
+    consumer_capability: CAP.PIL.001.KPI
+    subscribed_event:
+      id: EVT.DAT.001.RAPPORT_PROGRAMME_GENERE
+      version: 1.0.0
+      emitting_capability: CAP.DAT.001.REP
+    scope: public
+    rationale: >-
+      Chaque rapport programme généré par DAT.001.REP alimente le suivi des KPIs
+      du programme par CAP.PIL.001.KPI.
+    adrs:
+      - ADR-BCM-FUNC-0015
+    tags:
+      - business
+
+  # ── CAP.PIL.001.AUD — Audit conformité programme ────────────────────────────
+
+  - id: SUB.BUSINESS.PIL.001.003
+    consumer_capability: CAP.PIL.001.AUD
+    subscribed_event:
+      id: EVT.SUP.001.ACCES_JOURNALISE
+      version: 1.0.0
+      emitting_capability: CAP.SUP.001.AUD
+    scope: public
+    rationale: >-
+      Les traces d'accès aux données journalisées par SUP.001.AUD constituent les
+      preuves d'audit que PIL.001.AUD exploite pour vérifier la conformité réglementaire
+      du programme dans son ensemble.
+    adrs:
+      - ADR-BCM-FUNC-0015
+    tags:
+      - business
