@@ -25,7 +25,7 @@ def load_yaml(path: Path) -> Any:
     try:
         return yaml.safe_load(path.read_text(encoding="utf-8"))
     except Exception as exc:
-        raise SystemExit(f"[FATAL] Impossible de lire/parse {path}: {exc}")
+        raise SystemExit(f"[FATAL] Cannot read/parse {path}: {exc}")
 
 
 def _style_with_overrides(style: str, overrides: dict[str, str]) -> str:
@@ -114,15 +114,15 @@ def load_template_spec(template_file: Path) -> dict[str, Any]:
     xml_root = ET.fromstring(template_file.read_text(encoding="utf-8"))
     diagram = xml_root.find("diagram")
     if diagram is None:
-        raise SystemExit(f"[FATAL] Template invalide (diagram manquant): {template_file}")
+        raise SystemExit(f"[FATAL] Invalid template (diagram missing): {template_file}")
 
     graph_model = diagram.find("mxGraphModel")
     if graph_model is None:
-        raise SystemExit(f"[FATAL] Template invalide (mxGraphModel manquant): {template_file}")
+        raise SystemExit(f"[FATAL] Invalid template (mxGraphModel missing): {template_file}")
 
     root_el = graph_model.find("root")
     if root_el is None:
-        raise SystemExit(f"[FATAL] Template invalide (root manquant): {template_file}")
+        raise SystemExit(f"[FATAL] Invalid template (root missing): {template_file}")
 
     all_cells = root_el.findall("mxCell")
 
@@ -137,7 +137,7 @@ def load_template_spec(template_file: Path) -> dict[str, Any]:
         None,
     )
     if zone_cell is None:
-        raise SystemExit("[FATAL] Zone principale introuvable dans le template")
+        raise SystemExit("[FATAL] Main zone not found in template")
 
     title_cell = next(
         (
@@ -150,7 +150,7 @@ def load_template_spec(template_file: Path) -> dict[str, Any]:
         None,
     )
     if title_cell is None:
-        raise SystemExit("[FATAL] Titre de zone introuvable dans le template")
+        raise SystemExit("[FATAL] Zone title not found in template")
 
     capability_cells = [
         c
@@ -159,7 +159,7 @@ def load_template_spec(template_file: Path) -> dict[str, Any]:
     ]
     capability_cell = next((c for c in capability_cells), None)
     if capability_cell is None:
-        raise SystemExit("[FATAL] Style capability introuvable dans le template")
+        raise SystemExit("[FATAL] Capability style not found in template")
 
     event_group_cell = next(
         (
@@ -172,7 +172,7 @@ def load_template_spec(template_file: Path) -> dict[str, Any]:
         None,
     )
     if event_group_cell is None:
-        raise SystemExit("[FATAL] Groupe événement introuvable dans le template")
+        raise SystemExit("[FATAL] Event group not found in template")
 
     event_group_id = event_group_cell.get("id", "")
     event_image_cell = next(
@@ -196,7 +196,7 @@ def load_template_spec(template_file: Path) -> dict[str, Any]:
         None,
     )
     if event_image_cell is None or event_text_cell is None:
-        raise SystemExit("[FATAL] Image/texte événement introuvable dans le template")
+        raise SystemExit("[FATAL] Event image/text not found in template")
 
     edge_solid = next(
         (c for c in all_cells if c.get("edge") == "1" and "dashed=1" not in (c.get("style") or "")),
@@ -207,7 +207,7 @@ def load_template_spec(template_file: Path) -> dict[str, Any]:
         None,
     )
     if edge_solid is None or edge_dashed is None:
-        raise SystemExit("[FATAL] Styles de flèches introuvables dans le template")
+        raise SystemExit("[FATAL] Arrow styles not found in template")
 
     zone_x, zone_y, zone_w, zone_h = _cell_geometry(zone_cell)
     title_x, title_y, title_w, title_h = _cell_geometry(title_cell)
@@ -266,7 +266,7 @@ def load_capabilities_by_id(bcm_dir: Path) -> dict[str, dict[str, Any]]:
             if isinstance(capability, dict) and capability.get("id"):
                 capabilities[capability["id"]] = capability
     if not capabilities:
-        raise SystemExit(f"[FATAL] Aucune capacité trouvée dans {bcm_dir}/capabilities-*.yaml")
+        raise SystemExit(f"[FATAL] No capability found in {bcm_dir}/capabilities-*.yaml")
     return capabilities
 
 
@@ -501,7 +501,7 @@ def build_drawio_for_l1(
         ]
     )
     if not l2_capability_ids:
-        raise SystemExit(f"[FATAL] Aucune capacité L2 trouvée pour {l1_capability_id}")
+        raise SystemExit(f"[FATAL] No L2 capability found for {l1_capability_id}")
 
     relevant_subscriptions: list[dict[str, Any]] = []
     for subscription in subscriptions:
@@ -916,37 +916,37 @@ def build_drawio_for_l1(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Génère un draw.io chaîne production/consommation interne à un L1 "
-            "(capacités + événements + abonnements métier)."
+            "Generates a draw.io production/consumption chain diagram for an L1 "
+            "(capabilities + events + business subscriptions)."
         )
     )
-    parser.add_argument("--bcm-dir", default="bcm", help="Répertoire des fichiers capabilities-*.yaml")
+    parser.add_argument("--bcm-dir", default="bcm", help="Directory containing capabilities-*.yaml files")
     parser.add_argument(
         "--events-dir",
         default="bcm/business-event",
-        help="Répertoire racine contenant business-event-*.yaml et business-subscription-*.yaml",
+        help="Root directory containing business-event-*.yaml and business-subscription-*.yaml",
     )
     parser.add_argument(
         "--template",
         default="views/capacites/COEUR.005-chaine-abonnements-template.drawio",
-        help="Template draw.io de référence pour styles et géométrie",
+        help="Reference draw.io template for styles and geometry",
     )
     parser.add_argument(
         "--l1-capability",
         default=None,
-        help="Capacité L1 cible (ex: CAP.COEUR.005). Si omis: batch pour tous les L1 avec abonnements internes.",
+        help="Target L1 capability (e.g. CAP.COEUR.005). If omitted: batch for all L1s with internal subscriptions.",
     )
     parser.add_argument(
         "--output",
         default=None,
-        help="Fichier .drawio de sortie (mode mono-capacité uniquement, avec --l1-capability)",
+        help="Output .drawio file (single-capability mode only, with --l1-capability)",
     )
     parser.add_argument(
         "--output-dir",
         default="views/capacites",
-        help="Répertoire de sortie des rendus draw.io (défaut: views/capacites)",
+        help="Output directory for draw.io renders (default: views/capacites)",
     )
-    parser.add_argument("--diagram-name", default="Chaine capacite L1", help="Nom de l'onglet draw.io")
+    parser.add_argument("--diagram-name", default="L1 capability chain", help="Name of the draw.io tab")
     return parser.parse_args()
 
 
@@ -959,11 +959,11 @@ def main() -> int:
     output_dir = ROOT / args.output_dir
 
     if not bcm_dir.exists():
-        raise SystemExit(f"[FATAL] Répertoire introuvable: {bcm_dir}")
+        raise SystemExit(f"[FATAL] Directory not found: {bcm_dir}")
     if not events_dir.exists():
-        raise SystemExit(f"[FATAL] Répertoire introuvable: {events_dir}")
+        raise SystemExit(f"[FATAL] Directory not found: {events_dir}")
     if not template_file.exists():
-        raise SystemExit(f"[FATAL] Template introuvable: {template_file}")
+        raise SystemExit(f"[FATAL] Template not found: {template_file}")
 
     template_spec = load_template_spec(template_file)
     capabilities_by_id = load_capabilities_by_id(bcm_dir)
@@ -971,7 +971,7 @@ def main() -> int:
     subscriptions = load_business_subscriptions(events_dir)
 
     if not subscriptions:
-        raise SystemExit("[FATAL] Aucune abonnement métier détectée.")
+        raise SystemExit("[FATAL] No business subscription detected.")
 
     l1_with_internal_subs: set[str] = set()
     for subscription in subscriptions:
@@ -985,10 +985,10 @@ def main() -> int:
 
     if args.l1_capability:
         if args.l1_capability not in capabilities_by_id:
-            raise SystemExit(f"[FATAL] Capacité introuvable: {args.l1_capability}")
+            raise SystemExit(f"[FATAL] Capability not found: {args.l1_capability}")
         if args.l1_capability not in l1_with_internal_subs:
             raise SystemExit(
-                f"[FATAL] Aucune abonnement interne détectée pour {args.l1_capability}."
+                f"[FATAL] No internal subscription detected for {args.l1_capability}."
             )
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -1011,16 +1011,16 @@ def main() -> int:
         output_file.parent.mkdir(parents=True, exist_ok=True)
         output_file.write_text(xml_output, encoding="utf-8")
 
-        print("[OK] Draw.io chaîne généré")
+        print("[OK] Draw.io chain generated")
         print(f"  • template   : {template_file.relative_to(ROOT)}")
-        print(f"  • capacité   : {args.l1_capability}")
-        print(f"  • sortie     : {output_file.relative_to(ROOT)}")
+        print(f"  • capability : {args.l1_capability}")
+        print(f"  • output     : {output_file.relative_to(ROOT)}")
         return 0
 
     if args.output:
         raise SystemExit(
-            "[FATAL] --output n'est pas compatible avec le mode batch (sans --l1-capability). "
-            "Utiliser --output-dir."
+            "[FATAL] --output is not compatible with batch mode (without --l1-capability). "
+            "Use --output-dir instead."
         )
 
     rendered_files: list[Path] = []
@@ -1037,10 +1037,10 @@ def main() -> int:
         output_file.write_text(xml_output, encoding="utf-8")
         rendered_files.append(output_file)
 
-    print("[OK] Draw.io chaîne généré (mode batch)")
-    print(f"  • template   : {template_file.relative_to(ROOT)}")
-    print(f"  • capacités  : {len(rendered_files)}")
-    print(f"  • sortie dir : {output_dir.relative_to(ROOT)}")
+    print("[OK] Draw.io chain generated (batch mode)")
+    print(f"  • template    : {template_file.relative_to(ROOT)}")
+    print(f"  • capabilities: {len(rendered_files)}")
+    print(f"  • output dir  : {output_dir.relative_to(ROOT)}")
     for rendered_file in rendered_files:
         print(f"    - {rendered_file.relative_to(ROOT)}")
     return 0

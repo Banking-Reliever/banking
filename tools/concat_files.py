@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 """
-concat_files.py — Concatène tous les fichiers ADR, BCM, templates et externals-templates en un seul document.
+concat_files.py — Concatenates all ADR, BCM, templates and externals-templates files into a single document.
 
-Parcourt récursivement les dossiers `adr/`, `bcm/`, `templates/` et `externals-templates/` pour produire
-un fichier unique contenant l'ensemble du contenu, avec des séparateurs
-indiquant le chemin de chaque fichier source.
+Recursively traverses the `adr/`, `bcm/`, `templates/` and `externals-templates/` directories to produce
+a single file containing all content, with separators indicating the path of each source file.
 
 Usage:
-    python tools/concat_files.py                    # Affiche sur stdout
-    python tools/concat_files.py -o output.txt      # Écrit dans un fichier
-    python tools/concat_files.py --adr-only         # ADR uniquement
-    python tools/concat_files.py --bcm-only         # BCM uniquement
-    python tools/concat_files.py --templates-only   # Templates internes + externes
+    python tools/concat_files.py                    # Output to stdout
+    python tools/concat_files.py -o output.txt      # Write to a file
+    python tools/concat_files.py --adr-only         # ADR only
+    python tools/concat_files.py --bcm-only         # BCM only
+    python tools/concat_files.py --templates-only   # Internal + external templates
 """
 from __future__ import annotations
 
@@ -21,47 +20,47 @@ from pathlib import Path
 from typing import List, TextIO
 
 
-# Extensions de fichiers à inclure
+# File extensions to include
 VALID_EXTENSIONS = {".md", ".yaml", ".yml"}
 
 
 def find_files(directory: Path, extensions: set[str] | None = None) -> List[Path]:
     """
-    Trouve récursivement tous les fichiers avec les extensions spécifiées.
-    
+    Recursively finds all files with the specified extensions.
+
     Args:
-        directory: Dossier racine à parcourir
-        extensions: Extensions à inclure (ex: {".md", ".yaml"})
-    
+        directory: Root directory to traverse
+        extensions: Extensions to include (e.g. {".md", ".yaml"})
+
     Returns:
-        Liste de chemins triés par ordre alphabétique
+        List of paths sorted alphabetically
     """
     if extensions is None:
         extensions = VALID_EXTENSIONS
-    
+
     if not directory.exists():
         return []
-    
+
     files = []
     for path in directory.rglob("*"):
         if path.is_file() and path.suffix.lower() in extensions:
-            # Exclure les fichiers __pycache__
+            # Exclude __pycache__ files
             if "__pycache__" not in str(path):
                 files.append(path)
-    
+
     return sorted(files)
 
 
 def format_separator(file_path: Path, repo_root: Path) -> str:
     """
-    Génère un séparateur visuel pour un fichier.
-    
+    Generates a visual separator for a file.
+
     Args:
-        file_path: Chemin absolu du fichier
-        repo_root: Racine du repository pour afficher le chemin relatif
-    
+        file_path: Absolute path of the file
+        repo_root: Repository root used to display the relative path
+
     Returns:
-        Chaîne de séparation formatée
+        Formatted separator string
     """
     relative_path = file_path.relative_to(repo_root)
     width = 80
@@ -80,18 +79,18 @@ def concat_files(
     output: TextIO
 ) -> int:
     """
-    Concatène les fichiers avec séparateurs et les écrit dans output.
-    
+    Concatenates files with separators and writes them to output.
+
     Args:
-        files: Liste des fichiers à concaténer
-        repo_root: Racine du repository
-        output: Flux de sortie (fichier ou stdout)
-    
+        files: List of files to concatenate
+        repo_root: Repository root
+        output: Output stream (file or stdout)
+
     Returns:
-        Nombre de fichiers traités
+        Number of files processed
     """
     count = 0
-    
+
     for file_path in files:
         try:
             content = file_path.read_text(encoding="utf-8")
@@ -102,86 +101,86 @@ def concat_files(
                 output.write("\n")
             count += 1
         except Exception as e:
-            print(f"⚠️  Erreur lecture {file_path}: {e}", file=sys.stderr)
-    
+            print(f"WARNING: Error reading {file_path}: {e}", file=sys.stderr)
+
     return count
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Concatène les fichiers ADR, BCM, templates et externals-templates en un seul document.",
+        description="Concatenates ADR, BCM, templates and externals-templates files into a single document.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Exemples:
-  python tools/concat_files.py                    # Tout sur stdout
-  python tools/concat_files.py -o context.txt     # Sauvegarde dans un fichier
-  python tools/concat_files.py --adr-only         # ADR uniquement
-  python tools/concat_files.py --bcm-only         # BCM uniquement
-    python tools/concat_files.py --templates-only   # Templates + externals-templates uniquement
-  python tools/concat_files.py --ext .yaml        # YAML uniquement
+Examples:
+  python tools/concat_files.py                    # All to stdout
+  python tools/concat_files.py -o context.txt     # Save to a file
+  python tools/concat_files.py --adr-only         # ADR only
+  python tools/concat_files.py --bcm-only         # BCM only
+  python tools/concat_files.py --templates-only   # Templates + externals-templates only
+  python tools/concat_files.py --ext .yaml        # YAML only
 """
     )
-    
+
     parser.add_argument(
         "-o", "--output",
         type=str,
         default=None,
-        help="Fichier de sortie (défaut: stdout)"
+        help="Output file (default: stdout)"
     )
-    
+
     parser.add_argument(
         "--adr-only",
         action="store_true",
-        help="Concatène uniquement les fichiers ADR"
+        help="Concatenate ADR files only"
     )
-    
+
     parser.add_argument(
         "--bcm-only",
         action="store_true",
-        help="Concatène uniquement les fichiers BCM"
+        help="Concatenate BCM files only"
     )
 
     parser.add_argument(
         "--templates-only",
         action="store_true",
-        help="Concatène uniquement les fichiers templates (templates/ + externals-templates/)"
+        help="Concatenate template files only (templates/ + externals-templates/)"
     )
-    
+
     parser.add_argument(
         "--ext",
         type=str,
         action="append",
         dest="extensions",
-        help="Extensions à inclure (peut être répété, ex: --ext .yaml --ext .md)"
+        help="Extensions to include (can be repeated, e.g. --ext .yaml --ext .md)"
     )
-    
+
     parser.add_argument(
         "--no-separator",
         action="store_true",
-        help="Désactive les séparateurs entre fichiers"
+        help="Disable separators between files"
     )
-    
+
     args = parser.parse_args()
-    
-    # Détermination de la racine du repository
+
+    # Determine the repository root
     script_dir = Path(__file__).resolve().parent
     repo_root = script_dir.parent
-    
+
     adr_dir = repo_root / "adr"
     bcm_dir = repo_root / "bcm"
     templates_dir = repo_root / "templates"
     externals_templates_dir = repo_root / "externals-templates"
-    
-    # Extensions à utiliser
+
+    # Extensions to use
     extensions = set(args.extensions) if args.extensions else VALID_EXTENSIONS
-    
-    # Collecte des fichiers selon les options
+
+    # Collect files according to options
     all_files: List[Path] = []
-    
+
     selected_only_modes = sum([args.adr_only, args.bcm_only, args.templates_only])
     if selected_only_modes > 1:
-        parser.error("--adr-only, --bcm-only et --templates-only sont mutuellement exclusifs")
-    
+        parser.error("--adr-only, --bcm-only and --templates-only are mutually exclusive")
+
     if args.adr_only:
         adr_files = find_files(adr_dir, extensions)
         all_files.extend(adr_files)
@@ -202,21 +201,21 @@ Exemples:
         all_files.extend(bcm_files)
         all_files.extend(templates_files)
         all_files.extend(externals_templates_files)
-    
+
     if not all_files:
-        print("⚠️  Aucun fichier trouvé.", file=sys.stderr)
+        print("WARNING: No file found.", file=sys.stderr)
         return 1
-    
-    # Sortie
+
+    # Output
     if args.output:
         output_path = Path(args.output)
         with output_path.open("w", encoding="utf-8") as f:
             count = concat_files(all_files, repo_root, f)
-        print(f"✅ {count} fichiers concaténés dans {output_path}", file=sys.stderr)
+        print(f"[OK] {count} files concatenated into {output_path}", file=sys.stderr)
     else:
         count = concat_files(all_files, repo_root, sys.stdout)
-        print(f"\n# Total: {count} fichiers concaténés", file=sys.stderr)
-    
+        print(f"\n# Total: {count} files concatenated", file=sys.stderr)
+
     return 0
 
 

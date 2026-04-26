@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "Detects .env as a potentially sensitive file",
+      "passed": true,
+      "evidence": "outcome.txt: ABORTED; warning_message.txt identifies '.env' as sensitive file match"
+    },
+    {
+      "text": "Aborts before staging or committing",
+      "passed": true,
+      "evidence": "outcome.txt: ABORTED; git_log.txt shows only the initial commit — no new commit created"
+    },
+    {
+      "text": "Warns user explicitly about the .env file",
+      "passed": true,
+      "evidence": "warning_message.txt: 'Sensitive file detected: .env — I won't stage these — they look like they might contain secrets. Exclude them or add them to .gitignore, then re-run /commit.'"
+    },
+    {
+      "text": "Does NOT proceed to create a commit",
+      "passed": true,
+      "evidence": "git_log.txt: 'e934159 chore: initial commit' — only the initial commit, no new commit created"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  }
+}

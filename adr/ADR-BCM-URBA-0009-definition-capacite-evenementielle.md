@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-URBA-0009
-title: "Définition complète d'une capacité — responsabilité, production et consommation d'événements"
+title: "Complete Capability Definition — Responsibility, Event Production and Consumption"
 status: Proposed
 date: 2026-03-10
 
@@ -35,103 +35,103 @@ supersedes:
 
 tags:
   - BCM
-  - Urbanisation
+  - Urbanization
   - Ownership
   - event-driven
-  - abonnement
+  - subscription
   - production
 
 stability_impact: Structural
 ---
 
-# ADR-BCM-URBA-0009 — Définition complète d'une capacité — responsabilité, production et consommation d'événements
+# ADR-BCM-URBA-0009 — Complete Capability Definition — Responsibility, Event Production and Consumption
 
-## Contexte
+## Context
 
-L'ADR-BCM-URBA-0003 établit qu'une capacité décrit une **responsabilité métier stable**, indépendante des solutions techniques. Cette définition fondamentale reste valide mais incomplète dans un contexte d'architecture événementielle.
+ADR-BCM-URBA-0003 establishes that a capability describes a **stable business responsibility**, independent of technical solutions. This foundational definition remains valid but incomplete in an event-driven architecture context.
 
-Avec l'introduction du méta-modèle événementiel (ADR-BCM-URBA-0007) et des règles de modélisation à deux niveaux (ADR-BCM-URBA-0008), il devient nécessaire d'enrichir la définition d'une capacité pour inclure explicitement :
+With the introduction of the event meta-model (ADR-BCM-URBA-0007) and the two-level modeling rules (ADR-BCM-URBA-0008), it becomes necessary to enrich the definition of a capability to explicitly include:
 
-- sa **production d'événements** (ce qu'elle émet) ;
-- sa **consommation d'événements** (ce à quoi elle souscrit).
+- its **event production** (what it emits);
+- its **event consumption** (what it subscribes to).
 
-Cette extension permet de caractériser une capacité non seulement par ce qu'elle *fait* (responsabilité), mais aussi par ce qu'elle *communique* (interactions événementielles).
+This extension allows characterizing a capability not only by what it *does* (responsibility), but also by what it *communicates* (event-driven interactions).
 
-## Décision
+## Decision
 
-### Définition étendue d'une capacité
+### Extended Capability Definition
 
-Une capacité est définie par :
+A capability is defined by:
 
-1. **Une responsabilité métier stable** (reprise de l'ADR-BCM-URBA-0003)
-   - Le "quoi" métier, indépendant de la solution technique.
-   - Les applications et composants sont mappés sur les capacités, mais ne les définissent pas.
-   - Aucune référence à un éditeur, outil ou technologie dans les libellés.
+1. **A stable business responsibility** (carried over from ADR-BCM-URBA-0003)
+   - The business "what", independent of the technical solution.
+   - Applications and components are mapped onto capabilities, but do not define them.
+   - No reference to a vendor, tool, or technology in the labels.
 
-2. **Sa production d'événements**
-   - Une capacité est **productrice** des événements qui matérialisent les jalons de son cycle de vie.
-   - Elle a la **responsabilité exclusive** de la production de ces événements.
+2. **Its event production**
+   - A capability is the **producer** of events that materialize the milestones of its lifecycle.
+   - It has the **exclusive responsibility** for producing these events.
 
-3. **Sa consommation d'événements**
-   - Une capacité **consomme** des événements via des abonnements formalisés.
-   - Ces abonnements définissent les **dépendances explicites** de la capacité.
-
----
-
-### Règles par niveau d'abstraction
-
-#### Niveau Métier
-
-| Aspect | Règle |
-|--------|-------|
-| **Production** | La capacité a pour responsabilité la production de ses **événements métier**, représentant les jalons abstraits de son cycle de vie. |
-| **Consommation** | La capacité souscrit à des **événements métier externes** uniquement si ces événements **impactent directement le cycle de vie du processus** de la capacité. |
-
-**Critère décisionnel pour un abonnement métier :**
-> L'événement métier externe déclenche-t-il ou influence-t-il un changement d'état dans le cycle de vie du processus porté par cette capacité ?
-> - Si **oui** → abonnement métier justifiée.
-> - Si **non** → ce n'est pas un abonnement métier (potentiellement un abonnement ressource).
-
-#### Niveau Opérationnel
-
-| Aspect | Règle |
-|--------|-------|
-| **Production** | La capacité a pour responsabilité la production de ses **événements ressource**, représentant les faits publiés spécialisés liés aux ressources qu'elle gère. |
-| **Consommation** | La capacité souscrit à des **événements ressource** pour tout gisement de données impliqué dans la **production d'information**, que ce soit pour construire un **read model** ou pour des données impactant le cycle de vie du processus. |
-
-**Critère décisionnel pour un abonnement ressource :**
-> L'événement ressource externe fournit-il des données nécessaires à :
-> - la construction d'un read model utilisé par la capacité ? → **oui**
-> - l'exécution d'une règle métier ou d'un traitement de la capacité ? → **oui**
-> - Si aucun des deux → pas d'abonnement ressource justifiée.
+3. **Its event consumption**
+   - A capability **consumes** events via formalized subscriptions.
+   - These subscriptions define the **explicit dependencies** of the capability.
 
 ---
 
-### Vue synthétique
+### Rules by Abstraction Level
+
+#### Business Level
+
+| Aspect | Rule |
+|--------|-------|
+| **Production** | The capability is responsible for producing its **business events**, representing the abstract milestones of its lifecycle. |
+| **Consumption** | The capability subscribes to **external business events** only if these events **directly impact the lifecycle of the capability's process**. |
+
+**Decision criterion for a business subscription:**
+> Does the external business event trigger or influence a state change in the lifecycle of the process carried by this capability?
+> - If **yes** → business subscription justified.
+> - If **no** → this is not a business subscription (potentially a resource subscription).
+
+#### Operational Level
+
+| Aspect | Rule |
+|--------|-------|
+| **Production** | The capability is responsible for producing its **resource events**, representing the specialized published facts related to the resources it manages. |
+| **Consumption** | The capability subscribes to **resource events** for any data source involved in **information production**, whether for building a **read model** or for data impacting the process lifecycle. |
+
+**Decision criterion for a resource subscription:**
+> Does the external resource event provide data necessary for:
+> - building a read model used by the capability? → **yes**
+> - executing a business rule or processing by the capability? → **yes**
+> - If neither → no resource subscription justified.
+
+---
+
+### Synthetic View
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                              CAPACITÉ                                       │
+│                              CAPABILITY                                      │
 │                                                                             │
 │  ┌───────────────────────────────────────────────────────────────────────┐  │
-│  │                    RESPONSABILITÉ MÉTIER                              │  │
-│  │              (le "quoi", stable, indépendant du SI)                   │  │
+│  │                    BUSINESS RESPONSIBILITY                             │  │
+│  │           (the "what", stable, independent of the IS)                 │  │
 │  └───────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
 │  ┌─────────────────────────┐       ┌─────────────────────────────────────┐  │
-│  │      PRODUCTION         │       │         CONSOMMATION                │  │
+│  │      PRODUCTION         │       │         CONSUMPTION                 │  │
 │  │                         │       │                                     │  │
 │  │  ┌───────────────────┐  │       │  ┌─────────────────────────────────┐│  │
-│  │  │ Événements Métier │  │       │  │      Abonnements Métier         ││  │
-│  │  │ (jalons du cycle  │  │       │  │  (événements impactant le       ││  │
-│  │  │  de vie abstrait) │  │       │  │   cycle de vie du processus)    ││  │
-│  │  └───────────────────┘  │       │  └─────────────────────────────────┘│  │
-│  │                         │       │                                     │  │
-│  │  ┌───────────────────┐  │       │  ┌─────────────────────────────────┐│  │
-│  │  │ Événements        │  │       │  │   Abonnements Ressource         ││  │
-│  │  │ Ressource         │  │       │  │  (données pour read model ou    ││  │
-│  │  │ (faits publiés    │  │       │  │   production d'information)     ││  │
-│  │  │  spécialisés)     │  │       │  └─────────────────────────────────┘│  │
+│  │  │  Business Events  │  │       │  │     Business Subscriptions      ││  │
+│  │  │ (lifecycle        │  │       │  │  (events impacting the          ││  │
+│  │  │  milestones,      │  │       │  │   lifecycle of the process)     ││  │
+│  │  │  abstract)        │  │       │  └─────────────────────────────────┘│  │
+│  │  └───────────────────┘  │       │                                     │  │
+│  │                         │       │  ┌─────────────────────────────────┐│  │
+│  │  ┌───────────────────┐  │       │  │   Resource Subscriptions        ││  │
+│  │  │ Resource Events   │  │       │  │  (data for read model or        ││  │
+│  │  │ (specialized      │  │       │  │   information production)       ││  │
+│  │  │  published facts) │  │       │  └─────────────────────────────────┘│  │
 │  │  └───────────────────┘  │       │                                     │  │
 │  └─────────────────────────┘       └─────────────────────────────────────┘  │
 │                                                                             │
@@ -140,82 +140,82 @@ Une capacité est définie par :
 
 ---
 
-### Critères vérifiables
+### Verifiable Criteria
 
-| Critère | Vérification |
+| Criterion | Verification |
 |---------|--------------|
-| Toute capacité L2 doit émettre au moins un événement métier | Contrôle automatisé via `validate_events.py` |
-| Chaque abonnement métier doit justifier un impact sur le cycle de vie | Champ `impact_cycle_de_vie` requis dans le template d'abonnement |
-| Chaque abonnement ressource doit préciser son usage (read model ou traitement) | Champ `usage_type` requis dans le template d'abonnement |
-| Une capacité ne souscrit pas à ses propres événements | Contrôle automatisé |
+| Every L2 capability must emit at least one business event | Automated control via `validate_events.py` |
+| Each business subscription must justify an impact on the lifecycle | `lifecycle_impact` field required in the subscription template |
+| Each resource subscription must specify its usage (read model or processing) | `usage_type` field required in the subscription template |
+| A capability does not subscribe to its own events | Automated control |
 
 ## Justification
 
-Cette extension de la définition permet :
+This extension of the definition allows:
 
-- d'**expliciter les contrats d'interaction** entre capacités ;
-- de **clarifier les responsabilités** producteur/consommateur à chaque niveau ;
-- de **distinguer les dépendances structurelles** (cycle de vie) des dépendances opérationnelles (read model) ;
-- d'**outiller la gouvernance** avec des critères vérifiables automatiquement.
+- **expliciting interaction contracts** between capabilities;
+- **clarifying responsibilities** producer/consumer at each level;
+- **distinguishing structural dependencies** (lifecycle) from operational dependencies (read model);
+- **tooling governance** with automatically verifiable criteria.
 
-### Alternatives considérées
+### Alternatives Considered
 
-- **Option A — Conserver uniquement la définition par responsabilité :**
-  Rejetée car insuffisante pour caractériser les interactions dans une architecture événementielle.
+- **Option A — Keep only the responsibility-based definition:**
+  Rejected because insufficient to characterize interactions in an event-driven architecture.
 
-- **Option B — Définir les abonnements sans distinction métier/ressource :**
-  Rejetée car ne permet pas de différencier les niveaux de couplage et d'identifier les vraies dépendances métier.
+- **Option B — Define subscriptions without business/resource distinction:**
+  Rejected because it does not allow differentiating coupling levels and identifying true business dependencies.
 
-- **Option C — Laisser les abonnements implicites :**
-  Rejetée car crée du shadow coupling non traçable et non gouvernable.
+- **Option C — Leave subscriptions implicit:**
+  Rejected because it creates non-traceable and ungovernable shadow coupling.
 
-## Impacts sur la BCM
+## Impacts on the BCM
 
 ### Structure
 
-- Capacités impactées : toutes (enrichissement de la définition).
-- Templates de capacités à enrichir avec les sections `produced_events` et `subscriptions`.
+- Impacted capabilities: all (enrichment of the definition).
+- Capability templates to enrich with `produced_events` and `subscriptions` sections.
 
-### Événements
+### Events
 
-- Formalisation explicite de la relation `Capability -> Evenement` (production).
-- Formalisation explicite de la relation `Capability + Abonnement -> Evenement` (consommation).
+- Explicit formalization of the `Capability -> Event` relation (production).
+- Explicit formalization of the `Capability + Subscription -> Event` relation (consumption).
 
 ### Mapping SI / Data / Org
 
-- **SI** : permet de cartographier les flux d'événements par capacité.
-- **DATA** : clarifie les sources de données (abonnements ressource pour read models).
-- **ORG** : responsabilité de production assignée explicitement à chaque capacité.
+- **SI**: allows mapping event flows by capability.
+- **DATA**: clarifies data sources (resource subscriptions for read models).
+- **ORG**: production responsibility explicitly assigned to each capability.
 
-## Conséquences
+## Consequences
 
-### Positives
+### Positive
 
-- Traçabilité complète des interactions inter-capacités.
-- Gouvernance outillable : détection automatique des incohérences.
-- Support pour l'analyse d'impact (qui produit, qui consomme).
-- Clarification des niveaux de couplage (métier vs opérationnel).
+- Complete traceability of inter-capability interactions.
+- Toolable governance: automatic detection of inconsistencies.
+- Support for impact analysis (who produces, who consumes).
+- Clarification of coupling levels (business vs. operational).
 
-### Négatives / Risques
+### Negative / Risks
 
-- Complexité accrue de la documentation des capacités.
-- Nécessité de maintenir la cohérence entre capacités, événements et abonnements.
-- Discipline de gouvernance requise pour qualifier les abonnements.
+- Increased complexity of capability documentation.
+- Need to maintain coherence between capabilities, events, and subscriptions.
+- Governance discipline required to qualify subscriptions.
 
-### Dette acceptée
+### Accepted Debt
 
-- Les capacités existantes peuvent temporairement ne pas avoir leurs événements et abonnements documentés.
-- Migration progressive vers la définition complète.
+- Existing capabilities may temporarily not have their events and subscriptions documented.
+- Progressive migration toward the complete definition.
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : Élevé (règle transverse structurante).
-- Date de revue recommandée : 2028-03-10.
-- Indicateurs de stabilité attendus :
-  - 100% des capacités L2 avec au moins un événement métier documenté.
-  - 100% des abonnements avec qualification d'usage documentée.
-  - 0 abonnement métier sans justification d'impact cycle de vie.
+- Criticality level: High (structuring transverse rule).
+- Recommended review date: 2028-03-10.
+- Expected stability indicators:
+  - 100% of L2 capabilities with at least one business event documented.
+  - 100% of subscriptions with documented usage qualification.
+  - 0 business subscriptions without lifecycle impact justification.
 
-## Traçabilité
+## Traceability
 
-Cet ADR **supersede** ADR-BCM-URBA-0003, en reprenant et enrichissant sa définition fondamentale.
+This ADR **supersedes** ADR-BCM-URBA-0003, carrying forward and enriching its foundational definition.

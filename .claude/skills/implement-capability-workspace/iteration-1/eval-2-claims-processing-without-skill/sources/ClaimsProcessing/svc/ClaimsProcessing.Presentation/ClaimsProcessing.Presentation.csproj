@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>FoodarooExperience.ClaimsProcessing.Presentation</RootNamespace>
+    <AssemblyName>ClaimsProcessing.Presentation</AssemblyName>
+    <UserSecretsId>claimsprocessing-presentation</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
+    <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.0" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.3.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ClaimsProcessing.Application\ClaimsProcessing.Application.csproj" />
+    <ProjectReference Include="..\ClaimsProcessing.Contracts\ClaimsProcessing.Contracts.csproj" />
+    <ProjectReference Include="..\ClaimsProcessing.Infrastructure\ClaimsProcessing.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

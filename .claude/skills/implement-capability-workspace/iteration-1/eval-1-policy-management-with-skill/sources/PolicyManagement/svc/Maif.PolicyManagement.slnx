@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Maif.PolicyManagement.Application/Maif.PolicyManagement.Application.csproj" />
+    <Project Path="src/Maif.PolicyManagement.Contracts/Maif.PolicyManagement.Contracts.csproj" />
+    <Project Path="src/Maif.PolicyManagement.Domain/Maif.PolicyManagement.Domain.csproj" />
+    <Project Path="src/Maif.PolicyManagement.Infrastructure/Maif.PolicyManagement.Infrastructure.csproj" />
+    <Project Path="src/Maif.PolicyManagement.Presentation/Maif.PolicyManagement.Presentation.csproj" />
+  </Folder>
+</Solution>

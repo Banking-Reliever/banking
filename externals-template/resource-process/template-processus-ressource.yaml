@@ -98,7 +98,7 @@ resource_process:
       availability_target: "99.9%"
     execution:
       ordering: strict                        # strict | eventual | parallel
-      retry_policy: "3 tentatives / backoff exponentiel"
+      retry_policy: "3 attempts / exponential backoff"
       idempotency_required: true
     observability:
       trace_required: true
@@ -109,29 +109,29 @@ resource_process:
   orchestration_rules:
     - id: RULE.RES.001
       rule: >-
-        Décrire ici les règles opérationnelles explicites d'enchaînement.
+        Describe here the explicit operational sequencing rules.
 
     - id: RULE.RES.002
       rule: >-
-        Vérifier que le processus ne référence que des abstractions ressource.
+        Verify that the process only references resource abstractions.
 
   exits_ressource:
-    - to_resource_event: EVT.RES.DOM.000.SORTIE_1
-      meaning: Signification opérationnelle de la sortie 1.
+    - to_resource_event: EVT.RES.DOM.000.EXIT_1
+      meaning: Operational meaning of exit 1.
 
-    - to_resource_event: EVT.RES.DOM.000.SORTIE_2
-      meaning: Signification opérationnelle de la sortie 2.
+    - to_resource_event: EVT.RES.DOM.000.EXIT_2
+      meaning: Operational meaning of exit 2.
 
   traceability:
     adrs:
       - ADR-BCM-URBA-0013
 
-  # Champs optionnels
+  # Optional fields
   tags:
-    - processus-ressource
+    - resource-process
 
-  # Critères de complétude documentaire (guideline)
-  # - Le lecteur comprend l'objectif opérationnel et la valeur d'exécution.
-  # - Le périmètre et les frontières du processus sont explicites.
-  # - Les scénarios nominal/alternatif sont alignés avec event_subscription_chain.
-  # - Les indicateurs proposés permettent un pilotage opérationnel effectif.
+  # Documentary completeness criteria (guideline)
+  # - The reader understands the operational objective and execution value.
+  # - The scope and process boundaries are explicit.
+  # - The nominal/alternative scenarios are aligned with event_subscription_chain.
+  # - The proposed indicators allow effective operational monitoring.

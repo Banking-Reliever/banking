@@ -1,0 +1,14 @@
+{
+  "eval_id": 2,
+  "eval_name": "claims-processing-single-command",
+  "configuration": "with_skill",
+  "expectations": [
+    {"text": "sources-dir-created", "passed": true, "evidence": "sources/ClaimsProcessing/svc exists with 5 project dirs, nuget.config, docker-compose.yml"},
+    {"text": "namespace-correct", "passed": true, "evidence": "51 occurrences of 'FoodarooExperience.ClaimsProcessing' across all generated files"},
+    {"text": "claim-ar-exists", "passed": true, "evidence": "src/FoodarooExperience.ClaimsProcessing.Domain/Model/AR/Claim/ClaimAR.cs found"},
+    {"text": "file-claim-command-exists", "passed": true, "evidence": "src/FoodarooExperience.ClaimsProcessing.Contracts/Commands/FileClaimCommand.cs found"},
+    {"text": "claim-filed-event-exists", "passed": true, "evidence": "src/FoodarooExperience.ClaimsProcessing.Contracts/Events/ClaimFiled.cs found"},
+    {"text": "no-unresolved-placeholders", "passed": true, "evidence": "grep for template placeholders returned no matches"},
+    {"text": "cold-json-has-claim-lower", "passed": true, "evidence": "cold.json: MongoDbConnection uses 'claims-processing', RabbitMQConnection uses 'claims-processing' virtual host"}
+  ]
+}

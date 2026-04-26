@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-URBA-0012
-title: "Introduction d’un concept métier canonique"
+title: "Introduction of a Canonical Business Concept"
 status: Proposed
 date: 2026-03-19
 
@@ -33,96 +33,94 @@ supersedes: []
 tags:
   - BCM
   - URBA
-  - concept-metier
-  - canonique
-  - objet-metier
-  - ressource
+  - canonical-concept
+  - business-object
+  - resource
 
 stability_impact: Structural
 ---
 
-# ADR-BCM-URBA-0012 — Introduction d’un concept métier canonique
+# ADR-BCM-URBA-0012 — Introduction of a Canonical Business Concept
 
-## Contexte
+## Context
 
-Le cadre BCM distingue aujourd’hui :
-- les **capacités L2**, qui portent les responsabilités métier ;
-- les **objets métiers**, rattachés à une responsabilité ;
-- les **ressources**, qui déclinent ces objets pour les besoins opérationnels.
+The BCM framework currently distinguishes:
+- **L2 capabilities**, which carry business responsibilities;
+- **business objects**, attached to a responsibility;
+- **resources**, which express these objects for operational needs.
 
-Les travaux récents ont mis en évidence un besoin complémentaire : disposer d’un niveau plus transverse pour désigner simplement des notions comme **Déclaration de sinistre** ou **Dossier sinistre**, sans pour autant fusionner dans un même objet métier des responsabilités différentes.
+Recent work has highlighted a complementary need: to have a more transverse level to simply designate notions such as **Claim declaration** or **Claim file**, without merging different responsibilities into the same business object.
 
-En effet, un objet métier unique partagé entre plusieurs capacités L2 conduirait à :
-- brouiller les responsabilités ;
-- renforcer les couplages ;
-- créer des objets trop larges ou partiellement remplis ;
-- confondre modélisation métier et détail d’implémentation technique.
+Indeed, a single business object shared between several L2 capabilities would lead to:
+- blurring responsibilities;
+- reinforcing coupling;
+- creating objects that are too broad or partially filled;
+- confusing business modeling with technical implementation details.
 
-## Décision
+## Decision
 
-Il est introduit un niveau supplémentaire : le **concept métier ou modèle canonique**.
+An additional level is introduced: the **canonical business concept or canonical model**.
 
-Le **concept métier ou modèle canonique** :
-- représente une notion métier transverse et stable ;
-- sert de référence sémantique commune ;
-- ne porte pas à lui seul de responsabilité opérationnelle ;
-- ne se substitue ni à l’**objet métier**, ni à la **ressource**.
+The **canonical business concept or canonical model**:
+- represents a transverse and stable business notion;
+- serves as a common semantic reference;
+- does not on its own carry an operational responsibility;
+- is not a substitute for either the **business object** or the **resource**.
 
-Le cadre BCM est donc lu selon la hiérarchie suivante :
+The BCM framework is therefore read according to the following hierarchy:
 
 ```text
-Concept métier ou modèle canonique
+Canonical business concept or canonical model
         ↓
-Objet métier
+Business object
         ↓
-Ressource
+Resource
 ```
 
-## Règles
+## Rules
 
-1. Un **concept métier ou modèle canonique** peut être décliné en plusieurs **objets métiers**.
-2. Chaque **objet métier** reste rattaché à une responsabilité explicite portée par une capacité L2.
-3. Chaque **objet métier** peut être décliné en une ou plusieurs **ressources** selon les besoins opérationnels.
-4. Un **concept métier ou modèle canonique** ne doit pas être utilisé directement comme objet d’échange ou d’implémentation.
-5. Un détail technique de payload ou de sérialisation ne justifie pas, à lui seul, la fusion de plusieurs objets métiers.
+1. A **canonical business concept or canonical model** may be expressed as several **business objects**.
+2. Each **business object** remains attached to an explicit responsibility carried by an L2 capability.
+3. Each **business object** may be expressed as one or more **resources** according to operational needs.
+4. A **canonical business concept or canonical model** must not be used directly as an exchange or implementation object.
+5. A technical payload or serialization detail does not, by itself, justify the merging of several business objects.
 
-## Exemple
-| Concept métier canonique | Objet métier                      | Ressource                                      |
-| ------------------------ | --------------------------------- | ---------------------------------------------- |
-| Déclaration de sinistre  | Déclaration de sinistre reçue     | Déclaration de sinistre reçue                  |
-| ^^                       | Déclaration sinistre              | Déclaration sinistre dégâts des eaux           |
-| ^^                       | ^^                                | Déclaration sinistre incendie                  |
-| ^^                       | ^^                                | Déclaration sinistre vol                       |
+## Example
+| Canonical business concept | Business object                  | Resource                                      |
+| -------------------------- | -------------------------------- | --------------------------------------------- |
+| Claim declaration          | Claim declaration received       | Claim declaration received                    |
+| ^^                         | Claim declaration                | Water damage claim declaration                |
+| ^^                         | ^^                               | Fire claim declaration                        |
+| ^^                         | ^^                               | Theft claim declaration                       |
 
 
 ## Justification
 
-Cette décision permet :
+This decision allows:
 
-* de conserver un langage métier transverse commun ;
-* de préserver le découpage par responsabilités L2 ;
-* d’éviter la création d’objets métiers trop larges ou ambigus ;
-* de maintenir la distinction entre modélisation métier et implémentation technique.
+* preserving a common transverse business language;
+* maintaining the L2 responsibility-based breakdown;
+* avoiding the creation of overly broad or ambiguous business objects;
+* maintaining the distinction between business modeling and technical implementation.
 
-## Conséquences
-### Positives
+## Consequences
+### Positive
 
-* Meilleure clarté sémantique.
-* Meilleur respect des responsabilités métier.
-* Réduction du risque de couplage fort entre capacités.
-* Meilleure articulation entre vision transverse et déclinaisons opérationnelles.
+* Better semantic clarity.
+* Better respect of business responsibilities.
+* Reduction of the risk of strong coupling between capabilities.
+* Better articulation between transverse vision and operational breakdowns.
 
-### Risques
+### Risks
 
-* Introduction d’un niveau conceptuel supplémentaire.
-* Risque de confusion si le terme canonique est compris comme un schéma technique unique.
+* Introduction of an additional conceptual level.
+* Risk of confusion if the canonical concept is understood as a single technical schema.
 
-## Traçabilité
+## Traceability
 
-Cette décision s’inscrit dans la continuité :
+This decision is part of the continuum of:
 
-* de la gouvernance BCM ;
-* du guide de modélisation des événements ;
-* de la définition des capacités ;
-* du principe selon lequel les capacités L2 constituent le pivot d’urbanisation.
-
+* BCM governance;
+* the event modeling guide;
+* the capability definition;
+* the principle that L2 capabilities constitute the urbanization pivot.

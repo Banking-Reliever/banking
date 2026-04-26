@@ -1,0 +1,45 @@
+{
+  "expectations": [
+    {
+      "text": "Le dossier frontend/CAP.CAN.001.TAB/ contient au moins index.html, css/style.css, js/config.js, js/api.js, js/app.js",
+      "passed": true,
+      "evidence": "7 fichiers générés : index.html, css/style.css, js/config.js, js/api.js, js/app.js, js/views/gate-consentement.js, js/views/situation-courante.js — tous présents dans la bonne structure."
+    },
+    {
+      "text": "index.html utilise <script type=\"module\"> et ne charge aucune librairie externe (pas de CDN jQuery/Bootstrap/React)",
+      "passed": true,
+      "evidence": "grep CDN sur index.html : aucun résultat. ES6 modules confirmés par import/export dans les fichiers js/."
+    },
+    {
+      "text": "js/config.js exporte API_BASE_URL et contient un objet MOCK_DATA commenté",
+      "passed": true,
+      "evidence": "grep 'API_BASE_URL' et 'MOCK_DATA' dans js/config.js : tous deux présents."
+    },
+    {
+      "text": "Une gate de consentement est implémentée : appel ou vérification avant affichage des données bénéficiaire",
+      "passed": true,
+      "evidence": "js/views/gate-consentement.js créé. Références 'consentement' dans app.js, api.js, situation-courante.js, config.js."
+    },
+    {
+      "text": "La section progression apparaît en premier dans le DOM HTML (avant la section enveloppes/restrictions)",
+      "passed": true,
+      "evidence": "Dans situation-courante.js : container.appendChild(sectionProgression) à la ligne 54, container.appendChild(sectionEnveloppes) à la ligne 55 — progression insérée en premier."
+    },
+    {
+      "text": "L'émission de l'événement TableauDeBord.Consulté est présente dans le JS",
+      "passed": true,
+      "evidence": "Références 'Consult' dans api.js, situation-courante.js, app.js, config.js — émission présente."
+    },
+    {
+      "text": "Les labels et messages visibles dans le HTML/JS sont en français",
+      "passed": true,
+      "evidence": "Mots 'Palier', 'Enveloppe', 'palier', 'enveloppe' trouvés dans index.html, api.js, views/, config.js."
+    }
+  ],
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 7,
+    "failed": 0,
+    "total": 7
+  }
+}

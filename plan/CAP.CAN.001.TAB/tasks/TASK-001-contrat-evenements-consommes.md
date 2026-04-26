@@ -1,70 +1,70 @@
 ---
 task_id: TASK-001
 capability_id: CAP.CAN.001.TAB
-capability_name: Tableau de Bord Bénéficiaire
-epic: Épic 1 — Infrastructure d'alimentation événementielle
+capability_name: Beneficiary Dashboard
+epic: Epic 1 — Event Feed Infrastructure
 status: todo
 priority: high
 depends_on: []
 ---
 
-# TASK-001 — Gel du contrat des événements consommés par CAP.CAN.001.TAB
+# TASK-001 — Freeze the consumed events contract for CAP.CAN.001.TAB
 
-## Contexte
-CAP.CAN.001.TAB consomme trois événements produits par les capacités COEUR (BSP.001.SCO, BSP.001.PAL, BSP.004.ENV) via un point de souscription unique. Comme le COEUR se construit en parallèle, un stub alimentera ce point en phase de développement. Pour que stub et COEUR soient interchangeables sans régression, le schéma de chaque événement doit être défini et gelé avant toute implémentation. Ce contrat est la précondition bloquante de TASK-002.
+## Context
+CAP.CAN.001.TAB consumes three events produced by the CORE capabilities (BSP.001.SCO, BSP.001.PAL, BSP.004.ENV) via a unique subscription point. Since the CORE is being built in parallel, a stub will feed this point during development. For the stub and the CORE to be interchangeable without regression, the schema of each event must be defined and frozen before any implementation. This contract is the blocking precondition for TASK-002.
 
-## Référence capacité
-- Capacité : Tableau de Bord Bénéficiaire (CAP.CAN.001.TAB)
-- Zone : CANAL
-- ADR gouvernants : ADR-BCM-FUNC-0009, ADR-BCM-URBA-0007, ADR-BCM-URBA-0009
+## Capability Reference
+- Capability: Beneficiary Dashboard (CAP.CAN.001.TAB)
+- Zone: CHANNEL
+- Governing ADRs: ADR-BCM-FUNC-0009, ADR-BCM-URBA-0007, ADR-BCM-URBA-0009
 
-## Ce qu'il faut produire
-Définir et documenter le schéma contractuel des trois événements que CAP.CAN.001.TAB consomme, de sorte que le stub (TASK-002) et les capacités COEUR réelles (TASK-006) puissent les produire de manière interchangeable.
+## What needs to be produced
+Define and document the contractual schema of the three events that CAP.CAN.001.TAB consumes, so that the stub (TASK-002) and the real CORE capabilities (TASK-006) can produce them interchangeably.
 
-Pour chaque événement, le contrat doit spécifier :
-- Le nom canonique de l'événement (tel que défini dans le BCM)
-- La capacité productrice
-- Les champs obligatoires et leur type sémantique (ex. identifiant bénéficiaire, valeur numérique du score, horodatage)
-- La cardinalité (un événement par bénéficiaire par recalcul, par changement de palier, par transaction)
-- Le type d'abonnement : métier (impact cycle de vie) ou ressource (alimentation read model)
+For each event, the contract must specify:
+- The canonical event name (as defined in the BCM)
+- The producing capability
+- The mandatory fields and their semantic type (e.g. beneficiary identifier, numeric score value, timestamp)
+- The cardinality (one event per beneficiary per recalculation, per tier change, per transaction)
+- The subscription type: business (lifecycle impact) or resource (read model feed)
 
-Les trois événements à contractualiser :
+The three events to contractualize:
 
-| Événement | Producteur | Type d'abonnement |
-|-----------|-----------|-------------------|
-| `ScoreComportemental.Recalculé` | CAP.BSP.001.SCO | Ressource — alimentation du read model score |
-| `Palier.FranchiHausse` | CAP.BSP.001.PAL | Métier — change l'état courant affiché |
-| `Enveloppe.Consommée` | CAP.BSP.004.ENV | Ressource — mise à jour des soldes affichés |
+| Event | Producer | Subscription Type |
+|-------|----------|-------------------|
+| `BehavioralScore.Recalculated` | CAP.BSP.001.SCO | Resource — feed the score read model |
+| `Tier.UpwardCrossed` | CAP.BSP.001.PAL | Business — changes the current displayed state |
+| `Envelope.Consumed` | CAP.BSP.004.ENV | Resource — update the displayed balances |
 
-## Événements métier à produire
-Aucun — cette tâche produit un artefact de contrat, pas un événement métier.
+## Business Events to Produce
+None — this task produces a contract artifact, not a business event.
 
-## Objets métier impliqués
-- **Bénéficiaire** — identifiant de corrélation présent dans chaque événement
-- **Score comportemental** — valeur numérique portée par `ScoreComportemental.Recalculé`
-- **Palier** — niveau d'autonomie porté par `Palier.FranchiHausse`
-- **Enveloppe** — catégorie et solde restant portés par `Enveloppe.Consommée`
+## Business Objects Involved
+- **Beneficiary** — correlation identifier present in each event
+- **Behavioral score** — numeric value carried by `BehavioralScore.Recalculated`
+- **Tier** — autonomy level carried by `Tier.UpwardCrossed`
+- **Envelope** — category and remaining balance carried by `Envelope.Consumed`
 
-## Souscriptions événementielles requises
-Aucune — cette tâche définit les contrats ; la souscription est implémentée en TASK-002.
+## Required Event Subscriptions
+None — this task defines the contracts; the subscription is implemented in TASK-002.
 
-## Définition de Done
-- [ ] Le schéma de `ScoreComportemental.Recalculé` est documenté (champs, types, cardinalité)
-- [ ] Le schéma de `Palier.FranchiHausse` est documenté (champs, types, cardinalité)
-- [ ] Le schéma de `Enveloppe.Consommée` est documenté (champs, types, cardinalité)
-- [ ] Le type d'abonnement (métier / ressource) est qualifié pour chaque événement avec justification (ADR-BCM-URBA-0009)
-- [ ] Le contrat est validé par les interlocuteurs des capacités productrices (BSP.001 et BSP.004)
-- [ ] Le contrat est versionné (v1.0) et constitue la référence pour TASK-002 et TASK-006
-- [ ] validate_repo.py passe sans erreur
-- [ ] validate_events.py passe sans erreur
+## Definition of Done
+- [ ] The schema of `BehavioralScore.Recalculated` is documented (fields, types, cardinality)
+- [ ] The schema of `Tier.UpwardCrossed` is documented (fields, types, cardinality)
+- [ ] The schema of `Envelope.Consumed` is documented (fields, types, cardinality)
+- [ ] The subscription type (business / resource) is qualified for each event with justification (ADR-BCM-URBA-0009)
+- [ ] The contract is validated by the contacts from the producing capabilities (BSP.001 and BSP.004)
+- [ ] The contract is versioned (v1.0) and constitutes the reference for TASK-002 and TASK-006
+- [ ] validate_repo.py passes without error
+- [ ] validate_events.py passes without error
 
-## Critères d'acceptation (métier)
-Un développeur de TASK-002 peut construire le stub sans poser de questions sur la structure des événements. Un développeur de TASK-006 peut connecter les capacités COEUR réelles sans modifier le code de consommation de CAP.CAN.001.TAB.
+## Acceptance Criteria (business)
+A TASK-002 developer can build the stub without asking any questions about the event structure. A TASK-006 developer can connect the real CORE capabilities without modifying the consumption code of CAP.CAN.001.TAB.
 
-## Dépendances
-Aucune dépendance amont. Cette tâche doit être terminée avant TASK-002.
+## Dependencies
+No upstream dependencies. This task must be completed before TASK-002.
 
-## Questions ouvertes
-- Qui est l'interlocuteur côté BSP.001 (SCO et PAL) pour valider le contrat ?
-- Qui est l'interlocuteur côté BSP.004 (ENV) pour valider le contrat ?
-- L'identifiant bénéficiaire est-il le même across tous les événements (golden record de CAP.REF.001.BEN) ?
+## Open Questions
+- Who is the contact on the BSP.001 side (SCO and PAL) to validate the contract?
+- Who is the contact on the BSP.004 side (ENV) to validate the contract?
+- Is the beneficiary identifier the same across all events (golden record of CAP.REF.001.BEN)?

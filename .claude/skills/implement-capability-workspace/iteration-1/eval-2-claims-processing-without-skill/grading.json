@@ -1,0 +1,14 @@
+{
+  "eval_id": 2,
+  "eval_name": "claims-processing-single-command",
+  "configuration": "without_skill",
+  "expectations": [
+    {"text": "sources-dir-created", "passed": true, "evidence": "sources/ClaimsProcessing/svc exists with 5 project directories"},
+    {"text": "namespace-correct", "passed": true, "evidence": "Files use FoodarooExperience.ClaimsProcessing namespace (correct, matches requested namespace)"},
+    {"text": "claim-ar-exists", "passed": false, "evidence": "No ClaimAR.cs found; baseline uses 'Claim.cs' as aggregate root at ClaimsProcessing.Domain/Claims/ — different naming convention, missing AR suffix"},
+    {"text": "file-claim-command-exists", "passed": true, "evidence": "FileClaimCommand.cs found in Application/Claims/Commands/FileClaim/ (inside Application layer, not Contracts)"},
+    {"text": "claim-filed-event-exists", "passed": true, "evidence": "ClaimFiled.cs found as a domain event in Domain layer"},
+    {"text": "no-unresolved-placeholders", "passed": true, "evidence": "No template placeholders in generated files"},
+    {"text": "cold-json-has-claim-lower", "passed": false, "evidence": "Baseline uses EF Core + SQL Server (docker-compose exposes port 1433); no cold.json with MongoDB connection strings for claims-processing"}
+  ]
+}

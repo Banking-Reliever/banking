@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-FUNC-0004
-title: "L1 Breakdown des capacités IS de Reliever sur les 7 zones TOGAF"
+title: "L1 Breakdown of Reliever IS Capabilities across the 7 TOGAF Zones"
 status: Proposed
 date: 2026-04-24
 
@@ -51,146 +51,170 @@ tags:
   - L1
   - Reliever
   - breakdown
-  - remédiation-financière
+  - financial-remediation
 
 stability_impact: Structural
+
+domain_classification:
+  type: supporting
+  coordinates:
+    x: 0.2
+    y: 0.3
+  rationale: "Décision de structuration IS — aucune différenciation métier directe, nécessaire à la gouvernance urbanistique de l'ensemble des zones TOGAF"
 ---
 
-# ADR-BCM-FUNC-0004 — L1 Breakdown des capacités IS de Reliever
+# ADR-BCM-FUNC-0004 — L1 Breakdown of Reliever IS Capabilities
 
-## Contexte
+## Domain Classification
 
-Reliever est un dispositif de remédiation financière à paliers, prescriptible par la banque, un psychiatre ou un assistant social. Il accompagne des individus financièrement fragiles depuis une assistance maximale sur les micro-décisions d'achat jusqu'à la restitution complète de leur autonomie, via une carte dédiée et un score comportemental coordonné entre prescripteurs via open banking.
+> **Mandatory for FUNC ADRs.** Derived from the product vision and strategic vision — not from technical complexity alone.
 
-Le service offer validé est :
-> Reliever permet à des individus en fragilité financière de reprendre progressivement le contrôle de leur vie financière quotidienne grâce à un système de paliers d'autonomie croissante, ancré sur une carte dédiée et un score comportemental coordonné entre prescripteurs via open banking, même quand préserver leur dignité est aussi important que contraindre leurs comportements.
+| Axis | Score | Interpretation |
+|------|-------|----------------|
+| x — Business Differentiation | 0.2 | 0.0 = commodity (could be bought off-shelf) → 1.0 = uniquely differentiating |
+| y — Model Complexity | 0.3 | 0.0 = trivial / well-understood → 1.0 = proprietary / high cognitive load |
 
-La carte IS L1 doit :
-- Traduire 1:1 les 7 capacités stratégiques en capacités IS zonées
-- Ajouter les IS L1 transverses exigés par le modèle TOGAF étendu (ADR-BCM-URBA-0001) absents de la carte stratégique
-- Respecter le principe 1 capacité = 1 responsabilité (ADR-BCM-URBA-0009)
-- Affecter chaque L1 à une zone parmi les 7 (ADR-BCM-URBA-0001)
+**Classification:** `supporting`
 
-## Décision
+**Rationale:**
 
-La carte IS L1 de Reliever est structurée en **11 capacités** réparties sur **6 des 7 zones TOGAF**.
+> Décision de structuration IS — aucune différenciation métier directe, nécessaire à la gouvernance urbanistique de l'ensemble des zones TOGAF
 
-### SERVICES_COEUR — Cœur de métier Reliever
+---
 
-| ID | Nom | Responsabilité | Source stratégique |
-|----|-----|----------------|--------------------|
-| CAP.BSP.001 | Remédiation Comportementale | Évaluer en continu la trajectoire financière du bénéficiaire, piloter ses paliers d'autonomie, détecter rechutes et progressions | SC.001 |
-| CAP.BSP.002 | Accès & Enrôlement | Identifier les individus éligibles, orchestrer leur entrée dans le dispositif avec les prescripteurs, formaliser les conditions de prise en charge | SC.002 |
-| CAP.BSP.003 | Coordination des Prescripteurs | Permettre à la banque, au psychiatre et à l'assistant social d'agir de façon coordonnée sur un même bénéficiaire, avec droits et vues différenciés | SC.003 |
-| CAP.BSP.004 | Contrôle des Transactions | Appliquer les règles du palier courant à chaque acte d'achat, gérer les autorisations en temps réel, alimenter le score comportemental | SC.004 |
+## Context
 
-### CANAL — Exposition utilisateurs
+Reliever is a tiered financial remediation program, prescribable by a bank, a psychiatrist, or a social worker. It accompanies financially vulnerable individuals from maximum assistance on micro-purchase decisions through to the full restoration of their autonomy, via a dedicated card and a behavioral score coordinated among prescribers through open banking.
 
-| ID | Nom | Responsabilité | Source stratégique |
-|----|-----|----------------|--------------------|
-| CAP.CAN.001 | Parcours Bénéficiaire | Exposer au bénéficiaire la visualisation gamifiée de sa progression, l'assistance à l'achat et les notifications | SC.005 |
-| CAP.CAN.002 | Portail Prescripteur | Offrir aux prescripteurs une UX adaptée à leur rôle pour consulter les situations et déclencher des actions | Transverse (exposition CANAL de SC.003) |
+The validated service offer is:
+> Reliever enables financially vulnerable individuals to progressively regain control of their daily financial lives through a system of increasing autonomy tiers, anchored on a dedicated card and a behavioral score coordinated among prescribers via open banking, even when preserving their dignity is as important as constraining their behaviors.
 
-### ECHANGE_B2B — Écosystème financier externe
+The IS L1 map must:
+- Translate 1:1 the 7 strategic capabilities into zoned IS capabilities
+- Add the transverse IS L1s required by the extended TOGAF model (ADR-BCM-URBA-0001) that are absent from the strategic map
+- Respect the principle of 1 capability = 1 responsibility (ADR-BCM-URBA-0009)
+- Assign each L1 to one of the 7 zones (ADR-BCM-URBA-0001)
 
-| ID | Nom | Responsabilité | Source stratégique |
-|----|-----|----------------|--------------------|
-| CAP.B2B.001 | Gestion de l'Instrument Financier | Émettre et piloter la carte dédiée, lier ses règles aux paliers, accéder aux données financières via open banking | SC.006 |
+## Decision
 
-### SUPPORT — Fonctions transverses IS
+The Reliever IS L1 map is structured into **11 capabilities** distributed across **6 of the 7 TOGAF zones**.
 
-| ID | Nom | Responsabilité | Source stratégique |
-|----|-----|----------------|--------------------|
-| CAP.SUP.001 | Conformité & Protection des Données | Assurer la légalité du partage de données sensibles entre acteurs hétérogènes, garantir les obligations réglementaires | SC.007 |
+### SERVICES_COEUR — Reliever Core Business
 
-### REFERENTIEL — Master data partagée
+| ID | Name | Responsibility | Strategic Source |
+|----|------|----------------|------------------|
+| CAP.BSP.001 | Behavioral Remediation | Continuously evaluate the beneficiary's financial trajectory, steer their autonomy tiers, detect relapses and progressions | SC.001 |
+| CAP.BSP.002 | Access & Enrollment | Identify eligible individuals, orchestrate their entry into the program with prescribers, formalize the terms of care | SC.002 |
+| CAP.BSP.003 | Prescriber Coordination | Enable the bank, psychiatrist, and social worker to act in a coordinated way on the same beneficiary, with differentiated rights and views | SC.003 |
+| CAP.BSP.004 | Transaction Control | Apply the rules of the current tier to each purchase act, manage authorizations in real time, feed the behavioral score | SC.004 |
 
-| ID | Nom | Responsabilité | Source stratégique |
-|----|-----|----------------|--------------------|
-| CAP.REF.001 | Référentiels Communs | Porter les identités canoniques du Bénéficiaire, du Prescripteur et des définitions de Palier, consommées par toutes les zones | Transverse TOGAF |
+### CANAL — User Exposure
 
-### DATA_ANALYTIQUE — Analytique et pilotage data
+| ID | Name | Responsibility | Strategic Source |
+|----|------|----------------|------------------|
+| CAP.CAN.001 | Beneficiary Journey | Expose to the beneficiary the gamified visualization of their progression, purchase assistance, and notifications | SC.005 |
+| CAP.CAN.002 | Prescriber Portal | Offer prescribers a role-adapted UX to consult situations and trigger actions | Transverse (CANAL exposure of SC.003) |
 
-| ID | Nom | Responsabilité | Source stratégique |
-|----|-----|----------------|--------------------|
-| CAP.DAT.001 | Analytique Comportementale | Ingérer les événements comportementaux, alimenter et améliorer le modèle analytique du score, produire les rapports programme | Transverse TOGAF |
+### ECHANGE_B2B — External Financial Ecosystem
 
-### PILOTAGE — Gouvernance et steering
+| ID | Name | Responsibility | Strategic Source |
+|----|------|----------------|------------------|
+| CAP.B2B.001 | Financial Instrument Management | Issue and manage the dedicated card, link its rules to the tiers, access financial data via open banking | SC.006 |
 
-| ID | Nom | Responsabilité | Source stratégique |
-|----|-----|----------------|--------------------|
-| CAP.PIL.001 | Pilotage du Programme | Gouverner le programme de remédiation, mesurer son efficacité, assurer la conformité réglementaire à l'échelle | Transverse TOGAF |
+### SUPPORT — Transverse IS Functions
 
-### Règles de déambiguïsation
+| ID | Name | Responsibility | Strategic Source |
+|----|------|----------------|------------------|
+| CAP.SUP.001 | Data Compliance & Protection | Ensure the legality of sensitive data sharing among heterogeneous actors, guarantee regulatory obligations | SC.007 |
 
-- **CAP.BSP.003** (coordination logic) ≠ **CAP.CAN.002** (portail UX prescripteur) : la logique de droits et de co-décision reste COEUR ; l'exposition reste CANAL — per ADR-BCM-URBA-0001
-- **CAP.BSP.001** (scoring opérationnel temps réel) ≠ **CAP.DAT.001** (modèle analytique batch/stream) : le score transactionnel est COEUR ; l'amélioration du modèle et le reporting sont DATA_ANALYTIQUE
-- **CAP.SUP.001** (conformité IS transverse) ≠ **CAP.PIL.001** (pilotage programme métier) : SUP couvre RGPD, audit, droits ; PIL couvre gouvernance, KPIs, conformité réglementaire programme
+### REFERENTIEL — Shared Master Data
 
-### Critères vérifiables
+| ID | Name | Responsibility | Strategic Source |
+|----|------|----------------|------------------|
+| CAP.REF.001 | Common Referentials | Hold the canonical identities of the Beneficiary, the Prescriber, and the Tier definitions, consumed by all zones | Transverse TOGAF |
 
-- Toute capacité L1 est affectée à exactement une des 7 zones TOGAF
-- Aucun L1 n'est nommé d'après une application, un éditeur ou une technologie
-- Chaque L1 est décomposable en L2 sans chevauchement de périmètre
-- La totalité du service offer est couverte par au moins un L1
+### DATA_ANALYTIQUE — Analytics and Data Steering
 
-## Justification
+| ID | Name | Responsibility | Strategic Source |
+|----|------|----------------|------------------|
+| CAP.DAT.001 | Behavioral Analytics | Ingest behavioral events, feed and improve the analytical score model, produce program reports | Transverse TOGAF |
 
-La traduction 1:1 des 7 capacités stratégiques en IS L1 zonés garantit la traçabilité directe entre la vision business et la carte IS. Les 4 IS L1 transverses ajoutés (CAP.CAN.002, CAP.REF.001, CAP.DAT.001, CAP.PIL.001) sont exigés par le modèle TOGAF étendu (ADR-BCM-URBA-0001) : ils adressent des préoccupations IS structurantes absentes d'une carte stratégique pure.
+### PILOTAGE — Governance and Steering
 
-### Alternatives considérées
+| ID | Name | Responsibility | Strategic Source |
+|----|------|----------------|------------------|
+| CAP.PIL.001 | Program Steering | Govern the remediation program, measure its effectiveness, ensure regulatory compliance at scale | Transverse TOGAF |
 
-- **Tout regrouper en SERVICES_COEUR** — rejeté car perd la séparation COEUR/CANAL (confusion entre logique de coordination et UX prescripteur), efface la gouvernance data, et nuit à la lisibilité d'urbanisation
-- **Séparer Scoring et Paliers en deux L1 distincts** — rejeté car ils partagent le même domaine de responsabilité (remédiation comportementale) et leur couplage est inhérent au modèle MMR ; la séparation appartient au L2
+### Disambiguation Rules
 
-## Impacts sur la BCM
+- **CAP.BSP.003** (coordination logic) ≠ **CAP.CAN.002** (prescriber UX portal): the rights and co-decision logic remains in CORE; the exposure remains in CANAL — per ADR-BCM-URBA-0001
+- **CAP.BSP.001** (real-time operational scoring) ≠ **CAP.DAT.001** (batch/stream analytical model): the transactional score is CORE; model improvement and reporting are DATA_ANALYTIQUE
+- **CAP.SUP.001** (transverse IS compliance) ≠ **CAP.PIL.001** (business program steering): SUP covers GDPR, audit, rights; PIL covers governance, KPIs, program regulatory compliance
+
+### Verifiable Criteria
+
+- Every L1 capability is assigned to exactly one of the 7 TOGAF zones
+- No L1 is named after an application, vendor, or technology
+- Each L1 is decomposable into L2s without scope overlap
+- The entire service offer is covered by at least one L1
+
+## Rationale
+
+The 1:1 translation of the 7 strategic capabilities into zoned IS L1s guarantees direct traceability between the business vision and the IS map. The 4 transverse IS L1s added (CAP.CAN.002, CAP.REF.001, CAP.DAT.001, CAP.PIL.001) are required by the extended TOGAF model (ADR-BCM-URBA-0001): they address structural IS concerns absent from a purely strategic map.
+
+### Alternatives Considered
+
+- **Grouping everything into SERVICES_COEUR** — rejected because it loses the CORE/CANAL separation (confusion between coordination logic and prescriber UX), erases data governance, and harms urbanization readability
+- **Separating Scoring and Tiers into two distinct L1s** — rejected because they share the same responsibility domain (behavioral remediation) and their coupling is inherent to the MMR model; the separation belongs at L2
+
+## BCM Impacts
 
 ### Structure
 
-- Création de 11 capacités L1 dans 6 zones
-- Zone ECHANGE_B2B couverte par 1 seul L1 (instrument financier) : acceptable à ce stade, le périmètre open banking est délimité
-- Chaque L1 sera décomposé en L2 par les ADRs FUNC-0005 à FUNC-0015
+- 11 L1 capabilities created across 6 zones
+- Zone ECHANGE_B2B covered by 1 single L1 (financial instrument): acceptable at this stage, the open banking perimeter is bounded
+- Each L1 will be decomposed into L2s by ADRs FUNC-0005 through FUNC-0015
 
-### Événements
+### Events
 
-- Les événements métier seront définis au niveau L2 (ADR-BCM-URBA-0009)
+- Business events will be defined at the L2 level (ADR-BCM-URBA-0009)
 
-### Mapping SI / Data / Org
+### SI / Data / Org Mapping
 
-- **SI** : chaque L1 constitue un domaine fonctionnel auquel les composants applicatifs seront mappés
-- **ORG** : chaque L1 a un propriétaire métier à identifier lors de la phase d'organisation
-- **DATA** : les flux inter-L1 seront formalisés lors des ADRs L2
+- **SI**: each L1 constitutes a functional domain to which application components will be mapped
+- **ORG**: each L1 has a business owner to be identified during the organization phase
+- **DATA**: inter-L1 flows will be formalized during the L2 ADRs
 
-## Conséquences
+## Consequences
 
-### Positives
+### Positive
 
-- Carte IS lisible, zonée, traçable depuis le service offer
-- Séparation claire COEUR / CANAL / B2B / SUPPORT / REF / DAT / PIL
-- Base stable pour les 11 ADRs L2 suivants
+- Readable, zoned IS map, traceable from the service offer
+- Clear separation CORE / CANAL / B2B / SUPPORT / REF / DAT / PIL
+- Stable base for the 11 following L2 ADRs
 
-### Négatives / Risques
+### Negative / Risks
 
-- 11 L1 est dans la borne haute de lisibilité (ADR-BCM-URBA-0004 recommande ~10 max par zone) — acceptable car répartis sur 6 zones, pas 1 seule
-- La zone PILOTAGE ne contient qu'un seul L1 : à surveiller en revue de stabilité
+- 11 L1s is at the upper bound of readability (ADR-BCM-URBA-0004 recommends ~10 max per zone) — acceptable as they are distributed across 6 zones, not 1
+- The PILOTAGE zone contains only a single L1: to be monitored during stability reviews
 
-### Dette acceptée
+### Accepted Debt
 
-- Les owners organisationnels par L1 ne sont pas encore identifiés — à compléter lors de la phase d'organisation
+- Organizational owners per L1 have not yet been identified — to be completed during the organization phase
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : Élevé (décision structurante Reliever)
-- Date de revue recommandée : 2028-04-24
-- Indicateur de stabilité attendu : 11 L1 présents dans capabilities.yaml avec zone et owner renseignés
+- Criticality level: High (structural decision for Reliever)
+- Recommended review date: 2028-04-24
+- Expected stability indicator: 11 L1s present in capabilities.yaml with zone and owner populated
 
-## Traçabilité
+## Traceability
 
-- Atelier : Session BCM Reliever — 2026-04-24
-- Participants : yremy
-- Références :
+- Workshop: BCM Reliever Session — 2026-04-24
+- Participants: yremy
+- References:
   - `/product-vision/product.md`
   - `/strategic-vision/strategic-vision.md`
-  - ADR-BCM-URBA-0001 — Zoning TOGAF étendu
-  - ADR-BCM-URBA-0009 — Définition complète d'une capacité
-  - ADR-BCM-URBA-0010 — L2 pivot d'urbanisation
+  - ADR-BCM-URBA-0001 — Extended TOGAF Zoning
+  - ADR-BCM-URBA-0009 — Complete capability definition
+  - ADR-BCM-URBA-0010 — L2 urbanization pivot

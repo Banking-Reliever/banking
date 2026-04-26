@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-FUNC-0009
-title: "L2 Breakdown de CAP.CAN.001 — Parcours Bénéficiaire"
+title: "L2 Breakdown of CAP.CAN.001 — Beneficiary Journey"
 status: Proposed
 date: 2026-04-24
 
@@ -43,95 +43,119 @@ tags:
   - L2
   - CANAL
   - UX
-  - bénéficiaire
+  - beneficiary
   - gamification
 
 stability_impact: Moderate
+
+domain_classification:
+  type: supporting
+  coordinates:
+    x: 0.45
+    y: 0.35
+  rationale: "Canal mobile standard ; la valeur différenciante provient du cœur IS (BSP.001), pas du canal bénéficiaire lui-même"
 ---
 
-# ADR-BCM-FUNC-0009 — L2 Breakdown de CAP.CAN.001 — Parcours Bénéficiaire
+# ADR-BCM-FUNC-0009 — L2 Breakdown of CAP.CAN.001 — Beneficiary Journey
 
-## Contexte
+## Domain Classification
 
-CAP.CAN.001 est l'exposition CANAL du dispositif Reliever vers le bénéficiaire. C'est le point de contact direct avec l'utilisateur final — celui dont la dignité est la première contrainte fonctionnelle du service offer.
+> **Mandatory for FUNC ADRs.** Derived from the product vision and strategic vision — not from technical complexity alone.
 
-Ce L1 répond à la tension contrôle/dignité identifiée comme la plus critique dans la vision produit : l'expérience bénéficiaire doit être perçue comme un accompagnement motivant (modèle Strava), non comme une surveillance punitive. La gamification n'est pas un ornement — c'est une condition fonctionnelle.
+| Axis | Score | Interpretation |
+|------|-------|----------------|
+| x — Business Differentiation | 0.45 | 0.0 = commodity (could be bought off-shelf) → 1.0 = uniquely differentiating |
+| y — Model Complexity | 0.35 | 0.0 = trivial / well-understood → 1.0 = proprietary / high cognitive load |
 
-Per ADR-BCM-URBA-0001, CAP.CAN.001 porte l'UX et l'exposition ; les règles métier (score, paliers, alternatives) restent dans SERVICES_COEUR.
+**Classification:** `supporting`
 
-## Décision
+**Rationale:**
 
-CAP.CAN.001 est décomposé en **3 capacités L2** :
+> Canal mobile standard ; la valeur différenciante provient du cœur IS (BSP.001), pas du canal bénéficiaire lui-même
 
-| ID | Nom | Responsabilité |
-|----|-----|----------------|
-| CAP.CAN.001.TAB | Tableau de Progression | Exposer au bénéficiaire la visualisation gamifiée de sa progression, son budget disponible et sa trajectoire par palier |
-| CAP.CAN.001.ACH | Assistance à l'Achat | Fournir l'UX au moment de l'achat — scan de produit, affichage de l'alternative proposée par BSP.004.ALT, feedback d'autorisation ou de refus |
-| CAP.CAN.001.NOT | Notifications Bénéficiaire | Émettre les notifications push/SMS vers le bénéficiaire lors des événements clés — refus, palier franchi, budget proche, rechute |
+---
 
-### Événements métier par L2
+## Context
 
-| L2 | Événements produits | Événements consommés |
-|----|---------------------|----------------------|
+CAP.CAN.001 is the CANAL exposure of the Reliever program toward the beneficiary. It is the direct point of contact with the end user — the person whose dignity is the primary functional constraint of the service offer.
+
+This L1 addresses the control/dignity tension identified as the most critical in the product vision: the beneficiary experience must be perceived as motivating support (Strava model), not as punitive surveillance. Gamification is not an ornament — it is a functional requirement.
+
+Per ADR-BCM-URBA-0001, CAP.CAN.001 holds the UX and exposure; business rules (score, tiers, alternatives) remain in SERVICES_COEUR.
+
+## Decision
+
+CAP.CAN.001 is decomposed into **3 L2 capabilities**:
+
+| ID | Name | Responsibility |
+|----|------|----------------|
+| CAP.CAN.001.TAB | Progression Dashboard | Expose to the beneficiary the gamified visualization of their progression, available budget, and tier trajectory |
+| CAP.CAN.001.ACH | Purchase Assistance | Provide the UX at the moment of purchase — product scan, display of the alternative proposed by BSP.004.ALT, authorization or refusal feedback |
+| CAP.CAN.001.NOT | Beneficiary Notifications | Emit push/SMS notifications to the beneficiary upon key events — refusal, tier crossed, budget close, relapse |
+
+### Business Events per L2
+
+| L2 | Events Produced | Events Consumed |
+|----|-----------------|-----------------|
 | CAP.CAN.001.TAB | `TableauDeBord.Consulté` | `ScoreComportemental.Recalculé` (BSP.001.SCO), `Palier.FranchiHausse` (BSP.001.PAL), `Enveloppe.Consommée` (BSP.004.ENV) |
 | CAP.CAN.001.ACH | `ScanProduit.Lancé`, `Alternative.Acceptée` | `Transaction.Autorisée` (BSP.004.AUT), `Transaction.Refusée` (BSP.004.AUT), `Alternative.Proposée` (BSP.004.ALT) |
 | CAP.CAN.001.NOT | `NotificationBénéficiaire.Émise` | `Transaction.Refusée` (BSP.004.AUT), `Palier.FranchiHausse` (BSP.001.PAL), `Enveloppe.Épuisée` (BSP.004.ENV), `Bénéficiaire.TransféréVersAppliStandard` (BSP.002.SOR) |
 
-### Règle de dignité
+### Dignity Rule
 
-CAP.CAN.001.TAB doit exposer la progression positivement (ce qui a été accompli) avant les restrictions (ce qui est interdit). Le refus d'achat doit être accompagné d'une explication motivée et d'une alternative quand disponible. Ces règles UX sont la responsabilité de ce L2, pas du COEUR.
+CAP.CAN.001.TAB must expose progression positively (what has been accomplished) before restrictions (what is forbidden). A purchase refusal must be accompanied by a reasoned explanation and an alternative when available. These UX rules are the responsibility of this L2, not of the CORE.
 
-### Critères vérifiables
+### Verifiable Criteria
 
-- Chaque L2 produit au moins un événement métier (ADR-BCM-URBA-0009)
-- CAP.CAN.001 ne contient aucune règle métier de palier ou de scoring — il consomme des événements et affiche des états
+- Each L2 produces at least one business event (ADR-BCM-URBA-0009)
+- CAP.CAN.001 contains no tier or scoring business rules — it consumes events and displays states
 
-## Justification
+## Rationale
 
-La séparation TAB / ACH / NOT reflète trois moments d'interaction distincts : la consultation proactive (tableau de bord), l'interaction temps réel (acte d'achat), et la communication push (notifications). Ces trois moments ont des contraintes UX et des cycles de vie différents.
+The TAB / ACH / NOT separation reflects three distinct interaction moments: proactive consultation (dashboard), real-time interaction (purchase act), and push communication (notifications). These three moments have different UX constraints and lifecycles.
 
-### Alternatives considérées
+### Alternatives Considered
 
-- **TAB + NOT fusionnés** — rejeté car le tableau de bord est une consultation pull (à l'initiative de l'utilisateur) ; les notifications sont push (à l'initiative du système) ; confondre ces deux logiques d'interaction nuit à la clarté de responsabilité
-- **ACH dans BSP.004.ALT** — rejeté car l'UX de scan et d'affichage est une responsabilité CANAL (présentation, feedback, accessibilité) ; la logique de suggestion reste COEUR
+- **TAB + NOT merged** — rejected because the dashboard is a pull consultation (user-initiated); notifications are push (system-initiated); conflating these two interaction logics harms clarity of responsibility
+- **ACH in BSP.004.ALT** — rejected because the scan and display UX is a CANAL responsibility (presentation, feedback, accessibility); the suggestion logic remains in CORE
 
-## Impacts sur la BCM
+## BCM Impacts
 
 ### Structure
 
-- 3 L2 créés sous CAP.CAN.001
-- Consomme intensément des événements de BSP.001, BSP.002, BSP.004
+- 3 L2s created under CAP.CAN.001
+- Intensively consumes events from BSP.001, BSP.002, BSP.004
 
-### Mapping SI / Data / Org
+### SI / Data / Org Mapping
 
-- **SI** : CAP.CAN.001 est typiquement une application mobile ou webapp — mapping SI vers BSP.001, BSP.004 via API ou souscription événementielle
-- **ORG** : owner recommandé : équipe "Expérience Bénéficiaire"
+- **SI**: CAP.CAN.001 is typically a mobile application or webapp — SI mapping toward BSP.001, BSP.004 via API or event subscription
+- **ORG**: recommended owner: "Beneficiary Experience" team
 
-## Conséquences
+## Consequences
 
-### Positives
+### Positive
 
-- La tension dignité/contrôle est adressée par une capacité CANAL dédiée, avec des règles UX explicites
-- L'assistance à l'achat est un L2 de première classe — pas un afterthought
+- The dignity/control tension is addressed by a dedicated CANAL capability with explicit UX rules
+- Purchase assistance is a first-class L2 — not an afterthought
 
-### Négatives / Risques
+### Negative / Risks
 
-- CAP.CAN.001.ACH est dépendant de la latence de BSP.004.AUT — toute lenteur d'autorisation se traduit en friction UX au point de vente
+- CAP.CAN.001.ACH is dependent on BSP.004.AUT latency — any authorization slowness translates into UX friction at the point of sale
 
-### Dette acceptée
+### Accepted Debt
 
-- Les règles de gamification précises (badges, jalons, comparaisons sociales éventuelles) ne sont pas modélisées ici
+- The precise gamification rules (badges, milestones, potential social comparisons) are not modeled here
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : Élevé (tension dignité/contrôle)
-- Date de revue recommandée : 2028-04-24
-- Indicateur de stabilité attendu : règles UX de dignité documentées et testables (test utilisateur)
+- Criticality level: High (dignity/control tension)
+- Recommended review date: 2028-04-24
+- Expected stability indicator: dignity UX rules documented and testable (user testing)
 
-## Traçabilité
+## Traceability
 
-- Atelier : Session BCM Reliever — 2026-04-24
-- Participants : yremy
-- Références :
+- Workshop: BCM Reliever Session — 2026-04-24
+- Participants: yremy
+- References:
   - `/strategic-vision/strategic-vision.md` — SC.005
   - ADR-BCM-FUNC-0004, ADR-BCM-FUNC-0008

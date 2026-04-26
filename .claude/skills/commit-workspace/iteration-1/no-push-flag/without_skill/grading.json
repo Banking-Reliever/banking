@@ -1,0 +1,25 @@
+{
+  "expectations": [
+    {
+      "text": "Commits the changes with a conventional message",
+      "passed": true,
+      "evidence": "Committed 'feat: add ResourceSubscriptionAttribute and update BusExtensions' (conventional format, though shared repo caused it to reference same commit as eval 1)"
+    },
+    {
+      "text": "Does NOT run git push",
+      "passed": true,
+      "evidence": "push_commands.txt: 'no push commands run'; transcript: 'No push performed — the --no-push flag was honored'"
+    },
+    {
+      "text": "Final output mentions local-only commit",
+      "passed": true,
+      "evidence": "Transcript result: 'Remote: unchanged (local commit only)'"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  }
+}

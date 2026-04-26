@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-FUNC-0005
-title: "L2 Breakdown de CAP.BSP.001 — Remédiation Comportementale"
+title: "L2 Breakdown of CAP.BSP.001 — Behavioral Remediation"
 status: Proposed
 date: 2026-04-24
 
@@ -49,124 +49,148 @@ tags:
   - L2
   - BSP
   - scoring
-  - remédiation
+  - remediation
   - core-domain
 
 stability_impact: Structural
+
+domain_classification:
+  type: core
+  coordinates:
+    x: 0.95
+    y: 0.9
+  rationale: "Constitue le cœur différenciateur de Reliever — scoring comportemental et gouvernance des paliers d'autonomie inexistants ailleurs dans le secteur financier ou social"
 ---
 
-# ADR-BCM-FUNC-0005 — L2 Breakdown de CAP.BSP.001 — Remédiation Comportementale
+# ADR-BCM-FUNC-0005 — L2 Breakdown of CAP.BSP.001 — Behavioral Remediation
 
-## Contexte
+## Domain Classification
 
-CAP.BSP.001 est le **core domain** de Reliever (ADR-BCM-FUNC-0004). C'est la capacité différenciante : sans l'évaluation comportementale continue et le pilotage des paliers, Reliever n'est qu'une carte prépayée.
+> **Mandatory for FUNC ADRs.** Derived from the product vision and strategic vision — not from technical complexity alone.
 
-Ce L1 concentre la logique MMR-like du dispositif :
-- un score calculé en continu depuis les événements d'achat
-- des paliers d'autonomie avec leurs règles associées
-- la détection de signaux de rechute paradoxaux (enveloppe non consommée = contournement)
-- la tension entre autorité algorithmique et override prescripteur humain
+| Axis | Score | Interpretation |
+|------|-------|----------------|
+| x — Business Differentiation | 0.95 | 0.0 = commodity (could be bought off-shelf) → 1.0 = uniquely differentiating |
+| y — Model Complexity | 0.9 | 0.0 = trivial / well-understood → 1.0 = proprietary / high cognitive load |
 
-Le L2 doit décomposer ces responsabilités sans créer de couplage excessif entre le calcul du score, la gestion des paliers, la détection des signaux et l'arbitrage humain/algorithme.
+**Classification:** `core`
 
-## Décision
+**Rationale:**
 
-CAP.BSP.001 est décomposé en **4 capacités L2** :
+> Constitue le cœur différenciateur de Reliever — scoring comportemental et gouvernance des paliers d'autonomie inexistants ailleurs dans le secteur financier ou social
 
-| ID | Nom | Responsabilité |
-|----|-----|----------------|
-| CAP.BSP.001.SCO | Scoring Comportemental | Calculer et mettre à jour le score du bénéficiaire à partir des événements de transaction et des signaux de contournement reçus |
-| CAP.BSP.001.PAL | Gestion des Paliers | Définir les règles associées à chaque palier, piloter les transitions algorithmiques, appliquer les overrides prescripteurs |
-| CAP.BSP.001.SIG | Détection des Signaux | Identifier et qualifier les signaux de rechute (enveloppe non consommée) et de progression, les transmettre au scoring |
-| CAP.BSP.001.ARB | Arbitrage Algorithme / Humain | Gérer la reprise de contrôle de l'algorithme après un override, valider ou invalider la décision prescripteur dans le temps |
+---
 
-### Événements métier par L2
+## Context
 
-| L2 | Événements produits | Événements consommés |
-|----|---------------------|----------------------|
+CAP.BSP.001 is the **core domain** of Reliever (ADR-BCM-FUNC-0004). It is the differentiating capability: without continuous behavioral evaluation and tier steering, Reliever is merely a prepaid card.
+
+This L1 concentrates the MMR-like logic of the program:
+- a score calculated continuously from purchase events
+- autonomy tiers with their associated rules
+- detection of paradoxical relapse signals (unconsumed envelope = circumvention)
+- the tension between algorithmic authority and human prescriber override
+
+The L2 must decompose these responsibilities without creating excessive coupling between score calculation, tier management, signal detection, and human/algorithm arbitration.
+
+## Decision
+
+CAP.BSP.001 is decomposed into **4 L2 capabilities**:
+
+| ID | Name | Responsibility |
+|----|------|----------------|
+| CAP.BSP.001.SCO | Behavioral Scoring | Calculate and update the beneficiary's score from transaction events and received circumvention signals |
+| CAP.BSP.001.PAL | Tier Management | Define the rules associated with each tier, steer algorithmic transitions, apply prescriber overrides |
+| CAP.BSP.001.SIG | Signal Detection | Identify and qualify relapse signals (unconsumed envelope) and progression signals, transmit them to scoring |
+| CAP.BSP.001.ARB | Algorithm / Human Arbitration | Manage the algorithm's resumption of control after an override, validate or invalidate the prescriber's decision over time |
+
+### Business Events per L2
+
+| L2 | Events Produced | Events Consumed |
+|----|-----------------|-----------------|
 | CAP.BSP.001.SCO | `ScoreComportemental.Recalculé`, `ScoreComportemental.SeuilAtteint` | `Transaction.Autorisée` (BSP.004.AUT), `Transaction.Refusée` (BSP.004.AUT), `Signal.Rechute.Détecté` (BSP.001.SIG), `Signal.Progression.Détecté` (BSP.001.SIG) |
 | CAP.BSP.001.PAL | `Palier.FranchiHausse`, `Palier.Rétrogradé`, `Palier.Override.Appliqué` | `ScoreComportemental.SeuilAtteint` (BSP.001.SCO), `Override.DemandéParPrescripteur` (BSP.003.COD) |
 | CAP.BSP.001.SIG | `Signal.Rechute.Détecté`, `Signal.Progression.Détecté` | `Enveloppe.NonConsommée` (BSP.004.ENV), `Transaction.Autorisée` (BSP.004.AUT) |
 | CAP.BSP.001.ARB | `Arbitrage.Override.Validé`, `Arbitrage.AlgorithmeRéaffirmé` | `Palier.Override.Appliqué` (BSP.001.PAL), `ScoreComportemental.Recalculé` (BSP.001.SCO) |
 
-### Points de transfert
+### Transfer Points
 
-- **BSP.004.AUT → BSP.001.SCO** : chaque transaction autorisée ou refusée déclenche un recalcul du score
-- **BSP.004.ENV → BSP.001.SIG** : une enveloppe non consommée en fin de période déclenche la détection de signal de rechute
-- **BSP.001.SIG → BSP.001.SCO** : les signaux qualifiés alimentent le scoring
-- **BSP.001.SCO → BSP.001.PAL** : un seuil de score atteint déclenche une transition de palier candidate
-- **BSP.003.COD → BSP.001.PAL** : un override demandé par prescripteur force une transition de palier
-- **BSP.001.PAL → BSP.001.ARB** : tout override appliqué ouvre une fenêtre d'arbitrage algorithme/humain
+- **BSP.004.AUT → BSP.001.SCO**: each authorized or refused transaction triggers a score recalculation
+- **BSP.004.ENV → BSP.001.SIG**: an unconsumed envelope at end of period triggers relapse signal detection
+- **BSP.001.SIG → BSP.001.SCO**: qualified signals feed the scoring
+- **BSP.001.SCO → BSP.001.PAL**: a reached score threshold triggers a candidate tier transition
+- **BSP.003.COD → BSP.001.PAL**: an override requested by a prescriber forces a tier transition
+- **BSP.001.PAL → BSP.001.ARB**: any applied override opens an algorithm/human arbitration window
 
-### Règle clé — Enveloppe non consommée
+### Key Rule — Unconsumed Envelope
 
-Un budget non dépensé en fin de période est un signal de rechute (contournement du canal contrôlé), non un signal de succès. CAP.BSP.001.SIG est responsable exclusive de cette qualification contre-intuitive.
+An unspent budget at end of period is a relapse signal (circumvention of the controlled channel), not a success signal. CAP.BSP.001.SIG is the exclusive owner of this counter-intuitive qualification.
 
-### Critères vérifiables
+### Verifiable Criteria
 
-- Chaque L2 produit au moins un événement métier (ADR-BCM-URBA-0009)
-- Aucun L2 ne souscrit à ses propres événements
-- CAP.BSP.001.ARB ne produit pas d'événement de palier : il valide ou invalide, c'est CAP.BSP.001.PAL qui reste propriétaire de l'état du palier
+- Each L2 produces at least one business event (ADR-BCM-URBA-0009)
+- No L2 subscribes to its own events
+- CAP.BSP.001.ARB does not produce a tier event: it validates or invalidates; CAP.BSP.001.PAL remains owner of the tier state
 
-## Justification
+## Rationale
 
-La séparation SCO / PAL / SIG / ARB évite de concentrer toute la logique dans un monolithe comportemental. Chaque L2 a un cycle de vie distinct :
-- SCO : continu, déclenché par chaque transaction
-- PAL : déclenché par seuil ou override
-- SIG : déclenché par fin de période ou pattern d'achat
-- ARB : déclenché uniquement lors d'un override prescripteur
+The SCO / PAL / SIG / ARB separation avoids concentrating all logic in a behavioral monolith. Each L2 has a distinct lifecycle:
+- SCO: continuous, triggered by each transaction
+- PAL: triggered by threshold or override
+- SIG: triggered by end-of-period or purchase pattern
+- ARB: triggered only on prescriber override
 
-### Alternatives considérées
+### Alternatives Considered
 
-- **SCO + PAL fusionnés** — rejeté car le calcul du score et la décision de transition de palier ont des rythmes et des propriétaires différents ; les confondre crée un couplage fort entre la logique analytique et les règles métier de palier
-- **SIG absorbé dans SCO** — rejeté car la logique de détection du contournement (enveloppe non consommée) est une règle métier distincte, contre-intuitive, qui mérite une responsabilité dédiée et traçable
-- **ARB absent (algorithme seul)** — rejeté car la capacité d'override prescripteur est une exigence métier explicite ; son absence rendrait le dispositif rigide et incompatible avec le jugement clinique
+- **SCO + PAL merged** — rejected because score calculation and tier transition decisions have different rhythms and owners; conflating them creates strong coupling between analytical logic and tier business rules
+- **SIG absorbed into SCO** — rejected because the circumvention detection logic (unconsumed envelope) is a distinct, counter-intuitive business rule that deserves a dedicated and traceable responsibility
+- **ARB absent (algorithm only)** — rejected because the prescriber override capability is an explicit business requirement; its absence would make the program rigid and incompatible with clinical judgment
 
-## Impacts sur la BCM
+## BCM Impacts
 
 ### Structure
 
-- 4 L2 créés sous CAP.BSP.001
-- Aucun L3 nécessaire à ce stade
+- 4 L2s created under CAP.BSP.001
+- No L3 needed at this stage
 
-### Événements
+### Events
 
-- 9 événements métier définis, tous rattachés à une L2 émettrice unique (ADR-BCM-URBA-0010)
-- Flux événementiel principal : BSP.004 → BSP.001.SIG / SCO → BSP.001.PAL → BSP.001.ARB
+- 9 business events defined, all attached to a single emitting L2 (ADR-BCM-URBA-0010)
+- Main event flow: BSP.004 → BSP.001.SIG / SCO → BSP.001.PAL → BSP.001.ARB
 
-### Mapping SI / Data / Org
+### SI / Data / Org Mapping
 
-- **SI** : CAP.BSP.001 constitue le bounded context central de Reliever — son implémentation doit être isolée des autres contextes
-- **ORG** : owner recommandé : équipe "Remédiation" (data scientists + domain experts)
+- **SI**: CAP.BSP.001 constitutes the central bounded context of Reliever — its implementation must be isolated from other contexts
+- **ORG**: recommended owner: "Remediation" team (data scientists + domain experts)
 
-## Conséquences
+## Consequences
 
-### Positives
+### Positive
 
-- Core domain clairement isolé et décomposé
-- Flux événementiel traçable depuis la transaction jusqu'à la transition de palier
-- La règle de rechute (enveloppe non consommée) est explicitement propriété de SIG
+- Core domain clearly isolated and decomposed
+- Event flow traceable from transaction to tier transition
+- The relapse rule (unconsumed envelope) is explicitly owned by SIG
 
-### Négatives / Risques
+### Negative / Risks
 
-- BSP.001.ARB est un L2 à faible volume d'événements (déclenché uniquement sur override) — risque de sous-investissement ; surveiller en revue de stabilité
+- BSP.001.ARB is an L2 with low event volume (triggered only on override) — risk of under-investment; monitor during stability review
 
-### Dette acceptée
+### Accepted Debt
 
-- Les seuils précis de transition de palier (critères du scoring) ne sont pas modélisés dans cet ADR — à formaliser dans les spécifications du modèle comportemental
+- The precise tier transition thresholds (scoring criteria) are not modeled in this ADR — to be formalized in behavioral model specifications
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : Élevé (core domain)
-- Date de revue recommandée : 2027-10-24
-- Indicateur de stabilité attendu : 4 L2 présents, chacun avec au moins un événement métier documenté et une équipe owner identifiée
+- Criticality level: High (core domain)
+- Recommended review date: 2027-10-24
+- Expected stability indicator: 4 L2s present, each with at least one documented business event and an identified owner team
 
-## Traçabilité
+## Traceability
 
-- Atelier : Session BCM Reliever — 2026-04-24
-- Participants : yremy
-- Références :
+- Workshop: BCM Reliever Session — 2026-04-24
+- Participants: yremy
+- References:
   - `/strategic-vision/strategic-vision.md` — SC.001
   - ADR-BCM-FUNC-0004
-  - ADR-BCM-URBA-0009 — Définition complète d'une capacité
+  - ADR-BCM-URBA-0009 — Complete capability definition
   - ADR-BCM-URBA-0010 — L2 pivot

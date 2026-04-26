@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+"""
+Hook PostToolUse (Write|Edit) — détecte les modifications de fichiers TASK-*.md dans plan/
+et injecte un message dans le contexte de Claude pour déclencher l'agent kanban.
+"""
+import sys
+import json
+import re
+
+data = json.load(sys.stdin)
+fp = data.get("tool_input", {}).get("file_path", "")
+
+if re.search(r"plan/.*TASK-[^/]+\.md", fp):
+    print(json.dumps({
+        "hookSpecificOutput": {
+            "hookEventName": "PostToolUse",
+            "additionalContext": (
+                f"📋 Fichier TASK modifié : {fp}\n"
+                "Invoque immédiatement l'agent kanban pour rafraîchir /plan/BOARD.md."
+            )
+        }
+    }))

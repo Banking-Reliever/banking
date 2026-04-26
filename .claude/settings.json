@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/yoann/banking/.claude/hooks/kanban-watch-write.sh 2>/dev/null || true",
+            "statusMessage": "Checking kanban..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/yoann/banking/.claude/hooks/kanban-watch-bash.sh 2>/dev/null || true",
+            "statusMessage": "Checking kanban..."
+          }
+        ]
+      }
+    ]
+  }
+}

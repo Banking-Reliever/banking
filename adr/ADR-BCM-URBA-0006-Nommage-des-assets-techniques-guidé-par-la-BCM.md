@@ -1,12 +1,12 @@
 ---
 id: ADR-BCM-URBA-0006
-title: "Nommage des assets techniques guidé par la BCM (ancrage L2)"
+title: "Technical Asset Naming Guided by the BCM (L2 Anchoring)"
 status: Suspended
 date: 2026-02-26
 suspension_date: 2026-03-10
 suspension_reason: >
-  Reflète un niveau de maturité non présent encore dans l'entreprise.
-  Risque d'amener plus de confusion que d'éclaircissements pour le moment.
+  Reflects a maturity level not yet present in the company.
+  Risk of causing more confusion than clarity at this point.
 
 family: URBA
 
@@ -29,16 +29,16 @@ impacted_mappings:
   - ORG
 
 related_adr:
-  - ADR-BCM-GOV-0001  # hiérarchie GOV → URBA → FUNC
-  - ADR-BCM-URBA-0001  # zoning TOGAF étendu
-  - ADR-BCM-URBA-0002  # 3 niveaux
-  - ADR-BCM-URBA-0003  # 1 capa = 1 responsabilité
-  - ADR-BCM-URBA-0005  # contrats guidés par BCM (APIs/événements)
+  - ADR-BCM-GOV-0001  # GOV → URBA → FUNC hierarchy
+  - ADR-BCM-URBA-0001  # Extended TOGAF zoning
+  - ADR-BCM-URBA-0002  # 3 levels
+  - ADR-BCM-URBA-0003  # 1 capability = 1 responsibility
+  - ADR-BCM-URBA-0005  # BCM-guided contracts (APIs/events)
 
 supersedes: []
 tags:
   - naming
-  - capacité
+  - capability
   - events
   - topic
   - api
@@ -46,122 +46,122 @@ tags:
 stability_impact: Structural
 ---
 
-# ADR-BCM-URBA-0006 — Nommage des assets techniques guidé par la BCM (ancrage L2)
+# ADR-BCM-URBA-0006 — Technical Asset Naming Guided by the BCM (L2 Anchoring)
 
-## Contexte
+## Context
 
-Le SI comporte de nombreux assets techniques (topics d’événements, APIs, bases, schémas, composants applicatifs, fonctions serverless, buckets…).
-Sans convention commune, on observe :
-- une difficulté à rattacher un asset à une responsabilité métier,
-- une hétérogénéité de nommage entre équipes,
-- une faible traçabilité entre urbanisation fonctionnelle et implémentation technique.
+The IS contains many technical assets (event topics, APIs, databases, schemas, application components, serverless functions, buckets...).
+Without a common convention, we observe:
+- difficulty in linking an asset to a business responsibility,
+- naming heterogeneity between teams,
+- weak traceability between functional urbanization and technical implementation.
 
-La BCM est le référentiel de responsabilités métier stable, et le niveau L2 est le pivot d’arbitrage d’urbanisation (stabilité vs précision).
+The BCM is the stable business responsibility referential, and the L2 level is the urbanization arbitration pivot (stability vs. precision).
 
-## Décision
+## Decision
 
-### 1) Ancrage obligatoire sur une capacité L2
+### 1) Mandatory anchoring to an L2 capability
 
-Tout asset technique doit être rattaché à UNE capacité d’ownership unique, au niveau L2.
+Any technical asset must be attached to ONE unique ownership capability, at the L2 level.
 
-- Le rattachement est matérialisé par l’inclusion de l’ID L2 dans le nom de l’asset.
-- Le rattachement ne doit pas dépendre d’un libellé humain : uniquement d’un identifiant stable.
+- The attachment is materialized by including the L2 ID in the asset name.
+- The attachment must not depend on a human label: only on a stable identifier.
 
-### 2) Convention de nommage
+### 2) Naming convention
 
-Le pattern standard est :
+The standard pattern is:
 
 `<capability_l2_id>.<asset_type>.<asset_name>[.<qualifier>...]`
 
-- `<capability_l2_id>` : identifiant stable (ex : `bsp-005-sin-03`)
-- `<asset_type>` : `topic | evt | api | bff | spa | svc | fn | db | schema | bucket | queue | job | blob ...`
-- `<asset_name>` : nom métier court et stable (kebab-case)
-- `<qualifier>` : version majeure / variante (`v1`, `dlq`, `public`, `private`…)
+- `<capability_l2_id>`: stable identifier (e.g., `bsp-005-sin-03`)
+- `<asset_type>`: `topic | evt | api | bff | spa | svc | fn | db | schema | bucket | queue | job | blob ...`
+- `<asset_name>`: short and stable business name (kebab-case)
+- `<qualifier>`: major version / variant (`v1`, `dlq`, `public`, `private`...)
 
-Règles :
+Rules:
 - kebab-case `[a-z0-9-]`
-- séparateur hiérarchique `.`
-- pas d’accents / pas d’espaces
+- hierarchical separator `.`
+- no accents / no spaces
 
-Conventions BCM complémentaires (obligatoires pour les assets fonctionnels) :
-- `OBJ.<ZONE>.<L1>.<CODE>` pour les objets métier
-- `RES.<ZONE>.<L1>.<CODE>` pour les ressources opérationnelles
-- `ABO.METIER.<ZONE>.<L1>.<CODE>` pour les abonnements métier
-- `ABO.RESSOURCE.<ZONE>.<L1>.<CODE>` pour les abonnements ressource
+Complementary BCM conventions (mandatory for functional assets):
+- `OBJ.<ZONE>.<L1>.<CODE>` for business objects
+- `RES.<ZONE>.<L1>.<CODE>` for operational resources
+- `ABO.METIER.<ZONE>.<L1>.<CODE>` for business subscriptions
+- `ABO.RESSOURCE.<ZONE>.<L1>.<CODE>` for resource subscriptions
 
-Ces conventions sont distinctes :
-- un objet métier (`OBJ.*`) représente une abstraction fonctionnelle,
-- une ressource (`RES.*`) représente un artefact opérationnel implémentant cet objet métier.
+These conventions are distinct:
+- a business object (`OBJ.*`) represents a functional abstraction,
+- a resource (`RES.*`) represents an operational artifact implementing that business object.
 
-### 3) Cas particuliers
+### 3) Special cases
 
-- Si un asset est réellement transverse, son ownership doit être placé dans une capacité transverse (Support, Referentiel, DATA_ANALYTIQUE, ECHANGE_B2B, Canal) conformément au zoning.
-- Les composants “fourre-tout” (multi-capabilities) sont considérés comme une dette de découpage : l’ownership doit rester unique, et un plan de découpe est à envisager.
+- If an asset is truly transverse, its ownership must be placed in a transverse capability (Support, Referential, DATA_ANALYTIQUE, ECHANGE_B2B, Canal) in accordance with zoning.
+- "Catch-all" components (multi-capabilities) are considered a decomposition debt: ownership must remain unique, and a splitting plan should be considered.
 
-### 4) Registre de mapping
+### 4) Mapping registry
 
-En complément du nommage, un registre de mapping est maintenu (ex : `bcm/mappings/assets.yaml`) pour décrire :
-- owner capacité L2
-- équipe responsable
-- environnement(s)
-- techno / plateforme
-- criticité / SLA
-- liens vers repo / IaC / runbooks
+In addition to naming, a mapping registry is maintained (e.g., `bcm/mappings/assets.yaml`) to describe:
+- L2 capability owner
+- responsible team
+- environment(s)
+- technology / platform
+- criticality / SLA
+- links to repo / IaC / runbooks
 
-Le registre constitue la source d’information exhaustive.
-Le nom ne doit pas être surchargé pour remplacer un registre.
+The registry constitutes the exhaustive information source.
+The name must not be overloaded to replace a registry.
 
 ## Justification
 
-- Le niveau L2 est le bon niveau de décision d’urbanisation : assez précis pour guider le SI, assez stable pour éviter des renamings fréquents.
-- La règle “1 capacité = 1 responsabilité” garantit un ownership clair et réduit les ambiguïtés.
-- L’approche “contrats guidés par la BCM” assure la cohérence entre modèle et interfaces (APIs/événements).
+- The L2 level is the right urbanization decision level: precise enough to guide the IS, stable enough to avoid frequent renamings.
+- The "1 capability = 1 responsibility" rule guarantees clear ownership and reduces ambiguities.
+- The "BCM-guided contracts" approach ensures coherence between model and interfaces (APIs/events).
 
-### Alternatives considérées
+### Alternatives Considered
 
-- Nommage libre par équipe — rejeté car hétérogénéité et perte de traçabilité.
-- Nommage ancré sur l'application plutôt que la capacité — rejeté car couplage SI physique.
-- Nommage au niveau L3 — rejeté car trop instable (L3 est transitoire).
+- Free naming by team — rejected because of heterogeneity and loss of traceability.
+- Naming anchored to the application rather than the capability — rejected because of physical IS coupling.
+- Naming at L3 level — rejected because too unstable (L3 is transitional).
 
-## Impacts sur la BCM
+## Impacts on the BCM
 
 ### Structure
 
-- Nécessité de disposer d'identifiants L2 stables (non dépendants des libellés).
+- Need for stable L2 identifiers (not dependent on labels).
 
-### Événements (si applicable)
+### Events (if applicable)
 
-- Les conventions d'événements/topics deviennent cohérentes avec les capacités émettrices/consommatrices.
+- Event/topic conventions become coherent with emitting/consuming capabilities.
 
 ### Mapping SI / Data / Org
 
-- Renforcement du mapping Capability ↔ Assets techniques via un registre dédié.
+- Reinforcement of the Capability ↔ Technical Assets mapping via a dedicated registry.
 
-## Conséquences
+## Consequences
 
-### Positives
-- Traçabilité immédiate asset → responsabilité (L2).
-- Homogénéité de nommage inter-équipes.
-- Urbanisation mesurable (capacité coverage).
-- Réduction du “shadow naming” par projet.
+### Positive
+- Immediate traceability: asset → responsibility (L2).
+- Cross-team naming homogeneity.
+- Measurable urbanization (capability coverage).
+- Reduction of project "shadow naming".
 
-### Négatives / Risques
-- Coût initial d’adoption.
-- Risque de renaming si les IDs L2 ne sont pas stabilisés rapidement.
-- Risque d’ownership arbitraire si les règles “transverse vs métier” ne sont pas appliquées.
+### Negative / Risks
+- Initial adoption cost.
+- Risk of renaming if L2 IDs are not stabilized quickly.
+- Risk of arbitrary ownership if "transverse vs. business" rules are not applied.
 
-### Dette acceptée
+### Accepted Debt
 
-- Certains assets legacy ne pourront pas être renommés immédiatement. Ils seront progressivement migrés lors des évolutions.
+- Some legacy assets cannot be renamed immediately. They will be progressively migrated during evolutions.
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : Modéré (convention de nommage).
-- Date de revue recommandée : 2028-02-26.
-- Indicateur de stabilité attendu : 100 % des nouveaux assets nommés selon la convention.
+- Criticality level: Moderate (naming convention).
+- Recommended review date: 2028-02-26.
+- Expected stability indicator: 100% of new assets named according to the convention.
 
-## Traçabilité
+## Traceability
 
-- Atelier : gouvernance BCM, retours projets, event storming big picture
-- Participants : EA / Urbanisation
-- Références : ADR-BCM-URBA-0001, ADR-BCM-URBA-0002, ADR-BCM-URBA-0003, ADR-BCM-URBA-0005
+- Workshop: BCM governance, project feedback, event storming big picture
+- Participants: EA / Urbanization
+- References: ADR-BCM-URBA-0001, ADR-BCM-URBA-0002, ADR-BCM-URBA-0003, ADR-BCM-URBA-0005

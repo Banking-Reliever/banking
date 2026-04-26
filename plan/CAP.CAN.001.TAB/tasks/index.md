@@ -1,39 +1,39 @@
-# Index des tâches — Tableau de Bord Bénéficiaire (CAP.CAN.001.TAB)
+# Task Index — Beneficiary Dashboard (CAP.CAN.001.TAB)
 
-## Épic 1 — Infrastructure d'alimentation événementielle
+## Epic 1 — Event Feed Infrastructure
 
-| ID | Titre | Priorité | Statut | Dépend de |
-|----|-------|----------|--------|-----------|
-| TASK-001 | Gel du contrat des événements consommés | high | todo | — |
-| TASK-002 | Stub d'alimentation et couche de consommation événementielle | high | todo | TASK-001 |
+| ID | Title | Priority | Status | Depends on |
+|----|-------|----------|--------|------------|
+| TASK-001 | Freeze the consumed events contract | high | todo | — |
+| TASK-002 | Feed stub and event consumption layer | high | todo | TASK-001 |
 
-## Épic 2 — Tableau de bord web — situation courante
+## Epic 2 — Web Dashboard — Current Situation
 
-| ID | Titre | Priorité | Statut | Dépend de |
-|----|-------|----------|--------|-----------|
-| TASK-003 | Gate de consentement et vue situation courante web | high | todo | TASK-002 |
+| ID | Title | Priority | Status | Depends on |
+|----|-------|----------|--------|------------|
+| TASK-003 | Consent gate and current situation web view | high | todo | TASK-002 |
 
-## Épic 3 — Tableau de bord web — historique transactionnel
+## Epic 3 — Web Dashboard — Transaction History
 
-| ID | Titre | Priorité | Statut | Dépend de |
-|----|-------|----------|--------|-----------|
-| TASK-004 | Stub BSP.004.AUT et historique transactionnel web | medium | todo | TASK-003 |
+| ID | Title | Priority | Status | Depends on |
+|----|-------|----------|--------|------------|
+| TASK-004 | BSP.004.AUT stub and transaction history web view | medium | todo | TASK-003 |
 
-## Épic 4 — Vue mobile — consultation nomade
+## Epic 4 — Mobile View — Nomadic Consultation
 
-| ID | Titre | Priorité | Statut | Dépend de |
-|----|-------|----------|--------|-----------|
-| TASK-005 | Vue mobile — consultation nomade du tableau de bord | medium | todo | TASK-003 |
+| ID | Title | Priority | Status | Depends on |
+|----|-------|----------|--------|------------|
+| TASK-005 | Mobile view — nomadic dashboard consultation | medium | todo | TASK-003 |
 
-## Épic 5 — Raccordement aux capacités COEUR réelles
+## Epic 5 — Connection to Real CORE Capabilities
 
-| ID | Titre | Priorité | Statut | Dépend de |
-|----|-------|----------|--------|-----------|
-| TASK-006 | Raccordement COEUR réel et décommissionnement du stub | low | todo | TASK-002, TASK-003, TASK-004, TASK-005 |
+| ID | Title | Priority | Status | Depends on |
+|----|-------|----------|--------|------------|
+| TASK-006 | Real CORE connection and stub decommissioning | low | todo | TASK-002, TASK-003, TASK-004, TASK-005 |
 
 ---
 
-## Graphe de dépendances
+## Dependency Graph
 
 ```
 TASK-001
@@ -41,22 +41,22 @@ TASK-001
         └─► TASK-003
               ├─► TASK-004 (parallel)
               └─► TASK-005 (parallel)
-                    └─► TASK-006 (déclenché par COEUR opérationnel)
+                    └─► TASK-006 (triggered by CORE operational)
 ```
 
-**Chemin critique** : TASK-001 → TASK-002 → TASK-003 → TASK-004  
-**Parallélisable** : TASK-004 et TASK-005 s'exécutent en parallèle dès TASK-003 terminée  
-**TASK-006** : hors cadence interne — déclenchée par la disponibilité des capacités COEUR (BSP.001, BSP.004)
+**Critical path**: TASK-001 → TASK-002 → TASK-003 → TASK-004  
+**Parallelizable**: TASK-004 and TASK-005 run in parallel once TASK-003 is complete  
+**TASK-006**: outside the internal cadence — triggered by the availability of CORE capabilities (BSP.001, BSP.004)
 
 ---
 
-## Événements métier produits
+## Business Events Produced
 
-| Événement | Produit par |
-|-----------|-------------|
-| `TableauDeBord.Consulté` (canal=web) | TASK-003, TASK-004 |
-| `TableauDeBord.Consulté` (canal=mobile) | TASK-005 |
+| Event | Produced by |
+|-------|-------------|
+| `Dashboard.Viewed` (channel=web) | TASK-003, TASK-004 |
+| `Dashboard.Viewed` (channel=mobile) | TASK-005 |
 
-## Point de départ recommandé
+## Recommended Starting Point
 
-Commencer par **TASK-001** — la définition du contrat d'événements nécessite une coordination avec les équipes BSP.001 et BSP.004 et conditionne tout le reste.
+Start with **TASK-001** — the event contract definition requires coordination with the BSP.001 and BSP.004 teams and is a precondition for everything else.

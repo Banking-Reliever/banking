@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-FUNC-0012
-title: "L2 Breakdown de CAP.SUP.001 — Conformité & Protection des Données"
+title: "L2 Breakdown of CAP.SUP.001 — Data Compliance & Protection"
 status: Proposed
 date: 2026-04-24
 
@@ -42,100 +42,124 @@ tags:
   - BCM
   - L2
   - SUPPORT
-  - RGPD
-  - conformité
-  - données-sensibles
+  - GDPR
+  - compliance
+  - sensitive-data
 
 stability_impact: Moderate
+
+domain_classification:
+  type: generic
+  coordinates:
+    x: 0.15
+    y: 0.2
+  rationale: "Conformité RGPD, consentement et rétention sont des obligations réglementaires avec des patterns IS bien établis"
 ---
 
-# ADR-BCM-FUNC-0012 — L2 Breakdown de CAP.SUP.001 — Conformité & Protection des Données
+# ADR-BCM-FUNC-0012 — L2 Breakdown of CAP.SUP.001 — Data Compliance & Protection
 
-## Contexte
+## Domain Classification
 
-CAP.SUP.001 adresse la tension transparence/vie privée identifiée comme critique dans le service offer. Reliever concentre des données de natures hétérogènes (financières, médicales, sociales) sur un même individu, partagées entre des acteurs dont les réglementations sont distinctes (banque : RGPD + DSP2 ; médecin : RGPD + secret médical ; assistant social : RGPD + CASF).
+> **Mandatory for FUNC ADRs.** Derived from the product vision and strategic vision — not from technical complexity alone.
 
-Cette capacité est transverse à tout le dispositif — aucune capacité ne peut accéder à des données d'un bénéficiaire sans passer par les règles définies ici. Elle est propriétaire des consentements, de la traçabilité des accès, et des droits des bénéficiaires.
+| Axis | Score | Interpretation |
+|------|-------|----------------|
+| x — Business Differentiation | 0.15 | 0.0 = commodity (could be bought off-shelf) → 1.0 = uniquely differentiating |
+| y — Model Complexity | 0.2 | 0.0 = trivial / well-understood → 1.0 = proprietary / high cognitive load |
 
-## Décision
+**Classification:** `generic`
 
-CAP.SUP.001 est décomposé en **3 capacités L2** :
+**Rationale:**
 
-| ID | Nom | Responsabilité |
-|----|-----|----------------|
-| CAP.SUP.001.CON | Gestion des Consentements | Recueillir, stocker, gérer et honorer les consentements RGPD du bénéficiaire pour chaque type de partage de données |
-| CAP.SUP.001.AUD | Audit & Traçabilité | Journaliser l'ensemble des accès et actions sur les données bénéficiaires, toutes capacités confondues |
-| CAP.SUP.001.RET | Droits des Bénéficiaires | Traiter les exercices de droits RGPD (accès, rectification, effacement, portabilité, opposition) |
+> Conformité RGPD, consentement et rétention sont des obligations réglementaires avec des patterns IS bien établis
 
-### Événements métier par L2
+---
 
-| L2 | Événements produits | Événements consommés |
-|----|---------------------|----------------------|
-| CAP.SUP.001.CON | `Consentement.Accordé`, `Consentement.Révoqué` | `Bénéficiaire.Enrôlé` (BSP.002.ENR) — déclenche la collecte de consentement |
-| CAP.SUP.001.AUD | `AccèsDonnées.Journalisé` | Tout événement impliquant un accès à des données bénéficiaire (transverse) |
-| CAP.SUP.001.RET | `DroitExercé.Traité` | `Bénéficiaire.SortiDuDispositif` (BSP.002.SOR) — déclenche la revue des droits post-sortie |
+## Context
 
-### Règle de blocage
+CAP.SUP.001 addresses the transparency/privacy tension identified as critical in the service offer. Reliever concentrates data of heterogeneous natures (financial, medical, social) on the same individual, shared among actors whose regulations are distinct (bank: GDPR + PSD2; physician: GDPR + medical secrecy; social worker: GDPR + social action framework).
 
-`Consentement.Accordé` est une précondition obligatoire pour :
-- `Bénéficiaire.Enrôlé` (BSP.002.ENR) — pas d'enrôlement sans consentement
-- `DonnéesFinancières.Rafraîchies` (B2B.001.OBK) — pas d'accès open banking sans consentement
-- Toute consultation dans CAP.CAN.002.VUE
+This capability is transverse to the entire program — no capability can access a beneficiary's data without passing through the rules defined here. It owns consents, access traceability, and beneficiary rights.
 
-Si `Consentement.Révoqué`, toutes les capacités consommatrices doivent cesser l'accès aux données du bénéficiaire.
+## Decision
 
-### Critères vérifiables
+CAP.SUP.001 is decomposed into **3 L2 capabilities**:
 
-- Chaque L2 produit au moins un événement métier (ADR-BCM-URBA-0009)
-- Aucune capacité ne peut accéder aux données d'un bénéficiaire sans que `Consentement.Accordé` soit dans l'état courant
-- 100% des accès aux données bénéficiaires produisent `AccèsDonnées.Journalisé`
+| ID | Name | Responsibility |
+|----|------|----------------|
+| CAP.SUP.001.CON | Consent Management | Collect, store, manage, and honor the beneficiary's GDPR consents for each type of data sharing |
+| CAP.SUP.001.AUD | Audit & Traceability | Log all accesses and actions on beneficiary data, across all capabilities |
+| CAP.SUP.001.RET | Beneficiary Rights | Process GDPR rights requests (access, rectification, erasure, portability, objection) |
 
-## Justification
+### Business Events per L2
 
-La séparation CON / AUD / RET reflète trois responsabilités distinctes de conformité. Les consentements sont dynamiques (accordés/révoqués). L'audit est continu et transverse. Les droits sont des demandes ponctuelles avec des délais légaux (1 mois RGPD). Les confondre créerait un L2 trop large avec des contraintes légales incompatibles.
+| L2 | Events Produced | Events Consumed |
+|----|-----------------|-----------------|
+| CAP.SUP.001.CON | `Consentement.Accordé`, `Consentement.Révoqué` | `Bénéficiaire.Enrôlé` (BSP.002.ENR) — triggers consent collection |
+| CAP.SUP.001.AUD | `AccèsDonnées.Journalisé` | Any event involving access to beneficiary data (transverse) |
+| CAP.SUP.001.RET | `DroitExercé.Traité` | `Bénéficiaire.SortiDuDispositif` (BSP.002.SOR) — triggers post-exit rights review |
 
-### Alternatives considérées
+### Blocking Rule
 
-- **CON dans BSP.002.ENR** — rejeté car le consentement est une responsabilité transverse qui va au-delà de l'enrôlement (il peut être révoqué à tout moment, indépendamment du cycle de vie du bénéficiaire dans le dispositif)
-- **AUD dans CAP.PIL.001** — rejeté car l'audit des accès données est une obligation réglementaire RGPD (SUPPORT) ; le pilotage du programme est une préoccupation métier (PILOTAGE) — les niveaux et les acteurs sont distincts
+`Consentement.Accordé` is a mandatory precondition for:
+- `Bénéficiaire.Enrôlé` (BSP.002.ENR) — no enrollment without consent
+- `DonnéesFinancières.Rafraîchies` (B2B.001.OBK) — no open banking access without consent
+- Any consultation in CAP.CAN.002.VUE
 
-## Impacts sur la BCM
+If `Consentement.Révoqué`, all consuming capabilities must cease access to the beneficiary's data.
+
+### Verifiable Criteria
+
+- Each L2 produces at least one business event (ADR-BCM-URBA-0009)
+- No capability can access a beneficiary's data unless `Consentement.Accordé` is in the current state
+- 100% of beneficiary data accesses produce `AccèsDonnées.Journalisé`
+
+## Rationale
+
+The CON / AUD / RET separation reflects three distinct compliance responsibilities. Consents are dynamic (granted/revoked). Audit is continuous and transverse. Rights requests are one-time events with legal deadlines (1 month GDPR). Conflating them would create an L2 that is too broad with incompatible legal constraints.
+
+### Alternatives Considered
+
+- **CON in BSP.002.ENR** — rejected because consent is a transverse responsibility that goes beyond enrollment (it can be revoked at any time, independently of the beneficiary's lifecycle in the program)
+- **AUD in CAP.PIL.001** — rejected because data access auditing is a GDPR regulatory obligation (SUPPORT); program steering is a business concern (PILOTAGE) — the levels and actors are distinct
+
+## BCM Impacts
 
 ### Structure
 
-- 3 L2 créés sous CAP.SUP.001
-- Capacité transverse : toutes les autres capacités en dépendent pour l'accès aux données
+- 3 L2s created under CAP.SUP.001
+- Transverse capability: all other capabilities depend on it for data access
 
-### Mapping SI / Data / Org
+### SI / Data / Org Mapping
 
-- **SI** : nécessite un DMP (Data Management Platform) ou équivalent pour la gestion des consentements
-- **ORG** : owner recommandé : DPO (Data Protection Officer)
+- **SI**: requires a DMP (Data Management Platform) or equivalent for consent management
+- **ORG**: recommended owner: DPO (Data Protection Officer)
 
-## Conséquences
+## Consequences
 
-### Positives
+### Positive
 
-- La tension transparence/vie privée est adressée par une capacité dédiée avec des règles de blocage explicites
-- L'audit est de première classe — toute action est traçable
+- The transparency/privacy tension is addressed by a dedicated capability with explicit blocking rules
+- Audit is first-class — every action is traceable
 
-### Négatives / Risques
+### Negative / Risks
 
-- Le partage de données entre prescripteurs de natures différentes (banque, médecin, assistant social) reste une zone grise réglementaire — nécessite un avis juridique
+- Sharing data between prescribers of different natures (bank, physician, social worker) remains a regulatory grey area — requires legal advice
 
-### Dette acceptée
+### Accepted Debt
 
-- Les bases légales précises de traitement pour chaque type de prescripteur ne sont pas modélisées ici
+- The precise legal bases for processing data for each prescriber type are not modeled here
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : Élevé (obligation réglementaire, condition de viabilité)
-- Date de revue recommandée : 2027-10-24
-- Indicateur de stabilité attendu : 100% des accès données journalisés, 0 enrôlement sans consentement documenté
+- Criticality level: High (regulatory obligation, viability condition)
+- Recommended review date: 2027-10-24
+- Expected stability indicator: 100% of data accesses logged, 0 enrollment without documented consent
 
-## Traçabilité
+## Traceability
 
-- Atelier : Session BCM Reliever — 2026-04-24
-- Participants : yremy
-- Références :
+- Workshop: BCM Reliever Session — 2026-04-24
+- Participants: yremy
+- References:
   - `/strategic-vision/strategic-vision.md` — SC.007
   - ADR-BCM-FUNC-0004, ADR-BCM-FUNC-0007

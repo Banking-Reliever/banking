@@ -1,184 +1,184 @@
-# Plan — Tableau de Bord Bénéficiaire (CAP.CAN.001.TAB)
+# Plan — Beneficiary Dashboard (CAP.CAN.001.TAB)
 
-## Résumé de la capacité
-> Exposer au bénéficiaire une vue synthétique de sa situation financière adaptée à son palier : solde disponible, enveloppes, historique des transactions. L'interface est calibrée pour encourager sans infantiliser — la dignité est une contrainte fonctionnelle.
+## Capability Summary
+> Expose to the beneficiary a synthetic view of their financial situation adapted to their tier: available balance, envelopes, transaction history. The interface is calibrated to encourage without infantilizing — dignity is a functional constraint.
 
-## Alignement stratégique
-- **Service offer** : Reliever permet à des individus en fragilité financière de reprendre progressivement le contrôle de leur vie financière quotidienne grâce à un système de paliers d'autonomie croissante
-- **Capacité stratégique L1** : SC.005 — Valorisation de la Progression
-- **Zone BCM** : CANAL
-- **ADR gouvernants** : ADR-BCM-FUNC-0009
+## Strategic Alignment
+- **Service offer**: Reliever enables financially vulnerable individuals to progressively regain control of their daily financial lives through a system of increasing autonomy tiers
+- **L1 strategic capability**: SC.005 — Progression Valorization
+- **BCM Zone**: CHANNEL
+- **Governing ADRs**: ADR-BCM-FUNC-0009
 
-## Décisions de cadrage
+## Framing Decisions
 
-- **V0 sans gamification** — la visualisation gamifiée (badges, score visible, jalons) est reportée aux itérations suivantes ; V0 expose palier + enveloppes + historique
-- **Architecture stub/COEUR découplée** — un point de souscription unique par capacité ; le stub alimente ce point en phase de développement, le COEUR le remplace dès qu'il est opérationnel ; les développements sont strictement isolés
-- **Deux canaux planifiés** — web (dashboard riche, filtres et tri complets) et mobile (vue allégée, moins de colonnes, sans filtres complexes) ; V0 centrée sur le web
-- **Règle de dignité** (ADR-BCM-FUNC-0009) : la progression accomplie est toujours affichée avant les restrictions ; les refus sont accompagnés d'une explication
-
----
-
-## Épics d'implémentation
-
-### Épic 1 — Infrastructure d'alimentation événementielle
-**Objectif** : Poser le point de souscription unique de `CAP.CAN.001.TAB` et le stub qui produit les événements COEUR, permettant au tableau de bord d'être développé en isolation totale.
-
-**Condition d'entrée** : Le pattern de point de souscription unique par capacité est validé architecturalement (topic/queue dédié par capacité côté bus événementiel).
-
-**Condition de sortie (DoD)** :
-- Un stub publie `ScoreComportemental.Recalculé`, `Palier.FranchiHausse`, `Enveloppe.Consommée` sur le point de souscription `CAP.CAN.001.TAB` à fréquence paramétrable
-- La couche de consommation du tableau de bord lit ces événements et les rend disponibles aux épics suivants
-- Un bénéficiaire de test est simulable de bout en bout sans aucune dépendance au COEUR
-
-**Complexité** : M
-
-**Événements métier débloqués** : pipeline de consommation opérationnel (aucun événement métier externe produit à ce stade)
-
-**Dépendances** : aucune (épic fondateur)
+- **V0 without gamification** — gamified visualization (badges, visible score, milestones) is deferred to subsequent iterations; V0 exposes tier + envelopes + history
+- **Decoupled stub/CORE architecture** — a single subscription point per capability; the stub feeds this point during development, the CORE replaces it once operational; developments are strictly isolated
+- **Two planned channels** — web (rich dashboard, complete filters and sorting) and mobile (lightweight view, fewer columns, no complex filters); V0 centered on web
+- **Dignity rule** (ADR-BCM-FUNC-0009): accomplished progression is always displayed before restrictions; declines are accompanied by an explanation
 
 ---
 
-### Épic 2 — Tableau de bord web — situation courante
-**Objectif** : Le bénéficiaire peut consulter son palier actif, ses enveloppes budgétaires par catégorie et son solde disponible sur l'interface web ; `TableauDeBord.Consulté` est produit à chaque consultation.
+## Implementation Epics
 
-**Condition d'entrée** :
-- Épic 1 terminé (stub opérationnel)
-- État courant du bénéficiaire disponible : `CAP.BSP.002.CYC` ou stub équivalent
-- Vérification de `Consentement.Accordé` possible : `CAP.SUP.001.CON` ou stub gate
+### Epic 1 — Event Feed Infrastructure
+**Objective**: Establish the unique subscription point of `CAP.CAN.001.TAB` and the stub that produces CORE events, allowing the dashboard to be developed in complete isolation.
 
-**Condition de sortie (DoD)** :
-- L'interface web affiche : palier courant, enveloppes par catégorie avec solde disponible, indication du prochain palier atteignable
-- La progression accomplie est présentée avant les restrictions (règle de dignité ADR-0009)
-- `TableauDeBord.Consulté` est produit à chaque accès à la page principale
-- L'accès est bloqué si `Consentement.Accordé` est absent
+**Entry condition**: The unique subscription point pattern per capability is architecturally validated (dedicated topic/queue per capability on the event bus).
 
-**Complexité** : M
+**Exit condition (DoD)**:
+- A stub publishes `BehavioralScore.Recalculated`, `Tier.UpwardCrossed`, `Envelope.Consumed` on the `CAP.CAN.001.TAB` subscription point at a configurable frequency
+- The dashboard consumption layer reads these events and makes them available to subsequent epics
+- A test beneficiary is fully simulable end-to-end without any CORE dependency
 
-**Événements métier débloqués** : `TableauDeBord.Consulté`
+**Complexity**: M
 
-**Dépendances** :
-- Épic 1
-- `CAP.BSP.002.CYC` — état courant du bénéficiaire (stub acceptable)
-- `CAP.SUP.001.CON` — gate `Consentement.Accordé` (stub acceptable)
-- `CAP.REF.001.PAL` — définition des paliers et seuils (stub acceptable)
+**Unlocked business events**: consumption pipeline operational (no external business events produced at this stage)
+
+**Dependencies**: none (founding epic)
 
 ---
 
-### Épic 3 — Tableau de bord web — historique transactionnel
-**Objectif** : Le bénéficiaire accède à l'historique complet de ses transactions sur le web avec filtres (date, catégorie, statut) et tri ; les refus affichent leur motif.
+### Epic 2 — Web Dashboard — Current Situation
+**Objective**: The beneficiary can view their active tier, budget envelopes by category, and available balance on the web interface; `Dashboard.Viewed` is produced on each consultation.
 
-**Condition d'entrée** :
-- Épic 2 terminé (vue situation courante opérationnelle)
-- Événements transactionnels disponibles : `Transaction.Autorisée` et `Transaction.Refusée` depuis `CAP.BSP.004.AUT` ou stub
+**Entry condition**:
+- Epic 1 complete (stub operational)
+- Current beneficiary state available: `CAP.BSP.002.CYC` or equivalent stub
+- `Consent.Granted` verification possible: `CAP.SUP.001.CON` or stub gate
 
-**Condition de sortie (DoD)** :
-- L'historique des transactions est consultable avec filtres sur : période, catégorie de dépense, statut (autorisée / refusée)
-- Le tri par date et par montant fonctionne
-- Chaque transaction refusée affiche le motif de refus (règle du palier appliquée)
-- `TableauDeBord.Consulté` est produit à chaque accès à l'historique
+**Exit condition (DoD)**:
+- The web interface displays: current tier, envelopes by category with available balance, indication of the next reachable tier
+- Accomplished progression is presented before restrictions (dignity rule ADR-0009)
+- `Dashboard.Viewed` is produced on each access to the main page
+- Access is blocked if `Consent.Granted` is absent
 
-**Complexité** : M
+**Complexity**: M
 
-**Événements métier débloqués** : `TableauDeBord.Consulté` enrichi du contexte historique
+**Unlocked business events**: `Dashboard.Viewed`
 
-**Dépendances** :
-- Épic 2
-- `CAP.BSP.004.AUT` — flux `Transaction.Autorisée` / `Transaction.Refusée` (stub acceptable)
-
----
-
-### Épic 4 — Vue mobile — consultation nomade
-**Objectif** : Le bénéficiaire peut consulter sa situation clé depuis un appareil mobile : palier courant et soldes des enveloppes principales, sans filtres ni colonnes secondaires.
-
-**Condition d'entrée** :
-- Épic 2 terminé (tableau de bord web opérationnel, données disponibles)
-
-**Condition de sortie (DoD)** :
-- L'interface mobile affiche : palier courant, soldes des enveloppes principales (sans détail catégoriel exhaustif)
-- Pas de filtres, pas de tri, pas de colonnes secondaires — lecture rapide optimisée
-- `TableauDeBord.Consulté` est produit avec le tag `canal=mobile`
-- La règle de dignité s'applique identiquement (progression avant restriction)
-
-**Complexité** : M
-
-**Événements métier débloqués** : `TableauDeBord.Consulté` (canal mobile)
-
-**Dépendances** :
-- Épic 2 (les données et la logique de consommation sont réutilisées)
+**Dependencies**:
+- Epic 1
+- `CAP.BSP.002.CYC` — current beneficiary state (stub acceptable)
+- `CAP.SUP.001.CON` — `Consent.Granted` gate (stub acceptable)
+- `CAP.REF.001.PAL` — tier definitions and thresholds (stub acceptable)
 
 ---
 
-### Épic 5 — Raccordement aux capacités COEUR réelles
-**Objectif** : Remplacer le stub par les souscriptions événementielles réelles dès que `BSP.001.SCO`, `BSP.001.PAL` et `BSP.004.ENV` sont opérationnels ; décommissionner le stub sans régression fonctionnelle.
+### Epic 3 — Web Dashboard — Transaction History
+**Objective**: The beneficiary accesses the complete history of their transactions on the web with filters (date, category, status) and sorting; declines display their reason.
 
-**Condition d'entrée** :
-- `CAP.BSP.001.SCO`, `CAP.BSP.001.PAL`, `CAP.BSP.004.ENV` sont opérationnels et publient sur les points de souscription convenus
-- Les tests fonctionnels du tableau de bord sont validés sur stub (Épics 2, 3, 4 terminés)
-- Le schéma des événements COEUR est conforme au contrat du stub (vérification de compatibilité)
+**Entry condition**:
+- Epic 2 complete (current situation view operational)
+- Transactional events available: `Transaction.Authorized` and `Transaction.Declined` from `CAP.BSP.004.AUT` or stub
 
-**Condition de sortie (DoD)** :
-- Le stub est décommissionné
-- Le tableau de bord consomme les événements réels sans régression fonctionnelle sur les deux canaux (web et mobile)
-- La supervision confirme le flux événementiel réel en production
+**Exit condition (DoD)**:
+- Transaction history is viewable with filters on: period, spending category, status (authorized / declined)
+- Sorting by date and by amount works
+- Each declined transaction displays the decline reason (tier rule applied)
+- `Dashboard.Viewed` is produced on each access to the history
 
-**Complexité** : S
+**Complexity**: M
 
-**Événements métier débloqués** : tous les événements précédents, désormais alimentés par les données comportementales réelles
+**Unlocked business events**: `Dashboard.Viewed` enriched with historical context
 
-**Dépendances** :
-- `CAP.BSP.001.SCO` — opérationnel
-- `CAP.BSP.001.PAL` — opérationnel
-- `CAP.BSP.004.ENV` — opérationnel
+**Dependencies**:
+- Epic 2
+- `CAP.BSP.004.AUT` — `Transaction.Authorized` / `Transaction.Declined` stream (stub acceptable)
 
 ---
 
-## Carte des dépendances
+### Epic 4 — Mobile View — Nomadic Consultation
+**Objective**: The beneficiary can view their key situation from a mobile device: current tier and main envelope balances, without filters or secondary columns.
 
-| Épic | Dépend de | Type |
+**Entry condition**:
+- Epic 2 complete (web dashboard operational, data available)
+
+**Exit condition (DoD)**:
+- The mobile interface displays: current tier, main envelope balances (without exhaustive category detail)
+- No filters, no sorting, no secondary columns — optimized for quick reading
+- `Dashboard.Viewed` is produced with the tag `channel=mobile`
+- The dignity rule applies identically (progression before restriction)
+
+**Complexity**: M
+
+**Unlocked business events**: `Dashboard.Viewed` (mobile channel)
+
+**Dependencies**:
+- Epic 2 (data and consumption logic are reused)
+
+---
+
+### Epic 5 — Connection to Real CORE Capabilities
+**Objective**: Replace the stub with real event subscriptions as soon as `BSP.001.SCO`, `BSP.001.PAL`, and `BSP.004.ENV` are operational; decommission the stub without functional regression.
+
+**Entry condition**:
+- `CAP.BSP.001.SCO`, `CAP.BSP.001.PAL`, `CAP.BSP.004.ENV` are operational and publishing on the agreed subscription points
+- Dashboard functional tests are validated on stub (Epics 2, 3, 4 complete)
+- CORE event schemas conform to the stub contract (compatibility check)
+
+**Exit condition (DoD)**:
+- The stub is decommissioned
+- The dashboard consumes real events without functional regression on both channels (web and mobile)
+- Supervision confirms the real event stream in production
+
+**Complexity**: S
+
+**Unlocked business events**: all previous events, now fed by real behavioral data
+
+**Dependencies**:
+- `CAP.BSP.001.SCO` — operational
+- `CAP.BSP.001.PAL` — operational
+- `CAP.BSP.004.ENV` — operational
+
+---
+
+## Dependency Map
+
+| Epic | Depends on | Type |
 |------|-----------|------|
-| Épic 2 | Épic 1 | Séquentiel |
-| Épic 3 | Épic 2 | Séquentiel |
-| Épic 4 | Épic 2 | Séquentiel |
-| Épic 5 | Épics 2, 3, 4 | Séquentiel (tests validés) |
-| Épic 2 | CAP.BSP.002.CYC | Cross-capacité (stub acceptable) |
-| Épic 2 | CAP.SUP.001.CON | Cross-capacité (gate bloquante) |
-| Épic 2 | CAP.REF.001.PAL | Cross-capacité (stub acceptable) |
-| Épic 3 | CAP.BSP.004.AUT | Cross-capacité (stub acceptable) |
-| Épic 5 | CAP.BSP.001.SCO | Cross-capacité (opérationnel requis) |
-| Épic 5 | CAP.BSP.001.PAL | Cross-capacité (opérationnel requis) |
-| Épic 5 | CAP.BSP.004.ENV | Cross-capacité (opérationnel requis) |
+| Epic 2 | Epic 1 | Sequential |
+| Epic 3 | Epic 2 | Sequential |
+| Epic 4 | Epic 2 | Sequential |
+| Epic 5 | Epics 2, 3, 4 | Sequential (tests validated) |
+| Epic 2 | CAP.BSP.002.CYC | Cross-capability (stub acceptable) |
+| Epic 2 | CAP.SUP.001.CON | Cross-capability (blocking gate) |
+| Epic 2 | CAP.REF.001.PAL | Cross-capability (stub acceptable) |
+| Epic 3 | CAP.BSP.004.AUT | Cross-capability (stub acceptable) |
+| Epic 5 | CAP.BSP.001.SCO | Cross-capability (operational required) |
+| Epic 5 | CAP.BSP.001.PAL | Cross-capability (operational required) |
+| Epic 5 | CAP.BSP.004.ENV | Cross-capability (operational required) |
 
 ---
 
-## Risques
+## Risks
 
-| Risque | Probabilité | Impact | Mitigation |
-|--------|-------------|--------|------------|
-| Divergence de schéma stub/COEUR — le stub produit des événements avec un contrat légèrement différent de celui que finalise le COEUR, rendant l'Épic 5 plus coûteux | M | M | Définir et geler le contrat d'événement (schéma JSON/Avro) dès l'Épic 1 ; le stub doit respecter ce contrat |
-| Gate consentement non disponible au démarrage de l'Épic 2 — si CAP.SUP.001.CON n'a pas de stub, l'accès aux données est bloqué | L | H | Prévoir un stub de gate consentement minimal dès l'Épic 1 (réponse toujours `Accordé` en environnement de développement) |
-| Règles d'enveloppes non stabilisées — si les catégories ou la périodicité des enveloppes évoluent pendant l'Épic 2, l'affichage doit être refactorisé | M | M | Aligner avec CAP.REF.001.PAL dès l'Épic 1 sur le modèle de données des enveloppes avant de construire l'affichage |
+| Risk | Probability | Impact | Mitigation |
+|------|-------------|--------|------------|
+| Stub/CORE schema divergence — the stub produces events with a slightly different contract than what the CORE finalizes, making Epic 5 more costly | M | M | Define and freeze the event contract (JSON/Avro schema) from Epic 1; the stub must comply with this contract |
+| Consent gate unavailable at start of Epic 2 — if CAP.SUP.001.CON has no stub, data access is blocked | L | H | Provide a minimal consent gate stub from Epic 1 (always `Granted` response in development environment) |
+| Unstabilized envelope rules — if categories or envelope periodicity change during Epic 2, the display must be refactored | M | M | Align with CAP.REF.001.PAL from Epic 1 on the envelope data model before building the display |
 
 ---
 
-## Séquencement recommandé
+## Recommended Sequencing
 
 ```
-Épic 1 ──────────────────────────────────────────────────────────►
-         └─► Épic 2 ──────────────────────────────────────────────►
-                      └─► Épic 3 (web historique) ───────────────►
-                      └─► Épic 4 (mobile) ───────────────────────►
-                                    └─► Épic 5 (COEUR réel) ─────►
-                                         [déclenché par COEUR opérationnel]
+Epic 1 ──────────────────────────────────────────────────────────►
+         └─► Epic 2 ──────────────────────────────────────────────►
+                      └─► Epic 3 (web history) ──────────────────►
+                      └─► Epic 4 (mobile) ───────────────────────►
+                                    └─► Epic 5 (real CORE) ───────►
+                                         [triggered by CORE operational]
 ```
 
-**Chemin critique** : Épic 1 → Épic 2 → Épic 3  
-**Parallélisable** : Épic 3 et Épic 4 peuvent se développer en parallèle dès que l'Épic 2 est terminé  
-**Épic 5** : hors chemin critique interne — déclenché par la disponibilité des capacités COEUR, indépendamment de l'avancement des Épics 3 et 4
+**Critical path**: Epic 1 → Epic 2 → Epic 3  
+**Parallelizable**: Epic 3 and Epic 4 can be developed in parallel once Epic 2 is complete  
+**Epic 5**: outside the internal critical path — triggered by CORE capability availability, independently of Epics 3 and 4 progress
 
 ---
 
-## Questions ouvertes
+## Open Questions
 
-- La gamification (badges, visualisation de la trajectoire, jalons) est reportée — quel horizon est visé pour la V1 avec gamification, afin d'anticiper les points d'extension dans l'Épic 2 ?
-- La règle de dignité ("progression avant restriction") est posée dans l'ADR — nécessite-t-elle un atelier UX dédié pour être spécifiée sous forme de critères testables avant l'Épic 2 ?
-- Le contrat d'événement (schéma des trois événements consommés) doit être co-construit avec les équipes COEUR dès l'Épic 1 — qui est l'interlocuteur côté BSP.001 et BSP.004 ?
+- Gamification (badges, trajectory visualization, milestones) is deferred — what is the target horizon for V1 with gamification, to anticipate extension points in Epic 2?
+- The dignity rule ("progression before restriction") is established in the ADR — does it require a dedicated UX workshop to be specified as testable criteria before Epic 2?
+- The event contract (schema of the three consumed events) must be co-constructed with the CORE teams from Epic 1 — who is the contact on the BSP.001 and BSP.004 side?

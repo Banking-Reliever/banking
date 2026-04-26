@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Charge la configuration locale (.env) si présente.
+# Load local configuration (.env) if present.
 if [[ -f "$ROOT_DIR/.env" ]]; then
   set -a
   # shellcheck disable=SC1091
@@ -33,19 +33,19 @@ resolve_python() {
   fi
 
   echo "" >&2
-  echo "❌ Aucun interpréteur Python trouvé." >&2
-  echo "   Astuce: créez un venv (.venv) ou exportez PYTHON_BIN=/chemin/vers/python" >&2
+  echo "❌ No Python interpreter found." >&2
+  echo "   Tip: create a venv (.venv) or export PYTHON_BIN=/path/to/python" >&2
   exit 1
 }
 
 resolve_pr_refs() {
   local python_bin="$1"
 
-  # Priorité à des variables explicites
+  # Explicit variables take priority
   local base="${PR_BASE_SHA:-${GITHUB_BASE_SHA:-}}"
   local head="${PR_HEAD_SHA:-${GITHUB_HEAD_SHA:-${GITHUB_SHA:-}}}"
 
-  # En CI GitHub Actions, récupérer les SHAs depuis l'event payload si dispo
+  # In GitHub Actions CI, retrieve SHAs from the event payload if available
   if [[ -z "$base" || -z "$head" ]] && [[ -n "${GITHUB_EVENT_PATH:-}" ]] && [[ -f "${GITHUB_EVENT_PATH}" ]]; then
     local parsed
     parsed="$($python_bin - <<'PY'
@@ -71,7 +71,7 @@ PY
     fi
   fi
 
-  # Fallback local: merge-base avec origin/main ou main
+  # Local fallback: merge-base with origin/main or main
   if [[ -z "$head" ]]; then
     head="$(git -C "$ROOT_DIR" rev-parse HEAD)"
   fi
@@ -82,8 +82,8 @@ PY
     elif git -C "$ROOT_DIR" rev-parse --verify main >/dev/null 2>&1; then
       base="$(git -C "$ROOT_DIR" merge-base "$head" main)"
     else
-      echo "❌ Impossible de déterminer la base PR (origin/main ou main introuvable)." >&2
-      echo "   Définissez PR_BASE_SHA et PR_HEAD_SHA explicitement." >&2
+      echo "❌ Unable to determine PR base (origin/main or main not found)." >&2
+      echo "   Set PR_BASE_SHA and PR_HEAD_SHA explicitly." >&2
       exit 2
     fi
   fi
@@ -109,7 +109,7 @@ echo "🔀 Base:   $BASE_REF"
 echo "🧾 Head:   $HEAD_REF"
 
 echo ""
-echo "1) 🧠 Cohérence sémantique (scope PR: uniquement fichiers impactés)"
+echo "1) 🧠 Semantic coherence (PR scope: only impacted files)"
 "$PYTHON_BIN" "$ROOT_DIR/tools/semantic_review.py" \
   --scope pr \
   --review-mode "$SEMANTIC_REVIEW_MODE" \

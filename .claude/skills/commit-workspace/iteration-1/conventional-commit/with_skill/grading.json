@@ -1,0 +1,35 @@
+{
+  "expectations": [
+    {
+      "text": "Uses a conventional commit type (feat/fix/refactor/chore/test/docs/ci)",
+      "passed": true,
+      "evidence": "Commit message starts with 'feat: add ResourceSubscriptionAttribute...'"
+    },
+    {
+      "text": "Commit subject is imperative mood and under 72 chars",
+      "passed": true,
+      "evidence": "'add ResourceSubscriptionAttribute and update BusExtensions' = 57 chars, imperative mood"
+    },
+    {
+      "text": "Appends Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+      "passed": true,
+      "evidence": "git_show.txt shows 'Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>' in commit"
+    },
+    {
+      "text": "Does NOT use git add -A or git add .",
+      "passed": true,
+      "evidence": "Transcript shows 'git add src/Messaging/ResourceSubscriptionAttribute.cs src/Messaging/BusExtensions.cs' — explicit paths only"
+    },
+    {
+      "text": "Runs git push after committing",
+      "passed": true,
+      "evidence": "Agent report: 'git push -u origin master. Succeeded: 5e83492..3f4355c'"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  }
+}

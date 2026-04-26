@@ -1,14 +1,14 @@
 meta:
-  bcm_name: BCM Reliever — Abonnements ressource
+  bcm_name: BCM Reliever — Resource Subscriptions
   version: 0.1.0
   template_version: 1.0.0
   last_updated: '2026-04-24'
   owners:
-    - Direction Programme Reliever
+    - Reliever Programme Directorate
 
 resource_subscriptions:
 
-  # ── CAP.BSP.001.SCO — Scoring comportemental ────────────────────────────────
+  # ── CAP.BSP.001.SCO — Behavioural scoring ────────────────────────────────────
 
   - id: SUB.RESOURCE.BSP.001.001
     consumer_capability: CAP.BSP.001.SCO
@@ -19,9 +19,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.004.TRANSACTION_AUTORISEE
     scope: public
     rationale: >-
-      CAP.BSP.001.SCO consomme le RES.BSP.004.PAIEMENT_AUTORISE pour extraire le
-      montant, la catégorie et le marchand de la transaction autorisée, données
-      nécessaires au recalcul du score comportemental.
+      CAP.BSP.001.SCO consumes RES.BSP.004.PAIEMENT_AUTORISE to extract the
+      amount, category and merchant of the authorised transaction — data
+      required for the behavioural score recomputation.
     adrs:
       - ADR-BCM-FUNC-0005
     tags:
@@ -37,9 +37,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.004.TRANSACTION_REFUSEE
     scope: public
     rationale: >-
-      CAP.BSP.001.SCO consomme le RES.BSP.004.PAIEMENT_REFUSE pour extraire le
-      motif, la catégorie et le montant du refus comme signal comportemental
-      négatif alimentant le recalcul du score.
+      CAP.BSP.001.SCO consumes RES.BSP.004.PAIEMENT_REFUSE to extract the
+      decline reason, category and amount as a negative behavioural signal
+      feeding the score recomputation.
     adrs:
       - ADR-BCM-FUNC-0005
     tags:
@@ -55,9 +55,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.SIGNAL_RECHUTE
     scope: public
     rationale: >-
-      CAP.BSP.001.SCO consomme le RES.BSP.001.SIGNAL_COMPORTEMENTAL pour
-      extraire le score d'impact et la catégorie du signal de rechute afin
-      d'ajuster négativement le recalcul du score courant.
+      CAP.BSP.001.SCO consumes RES.BSP.001.SIGNAL_COMPORTEMENTAL to extract
+      the impact score and category of the relapse signal in order to
+      negatively adjust the current score recomputation.
     adrs:
       - ADR-BCM-FUNC-0005
     tags:
@@ -73,16 +73,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.SIGNAL_PROGRESSION
     scope: public
     rationale: >-
-      CAP.BSP.001.SCO consomme le RES.BSP.001.SIGNAL_COMPORTEMENTAL pour
-      extraire le score d'impact positif et la catégorie du signal de
-      progression afin d'ajuster positivement le recalcul du score courant.
+      CAP.BSP.001.SCO consumes RES.BSP.001.SIGNAL_COMPORTEMENTAL to extract
+      the positive impact score and category of the progression signal in order
+      to positively adjust the current score recomputation.
     adrs:
       - ADR-BCM-FUNC-0005
     tags:
       - resource
       - subscription
 
-  # ── CAP.BSP.001.PAL — Gestion des paliers ───────────────────────────────────
+  # ── CAP.BSP.001.PAL — Tier management ───────────────────────────────────────
 
   - id: SUB.RESOURCE.BSP.001.005
     consumer_capability: CAP.BSP.001.PAL
@@ -93,9 +93,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.SCORE_SEUIL_ATTEINT
     scope: public
     rationale: >-
-      CAP.BSP.001.PAL consomme le RES.BSP.001.SCORE_COURANT pour vérifier la
-      valeur exacte du score et le seuil franchi, données nécessaires à la
-      décision de transition de palier algorithmique.
+      CAP.BSP.001.PAL consumes RES.BSP.001.SCORE_COURANT to verify the exact
+      score value and the crossed threshold — data required for the algorithmic
+      tier transition decision.
     adrs:
       - ADR-BCM-FUNC-0005
     tags:
@@ -111,16 +111,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.003.OVERRIDE_DEMANDE
     scope: public
     rationale: >-
-      CAP.BSP.001.PAL consomme le RES.BSP.003.CODECISION_EN_COURS pour
-      connaître le palier cible demandé et suspendre l'algorithme en attente
-      de co-validation prescripteur.
+      CAP.BSP.001.PAL consumes RES.BSP.003.CODECISION_EN_COURS to know the
+      requested target tier and suspend the algorithm while awaiting
+      prescriber co-validation.
     adrs:
       - ADR-BCM-FUNC-0005
     tags:
       - resource
       - subscription
 
-  # ── CAP.BSP.001.SIG — Détection des signaux ─────────────────────────────────
+  # ── CAP.BSP.001.SIG — Signal detection ─────────────────────────────────────
 
   - id: SUB.RESOURCE.BSP.001.007
     consumer_capability: CAP.BSP.001.SIG
@@ -131,9 +131,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.004.ENVELOPPE_NON_CONSOMMEE
     scope: public
     rationale: >-
-      CAP.BSP.001.SIG consomme le RES.BSP.004.ENVELOPPE_NON_CONSOMMEE pour
-      contextualiser le signal de rechute contre-intuitif avec les détails
-      de la catégorie et de la durée d'inactivité sur l'enveloppe.
+      CAP.BSP.001.SIG consumes RES.BSP.004.ENVELOPPE_NON_CONSOMMEE to
+      contextualise the counter-intuitive relapse signal with the details
+      of the category and the duration of inactivity on the envelope.
     adrs:
       - ADR-BCM-FUNC-0005
     tags:
@@ -149,16 +149,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.004.TRANSACTION_AUTORISEE
     scope: public
     rationale: >-
-      CAP.BSP.001.SIG consomme le RES.BSP.004.PAIEMENT_AUTORISE pour extraire
-      les patterns de consommation (catégorie, marchand, fréquence) nécessaires
-      à la détection de comportements et de contournements éventuels.
+      CAP.BSP.001.SIG consumes RES.BSP.004.PAIEMENT_AUTORISE to extract
+      consumption patterns (category, merchant, frequency) required for
+      detecting behaviours and potential circumventions.
     adrs:
       - ADR-BCM-FUNC-0005
     tags:
       - resource
       - subscription
 
-  # ── CAP.BSP.001.ARB — Arbitrage algo / prescripteur ─────────────────────────
+  # ── CAP.BSP.001.ARB — Algorithm / prescriber arbitration ─────────────────────
 
   - id: SUB.RESOURCE.BSP.001.009
     consumer_capability: CAP.BSP.001.ARB
@@ -169,9 +169,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.PALIER_OVERRIDE_APPLIQUE
     scope: public
     rationale: >-
-      CAP.BSP.001.ARB consomme le RES.BSP.001.SURCHARGE_ACTIVE pour enregistrer
-      les paramètres de la surcharge active : palier forcé, prescripteur
-      décisionnaire et date d'expiration prévue.
+      CAP.BSP.001.ARB consumes RES.BSP.001.SURCHARGE_ACTIVE to record the
+      active override parameters: enforced tier, deciding prescriber
+      and planned expiry date.
     adrs:
       - ADR-BCM-FUNC-0005
     tags:
@@ -187,16 +187,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.SCORE_RECALCULE
     scope: public
     rationale: >-
-      CAP.BSP.001.ARB consomme le RES.BSP.001.SCORE_COURANT pour comparer la
-      valeur algorithmique avec le palier prescripteur actif et décider si les
-      conditions de reprise algorithmique sont réunies.
+      CAP.BSP.001.ARB consumes RES.BSP.001.SCORE_COURANT to compare the
+      algorithmic value against the active prescriber tier and decide whether
+      the conditions for algorithmic resumption are met.
     adrs:
       - ADR-BCM-FUNC-0005
     tags:
       - resource
       - subscription
 
-  # ── CAP.BSP.002.ELI — Qualification de l'éligibilité ───────────────────────
+  # ── CAP.BSP.002.ELI — Eligibility qualification ───────────────────────────────
 
   - id: SUB.RESOURCE.BSP.002.001
     consumer_capability: CAP.BSP.002.ELI
@@ -207,16 +207,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.003.OVERRIDE_DEMANDE
     scope: public
     rationale: >-
-      CAP.BSP.002.ELI consomme le RES.BSP.003.CODECISION_EN_COURS pour
-      identifier le candidat ciblé par la demande de surcharge prescripteur
-      et forcer sa qualification comme éligible au programme.
+      CAP.BSP.002.ELI consumes RES.BSP.003.CODECISION_EN_COURS to identify
+      the candidate targeted by the prescriber override request and force
+      their qualification as eligible for the programme.
     adrs:
       - ADR-BCM-FUNC-0006
     tags:
       - resource
       - subscription
 
-  # ── CAP.BSP.002.ENR — Enrôlement ────────────────────────────────────────────
+  # ── CAP.BSP.002.ENR — Enrolment ────────────────────────────────────────────────
 
   - id: SUB.RESOURCE.BSP.002.002
     consumer_capability: CAP.BSP.002.ENR
@@ -227,16 +227,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.002.ELIGIBILITE_VALIDEE
     scope: public
     rationale: >-
-      CAP.BSP.002.ENR consomme le RES.BSP.002.DOSSIER_ELIGIBLE pour extraire
-      l'identité du candidat éligible et les critères retenus, nécessaires
-      à l'initialisation du dossier d'enrôlement formel.
+      CAP.BSP.002.ENR consumes RES.BSP.002.DOSSIER_ELIGIBLE to extract the
+      eligible candidate's identity and the retained criteria, required for
+      initialising the formal enrolment case.
     adrs:
       - ADR-BCM-FUNC-0006
     tags:
       - resource
       - subscription
 
-  # ── CAP.BSP.002.CYC — Cycle de vie du bénéficiaire ─────────────────────────
+  # ── CAP.BSP.002.CYC — Beneficiary lifecycle ─────────────────────────────────
 
   - id: SUB.RESOURCE.BSP.002.003
     consumer_capability: CAP.BSP.002.CYC
@@ -247,9 +247,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.002.BENEFICIAIRE_ENROLE
     scope: public
     rationale: >-
-      CAP.BSP.002.CYC consomme le RES.BSP.002.DOSSIER_ACTIF pour initialiser
-      le suivi du cycle de vie du bénéficiaire avec son état initial, son
-      palier d'entrée et sa date d'enrôlement.
+      CAP.BSP.002.CYC consumes RES.BSP.002.DOSSIER_ACTIF to initialise
+      the beneficiary lifecycle tracking with their initial state, entry
+      tier and enrolment date.
     adrs:
       - ADR-BCM-FUNC-0006
     tags:
@@ -265,16 +265,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.SIGNAL_RECHUTE
     scope: public
     rationale: >-
-      CAP.BSP.002.CYC consomme le RES.BSP.001.SIGNAL_COMPORTEMENTAL pour
-      évaluer la sévérité du signal de rechute et décider d'une suspension
-      temporaire ou d'un ajustement du statut du dossier bénéficiaire.
+      CAP.BSP.002.CYC consumes RES.BSP.001.SIGNAL_COMPORTEMENTAL to assess
+      the severity of the relapse signal and decide on a temporary suspension
+      or an adjustment of the beneficiary's case status.
     adrs:
       - ADR-BCM-FUNC-0006
     tags:
       - resource
       - subscription
 
-  # ── CAP.BSP.002.SOR — Sortie du dispositif ──────────────────────────────────
+  # ── CAP.BSP.002.SOR — Exit from the programme ──────────────────────────────────
 
   - id: SUB.RESOURCE.BSP.002.005
     consumer_capability: CAP.BSP.002.SOR
@@ -285,16 +285,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.PALIER_HAUSSE
     scope: public
     rationale: >-
-      CAP.BSP.002.SOR consomme le RES.BSP.001.FRANCHISSEMENT pour vérifier
-      que le palier atteint est le palier terminal et déclencher la procédure
-      de sortie du dispositif et de transfert vers l'application standard.
+      CAP.BSP.002.SOR consumes RES.BSP.001.FRANCHISSEMENT to verify that the
+      reached tier is the terminal tier and trigger the programme exit procedure
+      and transfer to the standard application.
     adrs:
       - ADR-BCM-FUNC-0006
     tags:
       - resource
       - subscription
 
-  # ── CAP.BSP.003.ROL — Gestion des rôles prescripteurs ───────────────────────
+  # ── CAP.BSP.003.ROL — Prescriber role management ─────────────────────────────
 
   - id: SUB.RESOURCE.BSP.003.001
     consumer_capability: CAP.BSP.003.ROL
@@ -305,16 +305,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.002.BENEFICIAIRE_ENROLE
     scope: public
     rationale: >-
-      CAP.BSP.003.ROL consomme le RES.BSP.002.DOSSIER_ACTIF pour extraire le
-      réseau prescripteur associé au bénéficiaire et déclencher l'attribution
-      des droits différenciés par rôle (banquier, psychiatre, travailleur social).
+      CAP.BSP.003.ROL consumes RES.BSP.002.DOSSIER_ACTIF to extract the
+      prescriber network associated with the beneficiary and trigger the
+      assignment of differentiated rights by role (banker, psychiatrist, social worker).
     adrs:
       - ADR-BCM-FUNC-0007
     tags:
       - resource
       - subscription
 
-  # ── CAP.BSP.003.NOT — Alertes & notifications prescripteurs ─────────────────
+  # ── CAP.BSP.003.NOT — Prescriber alerts & notifications ─────────────────────
 
   - id: SUB.RESOURCE.BSP.003.002
     consumer_capability: CAP.BSP.003.NOT
@@ -325,9 +325,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.SIGNAL_RECHUTE
     scope: public
     rationale: >-
-      CAP.BSP.003.NOT consomme le RES.BSP.001.SIGNAL_COMPORTEMENTAL pour
-      personnaliser l'alerte prescripteur avec la nature du signal, son
-      intensité et son contexte comportemental.
+      CAP.BSP.003.NOT consumes RES.BSP.001.SIGNAL_COMPORTEMENTAL to personalise
+      the prescriber alert with the nature of the signal, its intensity and
+      its behavioural context.
     adrs:
       - ADR-BCM-FUNC-0007
     tags:
@@ -343,9 +343,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.PALIER_HAUSSE
     scope: public
     rationale: >-
-      CAP.BSP.003.NOT consomme le RES.BSP.001.FRANCHISSEMENT pour inclure dans
-      la notification prescripteur le détail du palier atteint et les nouvelles
-      règles d'autonomie applicables au bénéficiaire.
+      CAP.BSP.003.NOT consumes RES.BSP.001.FRANCHISSEMENT to include in the
+      prescriber notification the detail of the tier reached and the new
+      autonomy rules applicable to the beneficiary.
     adrs:
       - ADR-BCM-FUNC-0007
     tags:
@@ -361,9 +361,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.PALIER_RETROGRADE
     scope: public
     rationale: >-
-      CAP.BSP.003.NOT consomme le RES.BSP.001.RETROGRADATION pour inclure dans
-      l'alerte prescripteur le détail de la rétrogradation et les nouvelles
-      contraintes du palier inférieur nécessitant un suivi renforcé.
+      CAP.BSP.003.NOT consumes RES.BSP.001.RETROGRADATION to include in the
+      prescriber alert the detail of the demotion and the new constraints of
+      the lower tier requiring enhanced monitoring.
     adrs:
       - ADR-BCM-FUNC-0007
     tags:
@@ -379,16 +379,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.004.ENVELOPPE_NON_CONSOMMEE
     scope: public
     rationale: >-
-      CAP.BSP.003.NOT consomme le RES.BSP.004.ENVELOPPE_NON_CONSOMMEE pour
-      alerter le prescripteur avec le détail de l'enveloppe non utilisée et
-      lui permettre d'interpréter le signal de contournement potentiel.
+      CAP.BSP.003.NOT consumes RES.BSP.004.ENVELOPPE_NON_CONSOMMEE to alert
+      the prescriber with the details of the unused envelope and enable them
+      to interpret the potential circumvention signal.
     adrs:
       - ADR-BCM-FUNC-0007
     tags:
       - resource
       - subscription
 
-  # ── CAP.BSP.003.COD — Co-décision inter-prescripteurs ───────────────────────
+  # ── CAP.BSP.003.COD — Inter-prescriber co-decision ───────────────────────────
 
   - id: SUB.RESOURCE.BSP.003.006
     consumer_capability: CAP.BSP.003.COD
@@ -399,16 +399,16 @@ resource_subscriptions:
       linked_business_event: EVT.CAN.002.OVERRIDE_UX_DECLENCHE
     scope: public
     rationale: >-
-      CAP.BSP.003.COD consomme le RES.BSP.003.CODECISION_EN_COURS (porté par
-      RVT.CAN.002.OVERRIDE_UX_INITIE) pour initialiser le processus de
-      co-décision avec les prescripteurs identifiés et le palier cible demandé.
+      CAP.BSP.003.COD consumes RES.BSP.003.CODECISION_EN_COURS (carried by
+      RVT.CAN.002.OVERRIDE_UX_INITIE) to initialise the co-decision process
+      with the identified prescribers and the requested target tier.
     adrs:
       - ADR-BCM-FUNC-0007
     tags:
       - resource
       - subscription
 
-  # ── CAP.BSP.004.AUT — Autorisation à l'achat ────────────────────────────────
+  # ── CAP.BSP.004.AUT — Purchase authorisation ────────────────────────────────
 
   - id: SUB.RESOURCE.BSP.004.001
     consumer_capability: CAP.BSP.004.AUT
@@ -419,9 +419,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.PALIER_HAUSSE
     scope: public
     rationale: >-
-      CAP.BSP.004.AUT consomme le RES.BSP.001.FRANCHISSEMENT pour mettre à
-      jour son référentiel de règles d'autorisation avec les nouvelles
-      catégories autorisées et le nouveau plafond journalier du palier atteint.
+      CAP.BSP.004.AUT consumes RES.BSP.001.FRANCHISSEMENT to update its
+      authorisation rule referential with the new authorised categories and
+      the new daily cap of the reached tier.
     adrs:
       - ADR-BCM-FUNC-0008
     tags:
@@ -437,9 +437,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.PALIER_RETROGRADE
     scope: public
     rationale: >-
-      CAP.BSP.004.AUT consomme le RES.BSP.001.RETROGRADATION pour appliquer
-      immédiatement les règles restrictives du palier inférieur dans ses
-      décisions d'autorisation à l'achat.
+      CAP.BSP.004.AUT consumes RES.BSP.001.RETROGRADATION to immediately apply
+      the restrictive rules of the lower tier in its purchase authorisation
+      decisions.
     adrs:
       - ADR-BCM-FUNC-0008
     tags:
@@ -455,16 +455,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.PALIER_OVERRIDE_APPLIQUE
     scope: public
     rationale: >-
-      CAP.BSP.004.AUT consomme le RES.BSP.001.SURCHARGE_ACTIVE pour appliquer
-      le palier prescripteur forcé dans ses règles d'autorisation, en ignorant
-      temporairement le palier algorithmique.
+      CAP.BSP.004.AUT consumes RES.BSP.001.SURCHARGE_ACTIVE to apply the
+      prescriber-enforced tier in its authorisation rules, temporarily
+      ignoring the algorithmic tier.
     adrs:
       - ADR-BCM-FUNC-0008
     tags:
       - resource
       - subscription
 
-  # ── CAP.BSP.004.ENV — Gestion des enveloppes ────────────────────────────────
+  # ── CAP.BSP.004.ENV — Envelope management ────────────────────────────────────
 
   - id: SUB.RESOURCE.BSP.004.004
     consumer_capability: CAP.BSP.004.ENV
@@ -475,9 +475,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.002.BENEFICIAIRE_ENROLE
     scope: public
     rationale: >-
-      CAP.BSP.004.ENV consomme le RES.BSP.002.DOSSIER_ACTIF pour extraire le
-      palier initial du bénéficiaire et initialiser les enveloppes budgétaires
-      correspondantes pour la première période du programme.
+      CAP.BSP.004.ENV consumes RES.BSP.002.DOSSIER_ACTIF to extract the
+      beneficiary's initial tier and initialise the corresponding budget
+      envelopes for the programme's first period.
     adrs:
       - ADR-BCM-FUNC-0008
     tags:
@@ -493,16 +493,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.PALIER_HAUSSE
     scope: public
     rationale: >-
-      CAP.BSP.004.ENV consomme le RES.BSP.001.FRANCHISSEMENT pour recalibrer
-      les enveloppes budgétaires selon les catégories et plafonds définis pour
-      le nouveau palier atteint.
+      CAP.BSP.004.ENV consumes RES.BSP.001.FRANCHISSEMENT to recalibrate the
+      budget envelopes according to the categories and caps defined for
+      the newly reached tier.
     adrs:
       - ADR-BCM-FUNC-0008
     tags:
       - resource
       - subscription
 
-  # ── CAP.BSP.004.ALT — Comparaison & alternatives ────────────────────────────
+  # ── CAP.BSP.004.ALT — Comparison & alternatives ────────────────────────────
 
   - id: SUB.RESOURCE.BSP.004.006
     consumer_capability: CAP.BSP.004.ALT
@@ -513,16 +513,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.004.TRANSACTION_REFUSEE
     scope: public
     rationale: >-
-      CAP.BSP.004.ALT consomme le RES.BSP.004.PAIEMENT_REFUSE pour extraire
-      la catégorie, le montant et le marchand du refus afin de rechercher des
-      alternatives commerciales compatibles avec le palier courant.
+      CAP.BSP.004.ALT consumes RES.BSP.004.PAIEMENT_REFUSE to extract the
+      category, amount and merchant of the decline in order to search for
+      commercial alternatives compatible with the current tier.
     adrs:
       - ADR-BCM-FUNC-0008
     tags:
       - resource
       - subscription
 
-  # ── CAP.CAN.001.TAB — Tableau de progression ────────────────────────────────
+  # ── CAP.CAN.001.TAB — Progression dashboard ────────────────────────────────
 
   - id: SUB.RESOURCE.CAN.001.001
     consumer_capability: CAP.CAN.001.TAB
@@ -533,9 +533,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.SCORE_RECALCULE
     scope: public
     rationale: >-
-      CAP.CAN.001.TAB consomme le RES.BSP.001.SCORE_COURANT pour afficher la
-      valeur numérique du score dans la barre de progression gamifiée du
-      tableau de bord bénéficiaire.
+      CAP.CAN.001.TAB consumes RES.BSP.001.SCORE_COURANT to display the
+      numerical score value in the gamified progress bar of the
+      beneficiary dashboard.
     adrs:
       - ADR-BCM-FUNC-0009
     tags:
@@ -551,9 +551,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.PALIER_HAUSSE
     scope: public
     rationale: >-
-      CAP.CAN.001.TAB consomme le RES.BSP.001.FRANCHISSEMENT pour mettre à
-      jour le niveau de palier affiché dans le tableau de bord et déclencher
-      l'animation de progression motivationnelle.
+      CAP.CAN.001.TAB consumes RES.BSP.001.FRANCHISSEMENT to update the tier
+      level displayed in the dashboard and trigger the motivational
+      progression animation.
     adrs:
       - ADR-BCM-FUNC-0009
     tags:
@@ -569,16 +569,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.004.ENVELOPPE_CONSOMMEE
     scope: public
     rationale: >-
-      CAP.CAN.001.TAB consomme le RES.BSP.004.ENVELOPPE_OUVERTE pour mettre
-      à jour en quasi-temps-réel le solde disponible de chaque catégorie
-      affiché dans le tableau de bord bénéficiaire.
+      CAP.CAN.001.TAB consumes RES.BSP.004.ENVELOPPE_OUVERTE to update in
+      near real-time the available balance for each category displayed
+      in the beneficiary dashboard.
     adrs:
       - ADR-BCM-FUNC-0009
     tags:
       - resource
       - subscription
 
-  # ── CAP.CAN.001.ACH — Assistance à l'achat ──────────────────────────────────
+  # ── CAP.CAN.001.ACH — Purchase assistance ──────────────────────────────────
 
   - id: SUB.RESOURCE.CAN.001.004
     consumer_capability: CAP.CAN.001.ACH
@@ -589,9 +589,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.004.TRANSACTION_AUTORISEE
     scope: public
     rationale: >-
-      CAP.CAN.001.ACH consomme le RES.BSP.004.PAIEMENT_AUTORISE pour afficher
-      le feedback UX de succès avec les détails de la transaction : montant,
-      marchand et solde restant sur l'enveloppe.
+      CAP.CAN.001.ACH consumes RES.BSP.004.PAIEMENT_AUTORISE to display the
+      success UX feedback with the transaction details: amount, merchant
+      and remaining envelope balance.
     adrs:
       - ADR-BCM-FUNC-0009
     tags:
@@ -607,9 +607,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.004.TRANSACTION_REFUSEE
     scope: public
     rationale: >-
-      CAP.CAN.001.ACH consomme le RES.BSP.004.PAIEMENT_REFUSE pour afficher
-      le feedback UX de refus avec le motif explicite et le lien vers les
-      alternatives proposées si disponibles.
+      CAP.CAN.001.ACH consumes RES.BSP.004.PAIEMENT_REFUSE to display the
+      decline UX feedback with the explicit reason and the link to the
+      proposed alternatives if available.
     adrs:
       - ADR-BCM-FUNC-0009
     tags:
@@ -625,16 +625,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.004.ALTERNATIVE_PROPOSEE
     scope: public
     rationale: >-
-      CAP.CAN.001.ACH consomme le RES.BSP.004.ALTERNATIVE_PROPOSEE pour
-      afficher la liste des alternatives commerciales avec leurs détails
-      (nom, catégorie, compatibilité palier).
+      CAP.CAN.001.ACH consumes RES.BSP.004.ALTERNATIVE_PROPOSEE to display
+      the list of commercial alternatives with their details
+      (name, category, tier compatibility).
     adrs:
       - ADR-BCM-FUNC-0009
     tags:
       - resource
       - subscription
 
-  # ── CAP.CAN.001.NOT — Notifications bénéficiaire ────────────────────────────
+  # ── CAP.CAN.001.NOT — Beneficiary notifications ────────────────────────────
 
   - id: SUB.RESOURCE.CAN.001.007
     consumer_capability: CAP.CAN.001.NOT
@@ -645,9 +645,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.004.TRANSACTION_REFUSEE
     scope: public
     rationale: >-
-      CAP.CAN.001.NOT consomme le RES.BSP.004.PAIEMENT_REFUSE pour générer
-      une notification push/SMS personnalisée au bénéficiaire avec le motif
-      du refus et l'alternative disponible si existante.
+      CAP.CAN.001.NOT consumes RES.BSP.004.PAIEMENT_REFUSE to generate a
+      personalised push/SMS notification to the beneficiary with the decline
+      reason and the available alternative if one exists.
     adrs:
       - ADR-BCM-FUNC-0009
     tags:
@@ -663,9 +663,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.PALIER_HAUSSE
     scope: public
     rationale: >-
-      CAP.CAN.001.NOT consomme le RES.BSP.001.FRANCHISSEMENT pour générer la
-      notification motivationnelle de félicitations avec le nouveau palier et
-      les nouvelles possibilités débloquées pour le bénéficiaire.
+      CAP.CAN.001.NOT consumes RES.BSP.001.FRANCHISSEMENT to generate the
+      motivational congratulations notification with the new tier and
+      the new possibilities unlocked for the beneficiary.
     adrs:
       - ADR-BCM-FUNC-0009
     tags:
@@ -681,9 +681,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.004.ENVELOPPE_EPUISEE
     scope: public
     rationale: >-
-      CAP.CAN.001.NOT consomme le RES.BSP.004.ENVELOPPE_EPUISEE pour générer
-      la notification d'information sur l'épuisement de l'enveloppe avec la
-      catégorie concernée et la date de renouvellement prévue.
+      CAP.CAN.001.NOT consumes RES.BSP.004.ENVELOPPE_EPUISEE to generate the
+      informational notification about envelope exhaustion with the
+      concerned category and the planned renewal date.
     adrs:
       - ADR-BCM-FUNC-0009
     tags:
@@ -699,16 +699,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.002.BENEFICIAIRE_TRANSFERE_APP_STANDARD
     scope: public
     rationale: >-
-      CAP.CAN.001.NOT consomme le RES.BSP.002.DOSSIER_CLOS pour générer la
-      notification finale de félicitations avec la durée du programme et
-      les indicateurs de progression clés du bénéficiaire.
+      CAP.CAN.001.NOT consumes RES.BSP.002.DOSSIER_CLOS to generate the final
+      congratulations notification with the programme duration and the
+      beneficiary's key progression indicators.
     adrs:
       - ADR-BCM-FUNC-0009
     tags:
       - resource
       - subscription
 
-  # ── CAP.CAN.002.VUE — Vue bénéficiaire prescripteur ─────────────────────────
+  # ── CAP.CAN.002.VUE — Prescriber beneficiary view ─────────────────────────
 
   - id: SUB.RESOURCE.CAN.002.001
     consumer_capability: CAP.CAN.002.VUE
@@ -719,9 +719,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.SCORE_RECALCULE
     scope: public
     rationale: >-
-      CAP.CAN.002.VUE consomme le RES.BSP.001.SCORE_COURANT pour afficher la
-      valeur du score et son historique dans la vue prescripteur avec le
-      niveau de progression actualisé du dossier.
+      CAP.CAN.002.VUE consumes RES.BSP.001.SCORE_COURANT to display the score
+      value and its history in the prescriber view with the updated
+      progression level of the case.
     adrs:
       - ADR-BCM-FUNC-0010
     tags:
@@ -737,9 +737,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.PALIER_HAUSSE
     scope: public
     rationale: >-
-      CAP.CAN.002.VUE consomme le RES.BSP.001.FRANCHISSEMENT pour mettre à
-      jour l'état du dossier dans la vue prescripteur et débloquer les
-      nouvelles actions disponibles au palier atteint.
+      CAP.CAN.002.VUE consumes RES.BSP.001.FRANCHISSEMENT to update the case
+      state in the prescriber view and unlock the new actions available
+      at the reached tier.
     adrs:
       - ADR-BCM-FUNC-0010
     tags:
@@ -755,9 +755,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.SIGNAL_RECHUTE
     scope: public
     rationale: >-
-      CAP.CAN.002.VUE consomme le RES.BSP.001.SIGNAL_COMPORTEMENTAL pour
-      afficher l'alerte de rechute dans la vue prescripteur avec le détail
-      du signal et les données contextuelles permettant la réaction clinique.
+      CAP.CAN.002.VUE consumes RES.BSP.001.SIGNAL_COMPORTEMENTAL to display
+      the relapse alert in the prescriber view with the signal detail and
+      the contextual data enabling a clinical response.
     adrs:
       - ADR-BCM-FUNC-0010
     tags:
@@ -773,16 +773,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.003.ROLE_ATTRIBUE
     scope: public
     rationale: >-
-      CAP.CAN.002.VUE consomme le RES.BSP.003.ROLE_ATTRIBUE pour filtrer les
-      sections du dossier affichables selon les droits spécifiques du rôle
-      prescripteur actif sur ce bénéficiaire.
+      CAP.CAN.002.VUE consumes RES.BSP.003.ROLE_ATTRIBUE to filter the
+      displayable case sections according to the specific rights of the
+      prescriber role active on this beneficiary.
     adrs:
       - ADR-BCM-FUNC-0010
     tags:
       - resource
       - subscription
 
-  # ── CAP.CAN.002.ACT — Actions prescripteur ──────────────────────────────────
+  # ── CAP.CAN.002.ACT — Prescriber actions ──────────────────────────────────
 
   - id: SUB.RESOURCE.CAN.002.005
     consumer_capability: CAP.CAN.002.ACT
@@ -793,9 +793,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.003.OVERRIDE_COVALIDÉ
     scope: public
     rationale: >-
-      CAP.CAN.002.ACT consomme le RES.BSP.003.CODECISION_VALIDEE pour afficher
-      la confirmation visuelle de la co-décision avec les détails de la
-      résolution collective et le palier appliqué.
+      CAP.CAN.002.ACT consumes RES.BSP.003.CODECISION_VALIDEE to display the
+      visual confirmation of the co-decision with the details of the
+      collective resolution and the applied tier.
     adrs:
       - ADR-BCM-FUNC-0010
     tags:
@@ -811,16 +811,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.003.OVERRIDE_REFUSE
     scope: public
     rationale: >-
-      CAP.CAN.002.ACT consomme le RES.BSP.003.CODECISION_REJETEE pour afficher
-      la confirmation que la demande de surcharge a été rejetée par la
-      délibération prescripteur, avec les motifs de rejet.
+      CAP.CAN.002.ACT consumes RES.BSP.003.CODECISION_REJETEE to display the
+      confirmation that the override request was rejected by the prescriber
+      deliberation, along with the rejection reasons.
     adrs:
       - ADR-BCM-FUNC-0010
     tags:
       - resource
       - subscription
 
-  # ── CAP.CAN.002.RAP — Rapports & exports ────────────────────────────────────
+  # ── CAP.CAN.002.RAP — Reports & exports ────────────────────────────────────
 
   - id: SUB.RESOURCE.CAN.002.007
     consumer_capability: CAP.CAN.002.RAP
@@ -831,16 +831,16 @@ resource_subscriptions:
       linked_business_event: EVT.CAN.002.DOSSIER_CONSULTE
     scope: public
     rationale: >-
-      CAP.CAN.002.RAP consomme le RES.BSP.002.DOSSIER_ACTIF (porté par
-      RVT.CAN.002.DOSSIER_VU_PRESCRIPTEUR) pour générer un rapport de suivi
-      ciblé sur la période et les sections consultées par le prescripteur.
+      CAP.CAN.002.RAP consumes RES.BSP.002.DOSSIER_ACTIF (carried by
+      RVT.CAN.002.DOSSIER_VU_PRESCRIPTEUR) to generate a follow-up report
+      targeted at the period and sections consulted by the prescriber.
     adrs:
       - ADR-BCM-FUNC-0010
     tags:
       - resource
       - subscription
 
-  # ── CAP.B2B.001.CRT — Gestion de la carte dédiée ────────────────────────────
+  # ── CAP.B2B.001.CRT — Dedicated card management ────────────────────────────
 
   - id: SUB.RESOURCE.B2B.001.001
     consumer_capability: CAP.B2B.001.CRT
@@ -851,9 +851,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.002.BENEFICIAIRE_ENROLE
     scope: public
     rationale: >-
-      CAP.B2B.001.CRT consomme le RES.BSP.002.DOSSIER_ACTIF pour extraire
-      l'identité du bénéficiaire et son palier initial, nécessaires à
-      l'émission et la configuration initiale de la carte dédiée partenaire.
+      CAP.B2B.001.CRT consumes RES.BSP.002.DOSSIER_ACTIF to extract the
+      beneficiary's identity and initial tier, required for the issuance and
+      initial configuration of the dedicated partner card.
     adrs:
       - ADR-BCM-FUNC-0011
     tags:
@@ -869,9 +869,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.PALIER_HAUSSE
     scope: public
     rationale: >-
-      CAP.B2B.001.CRT consomme le RES.BSP.001.FRANCHISSEMENT pour transmettre
-      au partenaire émetteur les nouvelles règles d'usage de la carte
-      applicables dès le nouveau palier atteint.
+      CAP.B2B.001.CRT consumes RES.BSP.001.FRANCHISSEMENT to transmit to the
+      issuing partner the new card usage rules applicable from the newly
+      reached tier.
     adrs:
       - ADR-BCM-FUNC-0011
     tags:
@@ -887,9 +887,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.001.PALIER_RETROGRADE
     scope: public
     rationale: >-
-      CAP.B2B.001.CRT consomme le RES.BSP.001.RETROGRADATION pour transmettre
-      au partenaire les règles restrictives du palier inférieur à appliquer
-      immédiatement sur la carte dédiée.
+      CAP.B2B.001.CRT consumes RES.BSP.001.RETROGRADATION to transmit to the
+      partner the restrictive rules of the lower tier to be applied
+      immediately on the dedicated card.
     adrs:
       - ADR-BCM-FUNC-0011
     tags:
@@ -905,16 +905,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.002.BENEFICIAIRE_SORTI
     scope: public
     rationale: >-
-      CAP.B2B.001.CRT consomme le RES.BSP.002.DOSSIER_CLOS pour déclencher
-      la résiliation définitive de la carte dédiée avec le partenaire émetteur
-      et clôturer les obligations contractuelles associées.
+      CAP.B2B.001.CRT consumes RES.BSP.002.DOSSIER_CLOS to trigger the
+      definitive termination of the dedicated card with the issuing partner
+      and close the associated contractual obligations.
     adrs:
       - ADR-BCM-FUNC-0011
     tags:
       - resource
       - subscription
 
-  # ── CAP.B2B.001.OBK — Intégration open banking ──────────────────────────────
+  # ── CAP.B2B.001.OBK — Open banking integration ──────────────────────────────
 
   - id: SUB.RESOURCE.B2B.001.005
     consumer_capability: CAP.B2B.001.OBK
@@ -925,16 +925,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.002.BENEFICIAIRE_ENROLE
     scope: public
     rationale: >-
-      CAP.B2B.001.OBK consomme le RES.BSP.002.DOSSIER_ACTIF pour extraire le
-      consentement DSP2 et l'IBAN du bénéficiaire, nécessaires à
-      l'initialisation de l'accès open banking sur le compte principal.
+      CAP.B2B.001.OBK consumes RES.BSP.002.DOSSIER_ACTIF to extract the
+      PSD2 consent and the beneficiary's IBAN, required to initialise
+      the open banking access on the main account.
     adrs:
       - ADR-BCM-FUNC-0011
     tags:
       - resource
       - subscription
 
-  # ── CAP.B2B.001.FLX — Gestion des flux financiers ───────────────────────────
+  # ── CAP.B2B.001.FLX — Financial flow management ─────────────────────────────
 
   - id: SUB.RESOURCE.B2B.001.006
     consumer_capability: CAP.B2B.001.FLX
@@ -945,9 +945,9 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.004.ENVELOPPE_ALLOUEE
     scope: public
     rationale: >-
-      CAP.B2B.001.FLX consomme le RES.BSP.004.ENVELOPPE_OUVERTE pour déclencher
-      le virement de la catégorie concernée depuis le compte principal vers
-      la carte dédiée selon le montant alloué.
+      CAP.B2B.001.FLX consumes RES.BSP.004.ENVELOPPE_OUVERTE to trigger the
+      transfer of the relevant category from the main account to the dedicated
+      card according to the allocated amount.
     adrs:
       - ADR-BCM-FUNC-0011
     tags:
@@ -963,16 +963,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.004.ENVELOPPE_EPUISEE
     scope: public
     rationale: >-
-      CAP.B2B.001.FLX consomme le RES.BSP.004.ENVELOPPE_EPUISEE pour déclencher
-      le rapprochement des flux financiers de la catégorie épuisée et clôturer
-      la période comptable correspondante avec le partenaire.
+      CAP.B2B.001.FLX consumes RES.BSP.004.ENVELOPPE_EPUISEE to trigger the
+      reconciliation of the exhausted category's financial flows and close
+      the corresponding accounting period with the partner.
     adrs:
       - ADR-BCM-FUNC-0011
     tags:
       - resource
       - subscription
 
-  # ── CAP.SUP.001.CON — Gestion des consentements RGPD ────────────────────────
+  # ── CAP.SUP.001.CON — GDPR consent management ────────────────────────────────
 
   - id: SUB.RESOURCE.SUP.001.001
     consumer_capability: CAP.SUP.001.CON
@@ -983,16 +983,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.002.BENEFICIAIRE_ENROLE
     scope: public
     rationale: >-
-      CAP.SUP.001.CON consomme le RES.BSP.002.DOSSIER_ACTIF pour vérifier que
-      le consentement RGPD est formellement attaché au dossier avant d'autoriser
-      le traitement des données du bénéficiaire enrôlé.
+      CAP.SUP.001.CON consumes RES.BSP.002.DOSSIER_ACTIF to verify that the
+      GDPR consent is formally attached to the case before authorising the
+      processing of the enrolled beneficiary's data.
     adrs:
       - ADR-BCM-FUNC-0012
     tags:
       - resource
       - subscription
 
-  # ── CAP.SUP.001.RET — Droits des bénéficiaires RGPD ─────────────────────────
+  # ── CAP.SUP.001.RET — Beneficiary GDPR rights ─────────────────────────────
 
   - id: SUB.RESOURCE.SUP.001.002
     consumer_capability: CAP.SUP.001.RET
@@ -1003,16 +1003,16 @@ resource_subscriptions:
       linked_business_event: EVT.BSP.002.BENEFICIAIRE_SORTI
     scope: public
     rationale: >-
-      CAP.SUP.001.RET consomme le RES.BSP.002.DOSSIER_CLOS pour déclencher la
-      revue des droits RGPD post-sortie avec les données de traitement
-      collectées pendant le programme (droit à l'effacement, portabilité).
+      CAP.SUP.001.RET consumes RES.BSP.002.DOSSIER_CLOS to trigger the
+      post-exit GDPR rights review with the processing data collected during
+      the programme (right to erasure, portability).
     adrs:
       - ADR-BCM-FUNC-0012
     tags:
       - resource
       - subscription
 
-  # ── CAP.DAT.001.MOD — Modèle analytique du score ────────────────────────────
+  # ── CAP.DAT.001.MOD — Analytics scoring model ────────────────────────────────
 
   - id: SUB.RESOURCE.DAT.001.001
     consumer_capability: CAP.DAT.001.MOD
@@ -1023,16 +1023,16 @@ resource_subscriptions:
       linked_business_event: EVT.DAT.001.DONNEES_COMPORTEMENTALES_INGEREES
     scope: internal
     rationale: >-
-      CAP.DAT.001.MOD consomme le RES.DAT.001.LOT_INGERE pour alimenter le
-      pipeline d'entraînement du modèle avec les nouvelles données
-      comportementales anonymisées disponibles dans le lot.
+      CAP.DAT.001.MOD consumes RES.DAT.001.LOT_INGERE to feed the model
+      training pipeline with the new anonymised behavioural data
+      available in the batch.
     adrs:
       - ADR-BCM-FUNC-0014
     tags:
       - resource
       - subscription
 
-  # ── CAP.DAT.001.REP — Reporting programme ───────────────────────────────────
+  # ── CAP.DAT.001.REP — Programme reporting ───────────────────────────────────
 
   - id: SUB.RESOURCE.DAT.001.002
     consumer_capability: CAP.DAT.001.REP
@@ -1043,9 +1043,9 @@ resource_subscriptions:
       linked_business_event: EVT.DAT.001.DONNEES_COMPORTEMENTALES_INGEREES
     scope: internal
     rationale: >-
-      CAP.DAT.001.REP consomme le RES.DAT.001.LOT_INGERE pour alimenter les
-      pipelines de reporting programme avec les données comportementales
-      agrégées nécessaires aux tableaux de bord de suivi.
+      CAP.DAT.001.REP consumes RES.DAT.001.LOT_INGERE to feed the programme
+      reporting pipelines with the aggregated behavioural data required
+      for the monitoring dashboards.
     adrs:
       - ADR-BCM-FUNC-0014
     tags:
@@ -1061,16 +1061,16 @@ resource_subscriptions:
       linked_business_event: EVT.DAT.001.MODELE_SCORE_MAJ
     scope: public
     rationale: >-
-      CAP.DAT.001.REP consomme le RES.DAT.001.MODELE_ACTIF pour intégrer les
-      métriques de performance du modèle déployé dans les rapports de suivi
-      programme adressés aux instances de pilotage.
+      CAP.DAT.001.REP consumes RES.DAT.001.MODELE_ACTIF to integrate the
+      deployed model's performance metrics into the programme monitoring
+      reports addressed to steering governance bodies.
     adrs:
       - ADR-BCM-FUNC-0014
     tags:
       - resource
       - subscription
 
-  # ── CAP.PIL.001.GOV — Gouvernance du programme ──────────────────────────────
+  # ── CAP.PIL.001.GOV — Programme governance ──────────────────────────────────
 
   - id: SUB.RESOURCE.PIL.001.001
     consumer_capability: CAP.PIL.001.GOV
@@ -1081,16 +1081,16 @@ resource_subscriptions:
       linked_business_event: EVT.DAT.001.MODELE_SCORE_MAJ
     scope: public
     rationale: >-
-      CAP.PIL.001.GOV consomme le RES.DAT.001.MODELE_EN_VALIDATION pour
-      accéder aux spécifications du modèle soumis et instruire la décision
-      de validation ou de rejet avant tout déploiement en production.
+      CAP.PIL.001.GOV consumes RES.DAT.001.MODELE_EN_VALIDATION to access
+      the submitted model's specifications and instruct the validation or
+      rejection decision before any production deployment.
     adrs:
       - ADR-BCM-FUNC-0015
     tags:
       - resource
       - subscription
 
-  # ── CAP.PIL.001.KPI — Suivi de performance ──────────────────────────────────
+  # ── CAP.PIL.001.KPI — Performance monitoring ──────────────────────────────
 
   - id: SUB.RESOURCE.PIL.001.002
     consumer_capability: CAP.PIL.001.KPI
@@ -1101,16 +1101,16 @@ resource_subscriptions:
       linked_business_event: EVT.DAT.001.RAPPORT_PROGRAMME_GENERE
     scope: public
     rationale: >-
-      CAP.PIL.001.KPI consomme le RES.DAT.001.RAPPORT_ANALYTIQUE pour extraire
-      les indicateurs de performance et mettre à jour les tableaux de bord de
-      pilotage stratégique du programme.
+      CAP.PIL.001.KPI consumes RES.DAT.001.RAPPORT_ANALYTIQUE to extract
+      performance indicators and update the strategic programme steering
+      dashboards.
     adrs:
       - ADR-BCM-FUNC-0015
     tags:
       - resource
       - subscription
 
-  # ── CAP.PIL.001.AUD — Audit conformité programme ────────────────────────────
+  # ── CAP.PIL.001.AUD — Programme compliance audit ────────────────────────────
 
   - id: SUB.RESOURCE.PIL.001.003
     consumer_capability: CAP.PIL.001.AUD
@@ -1121,9 +1121,9 @@ resource_subscriptions:
       linked_business_event: EVT.SUP.001.ACCES_JOURNALISE
     scope: public
     rationale: >-
-      CAP.PIL.001.AUD consomme le RES.SUP.001.TRACE_ACCES_PRESCRIPTEUR pour
-      constituer les preuves d'audit réglementaire avec les données d'accès
-      horodatées et contextualisées nécessaires aux contrôles de conformité.
+      CAP.PIL.001.AUD consumes RES.SUP.001.TRACE_ACCES_PRESCRIPTEUR to build
+      regulatory audit evidence with the timestamped and contextualised access
+      data required for compliance checks.
     adrs:
       - ADR-BCM-FUNC-0015
     tags:

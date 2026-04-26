@@ -1,77 +1,77 @@
 ---
 task_id: TASK-002
 capability_id: CAP.CAN.001.TAB
-capability_name: Tableau de Bord Bénéficiaire
-epic: Épic 1 — Infrastructure d'alimentation événementielle
+capability_name: Beneficiary Dashboard
+epic: Epic 1 — Event Feed Infrastructure
 status: todo
 priority: high
 depends_on: [TASK-001]
 ---
 
-# TASK-002 — Stub d'alimentation et couche de consommation événementielle de CAP.CAN.001.TAB
+# TASK-002 — Feed stub and event consumption layer for CAP.CAN.001.TAB
 
-## Contexte
-CAP.CAN.001.TAB se développe en isolation totale des capacités COEUR (BSP.001.SCO, BSP.001.PAL, BSP.004.ENV), qui se construisent en parallèle. Un stub doit alimenter le point de souscription unique de CAP.CAN.001.TAB avec les trois événements définis en TASK-001, à une fréquence paramétrable. La couche de consommation lit ces événements et maintient un read model par bénéficiaire que les épics suivants afficheront. Quand le COEUR sera opérationnel (TASK-006), le stub sera remplacé sans toucher au code de consommation.
+## Context
+CAP.CAN.001.TAB is developed in complete isolation from the CORE capabilities (BSP.001.SCO, BSP.001.PAL, BSP.004.ENV), which are being built in parallel. A stub must feed the unique subscription point of CAP.CAN.001.TAB with the three events defined in TASK-001, at a configurable frequency. The consumption layer reads these events and maintains a read model per beneficiary that subsequent epics will display. When the CORE is operational (TASK-006), the stub will be replaced without touching the consumption code.
 
-## Référence capacité
-- Capacité : Tableau de Bord Bénéficiaire (CAP.CAN.001.TAB)
-- Zone : CANAL
-- ADR gouvernants : ADR-BCM-FUNC-0009, ADR-BCM-URBA-0007, ADR-BCM-URBA-0009
+## Capability Reference
+- Capability: Beneficiary Dashboard (CAP.CAN.001.TAB)
+- Zone: CHANNEL
+- Governing ADRs: ADR-BCM-FUNC-0009, ADR-BCM-URBA-0007, ADR-BCM-URBA-0009
 
-## Ce qu'il faut produire
+## What needs to be produced
 
-### Point de souscription unique
-Mettre en place le point de souscription dédié à CAP.CAN.001.TAB sur le bus événementiel. Toutes les capacités COEUR (actuelles et futures) publient sur ce point ; CAP.CAN.001.TAB le lit exclusivement.
+### Unique subscription point
+Set up the dedicated subscription point for CAP.CAN.001.TAB on the event bus. All CORE capabilities (current and future) publish to this point; CAP.CAN.001.TAB reads from it exclusively.
 
-### Stub d'alimentation
-Un composant qui publie sur ce point de souscription les trois événements définis en TASK-001 :
-- `ScoreComportemental.Recalculé` — avec un score simulé variant dans le temps
-- `Palier.FranchiHausse` — avec transitions de palier simulées
-- `Enveloppe.Consommée` — avec consommation budgétaire simulée par catégorie
+### Feed stub
+A component that publishes the three events defined in TASK-001 to this subscription point:
+- `BehavioralScore.Recalculated` — with a simulated score varying over time
+- `Tier.UpwardCrossed` — with simulated tier transitions
+- `Envelope.Consumed` — with simulated budget consumption by category
 
-Le stub doit être activable/désactivable par configuration d'environnement (inactif en production).
+The stub must be activatable/deactivatable via environment configuration (inactive in production).
 
-### Couche de consommation
-Un composant qui lit les événements du point de souscription et maintient un **read model par bénéficiaire** contenant :
-- Le score comportemental courant
-- Le palier actif
-- Les soldes d'enveloppes par catégorie
+### Consumption layer
+A component that reads the events from the subscription point and maintains a **read model per beneficiary** containing:
+- The current behavioral score
+- The active tier
+- Envelope balances by category
 
-Ce read model est la seule source de données pour les vues TASK-003, TASK-004, TASK-005.
+This read model is the sole data source for the TASK-003, TASK-004, TASK-005 views.
 
-### Bénéficiaire de test
-À l'issue de cette tâche, un bénéficiaire de test simulé doit être consultable de bout en bout (événements produits → read model alimenté) sans aucune dépendance au COEUR.
+### Test beneficiary
+At the end of this task, a simulated test beneficiary must be viewable end-to-end (events produced → read model fed) without any CORE dependency.
 
-## Événements métier à produire
-Aucun événement métier produit par cette tâche — elle pose l'infrastructure de consommation.
+## Business Events to Produce
+No business events produced by this task — it establishes the consumption infrastructure.
 
-## Objets métier impliqués
-- **Bénéficiaire** — clé de corrélation du read model
-- **Score comportemental** — état courant maintenu dans le read model
-- **Palier** — état courant maintenu dans le read model
-- **Enveloppe** — solde par catégorie maintenu dans le read model
+## Business Objects Involved
+- **Beneficiary** — correlation key of the read model
+- **Behavioral score** — current state maintained in the read model
+- **Tier** — current state maintained in the read model
+- **Envelope** — balance by category maintained in the read model
 
-## Souscriptions événementielles requises
-- `ScoreComportemental.Recalculé` (de CAP.BSP.001.SCO) — abonnement ressource : alimente le score dans le read model
-- `Palier.FranchiHausse` (de CAP.BSP.001.PAL) — abonnement métier : met à jour le palier actif dans le read model
-- `Enveloppe.Consommée` (de CAP.BSP.004.ENV) — abonnement ressource : met à jour les soldes d'enveloppes dans le read model
+## Required Event Subscriptions
+- `BehavioralScore.Recalculated` (from CAP.BSP.001.SCO) — resource subscription: feeds the score in the read model
+- `Tier.UpwardCrossed` (from CAP.BSP.001.PAL) — business subscription: updates the active tier in the read model
+- `Envelope.Consumed` (from CAP.BSP.004.ENV) — resource subscription: updates envelope balances in the read model
 
-## Définition de Done
-- [ ] Le point de souscription unique de CAP.CAN.001.TAB est opérationnel
-- [ ] Le stub publie les trois événements (conforme au contrat de TASK-001) à fréquence paramétrable
-- [ ] Le stub est désactivable par configuration d'environnement
-- [ ] La couche de consommation lit les trois événements et maintient le read model par bénéficiaire
-- [ ] Un bénéficiaire de test est consultable de bout en bout sans dépendance COEUR
-- [ ] Le remplacement du stub par une source réelle ne nécessite aucune modification du code de consommation
-- [ ] validate_repo.py passe sans erreur
-- [ ] validate_events.py passe sans erreur
+## Definition of Done
+- [ ] The unique subscription point of CAP.CAN.001.TAB is operational
+- [ ] The stub publishes the three events (compliant with the TASK-001 contract) at configurable frequency
+- [ ] The stub is deactivatable by environment configuration
+- [ ] The consumption layer reads the three events and maintains the read model per beneficiary
+- [ ] A test beneficiary is viewable end-to-end without CORE dependency
+- [ ] Replacing the stub with a real source requires no modification to the consumption code
+- [ ] validate_repo.py passes without error
+- [ ] validate_events.py passes without error
 
-## Critères d'acceptation (métier)
-Un développeur travaillant sur TASK-003 peut afficher les données d'un bénéficiaire de test sans attendre aucune autre équipe. Les données du read model sont cohérentes avec les événements publiés par le stub.
+## Acceptance Criteria (business)
+A developer working on TASK-003 can display a test beneficiary's data without waiting for any other team. The read model data is consistent with the events published by the stub.
 
-## Dépendances
-- **TASK-001** : le contrat d'événements doit être gelé avant d'implémenter le stub et la couche de consommation
+## Dependencies
+- **TASK-001**: the event contract must be frozen before implementing the stub and the consumption layer
 
-## Questions ouvertes
-- Le bus événementiel (technologie) est-il déjà choisi pour le projet Reliever, ou laissé à l'implement-capability ?
-- Le stub doit-il simuler plusieurs bénéficiaires distincts ou un seul bénéficiaire de test suffit-il pour les Épics 2-4 ?
+## Open Questions
+- Has the event bus technology already been chosen for the Reliever project, or is it left to the implement-capability skill?
+- Should the stub simulate multiple distinct beneficiaries or is a single test beneficiary sufficient for Epics 2-4?

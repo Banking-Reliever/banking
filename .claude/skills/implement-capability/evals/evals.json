@@ -1,0 +1,87 @@
+{
+  "skill_name": "implement-capability",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I need to implement a new L3 business capability called PolicyManagement for the Maif namespace. The main aggregate is InsurancePolicy. It should support two commands: CreatePolicy (emits PolicyCreated) and SuspendPolicy (emits PolicySuspended). Bus channel: maif-policy-management-channel.",
+      "expected_output": "Full project scaffold under sources/PolicyManagement/ with all 5 layers (Domain, Application, Infrastructure, Presentation, Contracts), random local port, docker-compose with offset MongoDB/RabbitMQ ports, all placeholder substitutions completed, and a nuget.config with naive-unicorn feed.",
+      "assertions": [
+        {
+          "name": "sources-dir-created",
+          "description": "sources/PolicyManagement/svc directory exists"
+        },
+        {
+          "name": "all-five-layers",
+          "description": "All 5 project directories exist: Domain, Application, Infrastructure, Presentation, Contracts"
+        },
+        {
+          "name": "no-unresolved-placeholders",
+          "description": "No file contains literal {Namespace}, {CapabilityName}, {AggregateName}, {LOCAL_PORT}, {MONGO_PORT} etc."
+        },
+        {
+          "name": "aggregate-ar-file",
+          "description": "InsurancePolicyAR.cs exists in the Domain layer"
+        },
+        {
+          "name": "two-commands-exist",
+          "description": "Both CreatePolicyCommand.cs and SuspendPolicyCommand.cs exist in Contracts/Commands"
+        },
+        {
+          "name": "two-events-exist",
+          "description": "Both PolicyCreated.cs and PolicySuspended.cs exist in Contracts/Events"
+        },
+        {
+          "name": "nuget-config",
+          "description": "nuget.config exists and contains naive-unicorn GitHub Packages feed"
+        },
+        {
+          "name": "random-port-in-hot-json",
+          "description": "hot.json contains a Port value that is a number in range 10000-59999"
+        },
+        {
+          "name": "docker-compose-offset-ports",
+          "description": "docker-compose.yml uses ports derived from the base port (not hardcoded 27017/5672)"
+        },
+        {
+          "name": "program-cs-wires-both-services",
+          "description": "Program.cs registers both ICreatePolicyService and ISuspendPolicyService"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Scaffold a new business capability for claims processing. Namespace: FoodarooExperience, capability name: ClaimsProcessing, main aggregate: Claim. One command: FileClaim, emits ClaimFiled.",
+      "expected_output": "Full scaffold under sources/ClaimsProcessing/ with correct FoodarooExperience namespace substitution, ClaimAR.cs, FileClaimCommand.cs, ClaimFiled.cs, Program.cs, all 5 .csproj files, docker-compose, cold.json and hot.json with ports.",
+      "assertions": [
+        {
+          "name": "sources-dir-created",
+          "description": "sources/ClaimsProcessing/svc directory exists"
+        },
+        {
+          "name": "namespace-correct",
+          "description": "Generated files use FoodarooExperience.ClaimsProcessing namespace (not generic placeholders)"
+        },
+        {
+          "name": "claim-ar-exists",
+          "description": "ClaimAR.cs exists in Domain/Model/AR/Claim/"
+        },
+        {
+          "name": "file-claim-command-exists",
+          "description": "FileClaimCommand.cs exists in Contracts/Commands"
+        },
+        {
+          "name": "claim-filed-event-exists",
+          "description": "ClaimFiled.cs exists in Contracts/Events"
+        },
+        {
+          "name": "no-unresolved-placeholders",
+          "description": "No file contains literal {Namespace}, {CapabilityName}, {AggregateName} etc."
+        },
+        {
+          "name": "cold-json-has-claim-lower",
+          "description": "cold.json connection strings reference claims-processing (not a placeholder)"
+        }
+      ]
+    }
+  ]
+}

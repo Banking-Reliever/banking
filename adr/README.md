@@ -1,92 +1,92 @@
 # ADR — Architecture Decision Records (BCM)
 
-Ce dossier contient l’ensemble des décisions formalisées relatives au POS (BCM).
+This folder contains all formalized decisions related to the BCM (Business Capability Map).
 
-Chaque évolution du modèle doit être tracée par un ADR.
+Every evolution of the model must be tracked by an ADR.
 
-Une modification non documentée n’est pas considérée comme valide.
-
----
-
-## 🎯 Finalité des ADR
-
-Les ADR permettent :
-
-- D’expliciter les décisions prises
-- De conserver le contexte et les alternatives rejetées
-- D’éviter la dérive implicite du modèle
-- D’assurer la traçabilité des évolutions
-- De stabiliser la gouvernance de la BCM
-
-La BCM évolue uniquement par décision formalisée.
+An undocumented modification is not considered valid.
 
 ---
 
-## 🏛 Taxonomie des ADR
+## Purpose of ADRs
 
-Les ADR sont organisés selon trois familles complémentaires :
+ADRs allow:
 
-### 1️⃣ GOV — Gouvernance
+- Explicit recording of decisions made
+- Preservation of context and rejected alternatives
+- Avoidance of implicit model drift
+- Auditability of evolutions
+- Stabilization of BCM governance
 
-Définissent le cadre institutionnel du modèle :
-
-- Organisation du collège BCM
-- Processus d’arbitrage
-- Règles de validation
-- Cycle de vie des décisions
-- Principes anti-dogme
-
-Ces ADR structurent **la manière dont les décisions sont prises**.
+The BCM evolves only through formalized decisions.
 
 ---
 
-### 2️⃣ URBA — Principes structurants
+## ADR Taxonomy
 
-Définissent les règles globales d’urbanisation et de modélisation :
+ADRs are organized according to three complementary families:
+
+### 1. GOV — Governance
+
+Define the institutional framework of the model:
+
+- Organization of the BCM board
+- Arbitration processes
+- Validation rules
+- Decision lifecycle
+- Anti-dogma principles
+
+These ADRs structure **the way decisions are made**.
+
+---
+
+### 2. URBA — Structuring Principles
+
+Define the global rules for urbanization and modeling:
 
 - Zoning
-- Niveaux L1/L2/L3
-- Règle "1 capacité = 1 responsabilité"
-- Découplage logique / physique
-- Principes événementiels
+- L1/L2/L3 levels
+- "1 capability = 1 responsibility" rule
+- Logical / physical decoupling
+- Event-driven principles
 
-Ces ADR définissent **les règles du jeu du modèle**.
+These ADRs define **the rules of the model**.
 
-### Convention d'identifiants à respecter
+### Identifier convention to follow
 
-Les ADR URBA/FUNC qui introduisent ou modifient des assets doivent respecter la convention suivante :
+URBA/FUNC ADRs that introduce or modify assets must follow this convention:
 
-- `CAP.*` pour les capacités
-- `EVT.*` pour les événements
-- `OBJ.*` pour les objets métier
-- `RES.*` pour les ressources
-- `ABO.METIER.*` pour les abonnements métier
-- `ABO.RESSOURCE.*` pour les abonnements ressource
+- `CAP.*` for capabilities
+- `EVT.*` for events
+- `OBJ.*` for business objects
+- `RES.*` for resources
+- `ABO.METIER.*` for business subscriptions
+- `ABO.RESSOURCE.*` for resource subscriptions
 
-Règle de cohérence attendue : une ressource (`RES.*`) implémente un objet métier (`OBJ.*`),
-et ne se substitue pas à lui. Cardinalités attendues :
-- une ressource référence **un seul** objet métier ;
-- un événement ressource référence **un seul** événement métier.
-
----
-
-### 3️⃣ FUNC — Décisions fonctionnelles
-
-Appliquent les principes URBA à des cas concrets :
-
-- Split / merge de capabilities
-- Ajustement de périmètre
-- Création ou suppression de L3
-- Évolution d’événements métier
-- Placement d’une capacité dans une zone
-
-Ces ADR définissent **l’évolution opérationnelle du modèle**.
+Expected coherence rule: a resource (`RES.*`) implements a business object (`OBJ.*`),
+and does not substitute for it. Expected cardinalities:
+- a resource references **exactly one** business object;
+- a resource event references **exactly one** business event.
 
 ---
 
-## ⚖️ Hiérarchie décisionnelle
+### 3. FUNC — Functional Decisions
 
-La hiérarchie des décisions est la suivante :
+Apply URBA principles to concrete cases:
+
+- Split / merge of capabilities
+- Scope adjustment
+- Creation or deletion of L3
+- Evolution of business events
+- Placement of a capability in a zone
+
+These ADRs define **the operational evolution of the model**.
+
+---
+
+## Decision Hierarchy
+
+The decision hierarchy is as follows:
 
 ```text
 GOV
@@ -96,164 +96,163 @@ URBA
 FUNC
 ```
 
-Règles associées :
+Associated rules:
 
-- Un ADR FUNC ne peut pas contredire un ADR URBA.
-- Un ADR URBA doit respecter les principes définis par GOV.
-- Un ADR GOV ne peut être remplacé que par un autre ADR GOV.
-- Toute modification de la BCM doit passer par un ADR Accepted.
+- A FUNC ADR cannot contradict a URBA ADR.
+- A URBA ADR must respect the principles defined by GOV.
+- A GOV ADR can only be replaced by another GOV ADR.
+- Any BCM modification must go through an Accepted ADR.
 
-### Règle de classification
+### Classification rule
 
 ```text
-Est-ce que cette décision concerne la manière dont on décide ?
+Does this decision concern the way decisions are made?
 → GOV
 
-Est-ce que cette décision change les règles globales du modèle ?
+Does this decision change the global rules of the model?
 → URBA
 
-Est-ce que cette décision applique les règles à un périmètre précis ?
+Does this decision apply the rules to a specific scope?
 → FUNC
 ```
-## 🗺 Impacted Mappings
+## Impacted Mappings
 
-Le champ `impacted_mappings` du YAML header indique **quels axes de cartographie** sont affectés par la décision. Il permet d'anticiper les impacts au-delà de la BCM elle-même.
+The `impacted_mappings` field of the YAML header indicates **which mapping axes** are affected by the decision. It allows anticipating impacts beyond the BCM itself.
 
-| Valeur | Axe de cartographie | Exemples d'impacts |
+| Value | Mapping Axis | Examples of impacts |
 |--------|---------------------|---------------------|
-| `SI`   | Cartographie applicative | Applications à recâbler, modules à renommer, composants à découper |
-| `DATA` | Cartographie des données | Flux de données à modifier, domaines de données à réaligner, référentiels impactés |
-| `ORG`  | Cartographie organisationnelle | Équipes à réaffecter, rôles à redéfinir, responsabilités opérationnelles à ajuster |
+| `SI`   | Application mapping | Applications to rewire, modules to rename, components to split |
+| `DATA` | Data mapping | Data flows to modify, data domains to realign, affected referentials |
+| `ORG`  | Organizational mapping | Teams to reassign, roles to redefine, operational responsibilities to adjust |
 
-**Règle d'usage :**
-- Toujours renseigner au moins une valeur si la décision a un impact concret au-delà du modèle BCM.
-- Laisser vide (`[]`) uniquement pour les ADR purement conceptuels sans répercussion directe sur le SI, les données ou l'organisation.
-- Un ADR FUNC aura presque toujours au moins `SI` renseigné.
-
----
-## 🧩 Structure d’un ADR
-
-Chaque ADR contient :
-
-Des métadonnées structurées (YAML header)
-
-- Un contexte
-- Une décision testable
-- Une justification
-- Les impacts sur la BCM
-- Les conséquences
-- La traçabilité
-
-Le template officiel doit être utilisé.
+**Usage rule:**
+- Always fill in at least one value if the decision has a concrete impact beyond the BCM model.
+- Leave empty (`[]`) only for purely conceptual ADRs with no direct impact on the IS, data, or organization.
+- A FUNC ADR will almost always have at least `SI` filled in.
 
 ---
+## ADR Structure
 
+Each ADR contains:
 
-## 🔁 Cycle de vie
+Structured metadata (YAML header)
 
-Statuts possibles :
+- A context
+- A testable decision
+- A justification
+- The impacts on the BCM
+- The consequences
+- The traceability
 
-- Proposed : en discussion
-- Accepted : validé
-- Deprecated : obsolète
-- Superseded : remplacé
-
-Un ADR Accepted constitue la référence officielle.
+The official template must be used.
 
 ---
 
-## 🏛 Collège BCM
 
-Les ADR sont instruits et arbitrés par le Collège BCM.
+## Lifecycle
 
-Composition :
+Possible statuses:
 
-- Architectes SI
+- Proposed: under discussion
+- Accepted: validated
+- Deprecated: obsolete
+- Superseded: replaced
+
+An Accepted ADR constitutes the official reference.
+
+---
+
+## BCM Board
+
+ADRs are reviewed and arbitrated by the BCM Board.
+
+Composition:
+
+- IS Architects
 - Lead Business Analysts
-- Urbaniste garant(e) de cohérence
+- Urbanist responsible for coherence
 
-Le collège :
+The board:
 
-- Assure la cohérence transversale
-- Intègre les retours terrain
-- Statue sur les propositions
-- Documente les décisions
+- Ensures cross-cutting coherence
+- Integrates field feedback
+- Rules on proposals
+- Documents decisions
 
-Les évolutions peuvent être proposées par les équipes projet, notamment via les retours d’Event Storming Big Picture.
-
----
-
-🧠 Principe d’évolutivité
-
-La BCM est un modèle vivant.
-
-Aucune règle n’est intangible.
-Tout ADR peut être challengé.
-
-Le principe directeur est :
-
-La cohérence du modèle ne doit jamais primer sur la valeur métier.
+Evolutions may be proposed by project teams, notably through Event Storming Big Picture feedback.
 
 ---
 
-## ✍️ Proposer un ADR
+Evolutivity Principle
 
-1. Créer un fichier ADR-BCM-<GOV|URBA|FUNC>-<NNNN>.md
-2. Utiliser le template officiel
-3. Renseigner les métadonnées
-4. Définir le statut Proposed
-5. Présenter au Collège BCM
+The BCM is a living model.
 
----
+No rule is immutable.
+Any ADR can be challenged.
 
-🚫 Ce que les ADR ne sont pas
+The guiding principle is:
 
-- Pas des comptes rendus de réunion
-- Pas des tickets projets
-- Pas des documents techniques applicatifs
-
-Ils documentent des décisions de modèle.
+Model coherence must never take precedence over business value.
 
 ---
 
-## 📊 Bonnes pratiques
+## Proposing an ADR
 
-- Une décision = un ADR
-- Être explicite et testable
-- Documenter les alternatives rejetées
-- Maintenir la traçabilité
-- Relier toute modification du fichier capabilities.yaml à un ADR Accepted
+1. Create a file ADR-BCM-<GOV|URBA|FUNC>-<NNNN>.md
+2. Use the official template
+3. Fill in the metadata
+4. Set the status to Proposed
+5. Present to the BCM Board
 
-### Ce qui est une bonne pratique dans un ADR func
+---
 
-Inclure des décisions précises quand elles portent sur :
- * le **périmètre** d’une capacité ;
- * les **frontières** entre capacités ;
- * les **responsabilités** ;
- * les **points de transfert** ;
- * les **règles de rattachement** d’objets métier ;
- * le **nommage d’événements** quand ce nommage a une portée contractuelle ou lève une ambiguïté durable.
+What ADRs are NOT
 
-C’est exactement ce que vos ADR font déjà correctement sur DSP et IND.
+- Not meeting minutes
+- Not project tickets
+- Not application technical documents
 
-### Ce qui devient une mauvaise pratique 
+They document model decisions.
 
-Cela devient une mauvaise pratique si l’ADR func descend jusqu’à :
+---
 
-* l’ordre d’exécution détaillé de variantes de traitement ;
-* des cas métier trop fins ou spécifiques à une ligne produit ;
-* des payloads exhaustifs ;
-* des règles qui vont probablement changer en atelier ou pendant l’implémentation ;
-* des choix de sequencing ou d’orchestration qui relèvent plus du design de solution que de la décision fonctionnelle stable.
+## Best Practices
 
-### Le bon test pratique
+- One decision = one ADR
+- Be explicit and testable
+- Document rejected alternatives
+- Maintain traceability
+- Link every modification of the capabilities.yaml file to an Accepted ADR
 
-Pour décider si un détail mérite d’être dans un ADR func, posez-vous trois questions :
+### What is a good practice in a FUNC ADR
 
-1. Si on ne l’écrit pas, la frontière entre équipes ou capacités redevient-elle ambiguë ?
-Si oui, mettez-le.
-2. Ce point a-t-il une portée contractuelle sur SI / DATA / ORG ?
-Si oui, mettez-le.
-3. Pense-t-on que ce détail doit rester stable au-delà de l’atelier courant ?
-Si non, laissez-le hors ADR.
+Include precise decisions when they concern:
+ * the **scope** of a capability;
+ * the **boundaries** between capabilities;
+ * the **responsibilities**;
+ * the **transfer points**;
+ * the **attachment rules** for business objects;
+ * the **naming of events** when that naming has a contractual scope or resolves a lasting ambiguity.
 
+This is exactly what your ADRs already do correctly on DSP and IND.
+
+### What becomes a bad practice
+
+It becomes a bad practice if the FUNC ADR descends to:
+
+* the detailed execution order of processing variants;
+* business cases too fine-grained or specific to one product line;
+* exhaustive payloads;
+* rules that will likely change in a workshop or during implementation;
+* sequencing or orchestration choices that belong more to solution design than to a stable functional decision.
+
+### The practical test
+
+To decide whether a detail deserves to be in a FUNC ADR, ask yourself three questions:
+
+1. If we don't write it down, does the boundary between teams or capabilities become ambiguous again?
+If yes, include it.
+2. Does this point have a contractual scope on SI / DATA / ORG?
+If yes, include it.
+3. Do we think this detail must remain stable beyond the current workshop?
+If no, leave it out of the ADR.

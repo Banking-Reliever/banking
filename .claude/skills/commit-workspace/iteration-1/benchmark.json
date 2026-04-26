@@ -1,0 +1,168 @@
+{
+  "metadata": {
+    "skill_name": "commit",
+    "skill_path": "/home/yoann/.claude/skills/commit",
+    "executor_model": "claude-sonnet-4-6",
+    "timestamp": "2026-04-23T16:10:00Z",
+    "evals_run": ["conventional-commit", "no-push-flag", "secrets-abort"],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "eval_name": "conventional-commit",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 108.3,
+        "tokens": 16535,
+        "tool_calls": 22,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Uses a conventional commit type (feat/fix/refactor/chore/test/docs/ci)", "passed": true, "evidence": "Commit: 'feat: add ResourceSubscriptionAttribute...'"},
+        {"text": "Commit subject is imperative mood and under 72 chars", "passed": true, "evidence": "57 chars, imperative mood"},
+        {"text": "Appends Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>", "passed": true, "evidence": "Present in git_show.txt"},
+        {"text": "Does NOT use git add -A or git add .", "passed": true, "evidence": "Used explicit file paths"},
+        {"text": "Runs git push after committing", "passed": true, "evidence": "Pushed with git push -u origin master"}
+      ]
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "conventional-commit",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 53.0,
+        "tokens": 12185,
+        "tool_calls": 13,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Uses a conventional commit type (feat/fix/refactor/chore/test/docs/ci)", "passed": true, "evidence": "Commit: 'feat: add ResourceSubscriptionAttribute...'"},
+        {"text": "Commit subject is imperative mood and under 72 chars", "passed": true, "evidence": "57 chars, imperative mood"},
+        {"text": "Appends Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>", "passed": true, "evidence": "Claude adds this by default from built-in git instructions"},
+        {"text": "Does NOT use git add -A or git add .", "passed": true, "evidence": "Used explicit file paths"},
+        {"text": "Runs git push after committing", "passed": true, "evidence": "Agent reported pushing to remote"}
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "no-push-flag",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 3,
+        "failed": 0,
+        "total": 3,
+        "time_seconds": 130.7,
+        "tokens": 17321,
+        "tool_calls": 29,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Commits the changes with a conventional message", "passed": true, "evidence": "'chore(Messaging): add eval comment to BusExtensions'"},
+        {"text": "Does NOT run git push", "passed": true, "evidence": "push_commands.txt: 'no push commands run'"},
+        {"text": "Final output mentions local-only commit", "passed": true, "evidence": "'Committed (local only): chore(Messaging)...'"}
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "no-push-flag",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 3,
+        "failed": 0,
+        "total": 3,
+        "time_seconds": 78.7,
+        "tokens": 12349,
+        "tool_calls": 15,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Commits the changes with a conventional message", "passed": true, "evidence": "'feat: add ResourceSubscriptionAttribute...' — conventional format"},
+        {"text": "Does NOT run git push", "passed": true, "evidence": "push_commands.txt: 'no push commands run'"},
+        {"text": "Final output mentions local-only commit", "passed": true, "evidence": "Transcript: 'Remote: unchanged (local commit only)'"}
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "secrets-abort",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 61.9,
+        "tokens": 13046,
+        "tool_calls": 10,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Detects .env as a potentially sensitive file", "passed": true, "evidence": "Matched .env pattern in Step 1 safety check"},
+        {"text": "Aborts before staging or committing", "passed": true, "evidence": "outcome.txt: ABORTED; git log shows only initial commit"},
+        {"text": "Warns user explicitly about the .env file", "passed": true, "evidence": "Warning: 'Sensitive file detected: .env — I won\\'t stage these...'"},
+        {"text": "Does NOT proceed to create a commit", "passed": true, "evidence": "git_log.txt: only 'e934159 chore: initial commit'"}
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "secrets-abort",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.5,
+        "passed": 2,
+        "failed": 2,
+        "total": 4,
+        "time_seconds": 51.9,
+        "tokens": 11120,
+        "tool_calls": 11,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Detects .env as a potentially sensitive file", "passed": true, "evidence": "warning_message.txt identifies DB_PASSWORD, API_KEY, JWT_SECRET"},
+        {"text": "Aborts before staging or committing", "passed": false, "evidence": "outcome.txt: COMMITTED_WITHOUT_ENV — created commit f463fe5"},
+        {"text": "Warns user explicitly about the .env file", "passed": true, "evidence": "Detailed warning provided in warning_message.txt"},
+        {"text": "Does NOT proceed to create a commit", "passed": false, "evidence": "git_log.txt shows 'f463fe5 feat: add NewFeature implementation' was created"}
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0},
+      "time_seconds": {"mean": 100.3, "stddev": 34.7, "min": 61.9, "max": 130.7},
+      "tokens": {"mean": 15634, "stddev": 2187, "min": 13046, "max": 17321}
+    },
+    "without_skill": {
+      "pass_rate": {"mean": 0.83, "stddev": 0.24, "min": 0.5, "max": 1.0},
+      "time_seconds": {"mean": 61.2, "stddev": 13.7, "min": 51.9, "max": 78.7},
+      "tokens": {"mean": 11885, "stddev": 620, "min": 11120, "max": 12349}
+    },
+    "delta": {
+      "pass_rate": "+0.17",
+      "time_seconds": "+39.1",
+      "tokens": "+3749"
+    }
+  },
+  "notes": [
+    "Eval 1 (conventional-commit): Both configurations scored 1.0 — Claude already follows conventional commits and Co-Authored-By by default via built-in git instructions. This assertion set is non-discriminating.",
+    "Eval 2 (no-push-flag): Both configurations scored 1.0 — Claude understands --no-push without the skill. The skill adds structure and a clean 'Committed (local only)' summary line.",
+    "Eval 3 (secrets-abort): Key differentiator — with-skill ABORTED entirely (1.0), without-skill COMMITTED_WITHOUT_ENV (0.5). The skill enforces a strict abort policy; baseline Claude pragmatically commits the non-secret files.",
+    "The skill costs ~39s and ~3750 extra tokens per invocation due to reading SKILL.md and following explicit steps.",
+    "Main skill value: enforcing the strict abort-on-secrets policy and providing structured step-by-step output."
+  ]
+}

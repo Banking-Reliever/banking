@@ -1,61 +1,61 @@
 # Service Offer
 
-> **Reliever** permet à des individus en fragilité financière de reprendre progressivement le contrôle de leur vie financière quotidienne grâce à un système de paliers d'autonomie croissante, ancré sur une carte dédiée et un score comportemental coordonné entre prescripteurs via open banking, même quand préserver leur dignité est aussi important que contraindre leurs comportements.
+> **Reliever** enables financially vulnerable individuals to progressively regain control of their daily financial lives through a system of increasing autonomy tiers, anchored on a dedicated card and a behavioral score coordinated between prescribers via open banking, even when preserving their dignity is as important as constraining their behaviors.
 
 ## Problem Statement
 
-Les dispositifs existants de lutte contre le surendettement (dossiers Banque de France, plans de redressement) interviennent trop tard, quand la spirale est déjà enclenchée. Ils ne permettent pas d'accompagner les individus au moment des micro-décisions d'achat quotidiennes. Le problème n'est pas l'ignorance — les personnes concernées ont conscience de leur fragilité — mais l'absence d'un soutien concret et d'une autorité externe au moment précis où la décision se pose.
+Existing over-indebtedness solutions (Banque de France files, recovery plans) intervene too late, once the spiral has already begun. They cannot support individuals at the moment of daily micro-purchase decisions. The problem is not ignorance — the people affected are aware of their vulnerability — but the absence of concrete support and external authority at the precise moment the decision is made.
 
 ## Primary Beneficiary
 
-Un individu conscient de sa fragilité financière, identifié par la banque, un psychiatre ou un assistant social. Il n'arrive pas à modifier son comportement d'achat seul — non par ignorance, mais par manque d'un soutien doté d'autorité dans l'instant de la décision. Le succès signifie pour lui une autonomie progressive restaurée, jusqu'à la gestion autonome de sa vie financière.
+An individual who is aware of their financial vulnerability, identified by a bank, a psychiatrist, or a social worker. They cannot modify their purchasing behavior alone — not out of ignorance, but due to the lack of authoritative support at the moment of decision. Success means progressively restored autonomy, up to fully independent management of their financial life.
 
 ## Scope
 
 ### In Scope
-- Contrôle des dépenses au moment de l'achat via une carte dédiée dont les règles suivent le palier courant
-- Visualisation gamifiée du budget et de la progression (modèle Strava)
-- Coordination multi-acteurs (banque, psychiatre, assistant social) avec droits différenciés par rôle
+- Spending control at the point of purchase via a dedicated card whose rules follow the current tier
+- Gamified visualization of budget and progress (Strava model)
+- Multi-actor coordination (bank, psychiatrist, social worker) with differentiated rights per role
 
 ### Out of Scope
-- Prêts et virements — Reliever n'est pas un instrument de crédit ni de transfert de fonds
-- Gestion du compte bancaire principal — Reliever est une couche de remédiation, pas un compte bancaire
-- Intégration aux systèmes bancaires propriétaires — l'open banking est le seul canal d'accès, aucun accord inter-établissements n'est requis
+- Loans and transfers — Reliever is not a credit instrument or fund transfer tool
+- Management of the main bank account — Reliever is a remediation layer, not a bank account
+- Integration with proprietary banking systems — open banking is the only access channel; no inter-institutional agreements are required
 
 ### Open Questions
-- Gouvernance des données entre prescripteurs : quelles données le psychiatre voit-il ? La banque voit-elle le diagnostic ?
-- Critères précis de transition de palier : quels indicateurs comportementaux l'algorithme mesure-t-il ?
-- Émission de la carte dédiée : quel établissement de paiement est le partenaire ?
-- Que se passe-t-il quand l'enveloppe est épuisée avant la fin de période ?
+- Data governance between prescribers: what data does the psychiatrist see? Does the bank see the diagnosis?
+- Precise tier transition criteria: what behavioral indicators does the algorithm measure?
+- Issuance of the dedicated card: which payment institution is the partner?
+- What happens when the budget envelope is exhausted before the end of the period?
 
 ## Core Domain Concepts
 
-1. **Bénéficiaire** — l'individu en remédiation financière
-2. **Prescripteur** — banque, psychiatre, assistant social
-3. **Palier** — niveau d'autonomie courant avec ses règles associées
-4. **Score comportemental** — l'équivalent MMR, calculé en continu par l'algorithme
-5. **Enveloppe** — budget alloué par catégorie et par période
-6. **Événement d'achat** — le moment où la carte est présentée et la règle du palier s'applique
-7. **Contournement** — le comportement de bypasser le canal contrôlé (signal : enveloppe non consommée)
-8. **Progression** — la trajectoire visible du bénéficiaire, valorisée comme une performance
+1. **Beneficiary** — the individual undergoing financial remediation
+2. **Prescriber** — bank, psychiatrist, social worker
+3. **Tier** — current autonomy level with its associated rules
+4. **Behavioral score** — the MMR equivalent, continuously calculated by the algorithm
+5. **Envelope** — budget allocated by category and period
+6. **Purchase event** — the moment the card is presented and the tier rule is applied
+7. **Bypass** — the behavior of circumventing the controlled channel (signal: envelope not consumed)
+8. **Progression** — the beneficiary's visible trajectory, treated as a performance achievement
 
 ## Core Events
 
-1. **Achat effectué** — carte présentée, règle du palier appliquée, enveloppe consommée
-2. **Achat refusé** — palier bloquant, décision motivée retournée à l'individu
-3. **Enveloppe non consommée** — signal de contournement, déclencheur de réévaluation du score
-4. **Palier modifié** — par algorithme ou override prescripteur ; l'algorithme reprend le dessus si la réalité comportementale contredit la décision manuelle
-5. **Rechute détectée** — score chute, prescripteurs notifiés
-6. **Autonomie restituée** — dernier palier atteint, bascule vers application bancaire standard
+1. **Purchase completed** — card presented, tier rule applied, envelope consumed
+2. **Purchase declined** — blocking tier, motivated decision returned to the individual
+3. **Envelope not consumed** — bypass signal, triggers score re-evaluation
+4. **Tier modified** — by algorithm or prescriber override; the algorithm resumes authority if behavioral reality contradicts the manual decision
+5. **Relapse detected** — score drops, prescribers notified
+6. **Autonomy restored** — final tier reached, switch to standard banking application
 
 ## Core Tensions
 
-- **Contrôle vs. dignité** — contraindre sans infantiliser ; la dignité n'est pas une valeur morale ajoutée, c'est une condition fonctionnelle : un outil humiliant se sabote lui-même en provoquant le contournement
-- **Algorithme vs. jugement humain** — l'override prescripteur peut forcer un palier, mais l'algorithme reste l'autorité continue et reprend le dessus si le saut n'est pas validé par les comportements
-- **Transparence vs. vie privée** — partage de données entre acteurs de natures différentes (banque, médecin, travailleur social) ; les périmètres de visibilité par rôle sont une question ouverte critique
+- **Control vs. dignity** — constrain without infantilizing; dignity is not an added moral value, it is a functional condition: a humiliating tool undermines itself by provoking the bypass it seeks to prevent
+- **Algorithm vs. human judgment** — the prescriber override can force a tier, but the algorithm remains the continuous authority and resumes control if the leap is not validated by behaviors
+- **Transparency vs. privacy** — data sharing between actors of different natures (bank, doctor, social worker); role-based visibility boundaries are a critical open question
 
 ## Alternatives Considered
 
-- **Option 1 — Sandbox alimentaire** : micro-compte limité aux courses. Livrable aujourd'hui, mais vision trop étroite — ne couvre pas la vie financière globale et maintient la dépendance aux accords inter-bancaires.
-- **Option 2 — Compte sous gestion progressive** : intégration au compte principal avec contrôle gradué par palier. Nécessite un protocole bancaire partagé impossible à obtenir aujourd'hui.
-- **Option 3 — Protocole de remédiation ouvert (retenu)** : couche indépendante des établissements bancaires via open banking. La carte dédiée est le seul point de contrôle universel. Résout la fragmentation bancaire sans nécessiter d'accord inter-établissements.
+- **Option 1 — Food sandbox**: micro-account limited to grocery purchases. Deliverable today, but too narrow a vision — does not cover overall financial life and maintains dependency on inter-banking agreements.
+- **Option 2 — Progressively managed account**: integration with the main account with graduated tier-based control. Requires a shared banking protocol that is impossible to obtain today.
+- **Option 3 — Open remediation protocol (selected)**: layer independent of banking institutions via open banking. The dedicated card is the only universal control point. Resolves banking fragmentation without requiring inter-institutional agreements.

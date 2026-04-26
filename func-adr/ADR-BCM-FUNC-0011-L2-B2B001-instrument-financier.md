@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-FUNC-0011
-title: "L2 Breakdown de CAP.B2B.001 — Gestion de l'Instrument Financier"
+title: "L2 Breakdown of CAP.B2B.001 — Financial Instrument Management"
 status: Proposed
 date: 2026-04-24
 
@@ -44,101 +44,125 @@ tags:
   - L2
   - ECHANGE_B2B
   - open-banking
-  - carte
-  - instrument-financier
+  - card
+  - financial-instrument
 
 stability_impact: Structural
+
+domain_classification:
+  type: generic
+  coordinates:
+    x: 0.25
+    y: 0.3
+  rationale: "Émission de carte et open banking sont des patterns réglementaires standardisés (DSP2) utilisés comme infrastructure, non comme source de différenciation"
 ---
 
-# ADR-BCM-FUNC-0011 — L2 Breakdown de CAP.B2B.001 — Gestion de l'Instrument Financier
+# ADR-BCM-FUNC-0011 — L2 Breakdown of CAP.B2B.001 — Financial Instrument Management
 
-## Contexte
+## Domain Classification
 
-CAP.B2B.001 est la capacité qui rend Reliever indépendant des établissements bancaires. Via l'open banking, Reliever accède aux données financières du compte principal sans accord inter-bancaire. Via la carte dédiée, il contrôle les dépenses sans modifier le compte principal.
+> **Mandatory for FUNC ADRs.** Derived from the product vision and strategic vision — not from technical complexity alone.
 
-C'est la zone ECHANGE_B2B qui porte cette capacité (ADR-BCM-URBA-0001) : il s'agit d'échanges avec l'écosystème financier externe (réseaux de paiement, établissements émetteurs, API open banking) avec des contraintes SLA, de traçabilité et de conformité réglementaire spécifiques.
+| Axis | Score | Interpretation |
+|------|-------|----------------|
+| x — Business Differentiation | 0.25 | 0.0 = commodity (could be bought off-shelf) → 1.0 = uniquely differentiating |
+| y — Model Complexity | 0.3 | 0.0 = trivial / well-understood → 1.0 = proprietary / high cognitive load |
 
-## Décision
+**Classification:** `generic`
 
-CAP.B2B.001 est décomposé en **3 capacités L2** :
+**Rationale:**
 
-| ID | Nom | Responsabilité |
-|----|-----|----------------|
-| CAP.B2B.001.CRT | Gestion de la Carte Dédiée | Piloter le cycle de vie de la carte dédiée — émission, activation, suspension, résiliation — et lier ses règles d'usage aux paliers courants |
-| CAP.B2B.001.OBK | Intégration Open Banking | Accéder et rafraîchir les données financières du compte principal du bénéficiaire via les APIs open banking |
-| CAP.B2B.001.FLX | Gestion des Flux Financiers | Orchestrer l'alimentation de la carte dédiée depuis le compte principal, assurer le rapprochement des flux |
+> Émission de carte et open banking sont des patterns réglementaires standardisés (DSP2) utilisés comme infrastructure, non comme source de différenciation
 
-### Événements métier par L2
+---
 
-| L2 | Événements produits | Événements consommés |
-|----|---------------------|----------------------|
+## Context
+
+CAP.B2B.001 is the capability that makes Reliever independent from banking institutions. Via open banking, Reliever accesses the financial data of the main account without an inter-banking agreement. Via the dedicated card, it controls spending without modifying the main account.
+
+This is the ECHANGE_B2B zone that holds this capability (ADR-BCM-URBA-0001): it involves exchanges with the external financial ecosystem (payment networks, issuing institutions, open banking APIs) with specific SLA, traceability, and regulatory compliance constraints.
+
+## Decision
+
+CAP.B2B.001 is decomposed into **3 L2 capabilities**:
+
+| ID | Name | Responsibility |
+|----|------|----------------|
+| CAP.B2B.001.CRT | Dedicated Card Management | Manage the dedicated card lifecycle — issuance, activation, suspension, cancellation — and link its usage rules to the current tiers |
+| CAP.B2B.001.OBK | Open Banking Integration | Access and refresh the beneficiary's main account financial data via open banking APIs |
+| CAP.B2B.001.FLX | Financial Flow Management | Orchestrate the funding of the dedicated card from the main account, ensure flow reconciliation |
+
+### Business Events per L2
+
+| L2 | Events Produced | Events Consumed |
+|----|-----------------|-----------------|
 | CAP.B2B.001.CRT | `Carte.Émise`, `Carte.Activée`, `Carte.Suspendue`, `Carte.Résiliée` | `Bénéficiaire.Enrôlé` (BSP.002.ENR), `Palier.FranchiHausse` (BSP.001.PAL), `Palier.Rétrogradé` (BSP.001.PAL), `Bénéficiaire.SortiDuDispositif` (BSP.002.SOR) |
-| CAP.B2B.001.OBK | `DonnéesFinancières.Rafraîchies` | `Bénéficiaire.Enrôlé` (BSP.002.ENR) — pour initialiser l'accès open banking |
+| CAP.B2B.001.OBK | `DonnéesFinancières.Rafraîchies` | `Bénéficiaire.Enrôlé` (BSP.002.ENR) — to initialize open banking access |
 | CAP.B2B.001.FLX | `Alimentation.Effectuée` | `Enveloppe.Allouée` (BSP.004.ENV), `Enveloppe.Épuisée` (BSP.004.ENV) |
 
-### Points de transfert
+### Transfer Points
 
-- **BSP.001.PAL → B2B.001.CRT** : tout changement de palier met à jour les règles de la carte (plafonds, restrictions catégories)
-- **BSP.002.ENR → B2B.001.CRT** : l'enrôlement déclenche l'émission de la carte
-- **B2B.001.OBK → DAT.001** : les données financières rafraîchies alimentent l'analytique comportementale
+- **BSP.001.PAL → B2B.001.CRT**: any tier change updates the card rules (ceilings, category restrictions)
+- **BSP.002.ENR → B2B.001.CRT**: enrollment triggers card issuance
+- **B2B.001.OBK → DAT.001**: refreshed financial data feeds behavioral analytics
 
-### Contrainte réglementaire open banking
+### Open Banking Regulatory Constraint
 
-CAP.B2B.001.OBK opère sous le cadre PSD2/DSP2. L'accès aux données financières nécessite un consentement explicite géré par CAP.SUP.001.CON. La capacité open banking ne peut être activée qu'après `Consentement.Accordé`.
+CAP.B2B.001.OBK operates under the PSD2/DSP2 framework. Access to financial data requires explicit consent managed by CAP.SUP.001.CON. The open banking capability can only be activated after `Consentement.Accordé`.
 
-### Critères vérifiables
+### Verifiable Criteria
 
-- Chaque L2 produit au moins un événement métier (ADR-BCM-URBA-0009)
-- `Carte.Émise` ne peut être produit qu'après `Bénéficiaire.Enrôlé`
-- `DonnéesFinancières.Rafraîchies` ne peut être produit qu'après `Consentement.Accordé` (SUP.001.CON)
+- Each L2 produces at least one business event (ADR-BCM-URBA-0009)
+- `Carte.Émise` can only be produced after `Bénéficiaire.Enrôlé`
+- `DonnéesFinancières.Rafraîchies` can only be produced after `Consentement.Accordé` (SUP.001.CON)
 
-## Justification
+## Rationale
 
-La séparation CRT / OBK / FLX reflète trois relations distinctes avec l'écosystème financier externe : l'émetteur de carte (partenaire de paiement), les banques du bénéficiaire (via open banking), et les flux de fonds entre les deux. Ces trois relations ont des partenaires, des SLAs et des réglementations différents.
+The CRT / OBK / FLX separation reflects three distinct relationships with the external financial ecosystem: the card issuer (payment partner), the beneficiary's banks (via open banking), and the fund flows between the two. These three relationships have different partners, SLAs, and regulations.
 
-### Alternatives considérées
+### Alternatives Considered
 
-- **CRT + FLX fusionnés** — rejeté car la carte et les flux financiers impliquent des partenaires externes différents (émetteur carte ≠ banque principale du bénéficiaire) ; leur cycle de vie et leurs SLAs sont distincts
-- **OBK dans CAP.SUP.001** — rejeté car l'open banking est un échange avec l'écosystème externe (ECHANGE_B2B) ; la conformité de cet échange est gérée par SUP.001 mais la capacité d'échange elle-même appartient à B2B
+- **CRT + FLX merged** — rejected because the card and financial flows involve different external partners (card issuer ≠ beneficiary's main bank); their lifecycles and SLAs are distinct
+- **OBK in CAP.SUP.001** — rejected because open banking is an exchange with the external ecosystem (ECHANGE_B2B); the compliance of that exchange is managed by SUP.001 but the exchange capability itself belongs to B2B
 
-## Impacts sur la BCM
+## BCM Impacts
 
 ### Structure
 
-- 3 L2 créés sous CAP.B2B.001
-- Dépendances entrantes fortes depuis BSP.001.PAL et BSP.002.ENR
+- 3 L2s created under CAP.B2B.001
+- Strong incoming dependencies from BSP.001.PAL and BSP.002.ENR
 
-### Mapping SI / Data / Org
+### SI / Data / Org Mapping
 
-- **SI** : nécessite un partenaire d'émission de carte (établissement de paiement agréé) et un agrégateur open banking
-- **ORG** : owner recommandé : équipe "Partenariats Financiers & Paiements"
+- **SI**: requires a card issuance partner (licensed payment institution) and an open banking aggregator
+- **ORG**: recommended owner: "Financial Partnerships & Payments" team
 
-## Conséquences
+## Consequences
 
-### Positives
+### Positive
 
-- Reliever est indépendant des banques grâce à l'open banking — pas d'accord inter-bancaire requis
-- La carte est le seul point de contrôle universel
+- Reliever is independent from banks through open banking — no inter-banking agreement required
+- The card is the single universal control point
 
-### Négatives / Risques
+### Negative / Risks
 
-- Dépendance forte à un partenaire d'émission de carte (single point of failure potentiel)
-- L'open banking est soumis à des révisions réglementaires (DSP3 en cours) — risque de refactoring de B2B.001.OBK
+- Strong dependency on a card issuance partner (potential single point of failure)
+- Open banking is subject to regulatory revisions (PSD3 in progress) — risk of refactoring B2B.001.OBK
 
-### Dette acceptée
+### Accepted Debt
 
-- Le choix du partenaire d'émission de carte n'est pas formalisé ici — question ouverte critique
+- The choice of card issuance partner is not formalized here — critical open question
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : Élevé (infrastructure financière du dispositif)
-- Date de revue recommandée : 2027-10-24
-- Indicateur de stabilité attendu : partenaire d'émission identifié, accès open banking certifié DSP2
+- Criticality level: High (financial infrastructure of the program)
+- Recommended review date: 2027-10-24
+- Expected stability indicator: issuance partner identified, open banking access PSD2-certified
 
-## Traçabilité
+## Traceability
 
-- Atelier : Session BCM Reliever — 2026-04-24
-- Participants : yremy
-- Références :
+- Workshop: BCM Reliever Session — 2026-04-24
+- Participants: yremy
+- References:
   - `/strategic-vision/strategic-vision.md` — SC.006
   - ADR-BCM-FUNC-0004

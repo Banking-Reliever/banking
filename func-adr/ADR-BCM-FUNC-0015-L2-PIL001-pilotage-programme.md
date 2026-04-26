@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-FUNC-0015
-title: "L2 Breakdown de CAP.PIL.001 — Pilotage du Programme"
+title: "L2 Breakdown of CAP.PIL.001 — Program Steering"
 status: Proposed
 date: 2026-04-24
 
@@ -41,92 +41,116 @@ tags:
   - BCM
   - L2
   - PILOTAGE
-  - gouvernance
+  - governance
   - KPI
-  - conformité-programme
+  - program-compliance
 
 stability_impact: Moderate
+
+domain_classification:
+  type: generic
+  coordinates:
+    x: 0.2
+    y: 0.25
+  rationale: "Pilotage et KPIs suivent des patterns de gouvernance standard sans différenciation compétitive"
 ---
 
-# ADR-BCM-FUNC-0015 — L2 Breakdown de CAP.PIL.001 — Pilotage du Programme
+# ADR-BCM-FUNC-0015 — L2 Breakdown of CAP.PIL.001 — Program Steering
 
-## Contexte
+## Domain Classification
 
-CAP.PIL.001 pilote le programme de remédiation Reliever à l'échelle — au-delà du suivi individuel d'un bénéficiaire. Elle répond à la question : "Le programme est-il efficace ? Est-il conforme ? Doit-on faire évoluer les règles ?"
+> **Mandatory for FUNC ADRs.** Derived from the product vision and strategic vision — not from technical complexity alone.
 
-Per ADR-BCM-URBA-0001, la zone PILOTAGE porte les capacités de pilotage d'entreprise, conformité et gouvernance. CAP.PIL.001 est distinct de CAP.SUP.001 (conformité IS transverse) : PIL.001 pilote la conformité réglementaire du programme dans son ensemble ; SUP.001 garantit la conformité des données au niveau technique.
+| Axis | Score | Interpretation |
+|------|-------|----------------|
+| x — Business Differentiation | 0.2 | 0.0 = commodity (could be bought off-shelf) → 1.0 = uniquely differentiating |
+| y — Model Complexity | 0.25 | 0.0 = trivial / well-understood → 1.0 = proprietary / high cognitive load |
 
-## Décision
+**Classification:** `generic`
 
-CAP.PIL.001 est décomposé en **3 capacités L2** :
+**Rationale:**
 
-| ID | Nom | Responsabilité |
-|----|-----|----------------|
-| CAP.PIL.001.GOV | Gouvernance du Programme | Définir et faire évoluer les politiques de gouvernance du programme — règles d'éligibilité, seuils de palier, protocoles de co-décision |
-| CAP.PIL.001.KPI | Suivi de Performance | Mesurer l'efficacité du dispositif à l'échelle — taux de progression, taux de rechute, taux de sortie, dignité perçue |
-| CAP.PIL.001.AUD | Audit Conformité Programme | Vérifier la conformité réglementaire du programme dans son ensemble (respect des cadres bancaire, médical et social) |
+> Pilotage et KPIs suivent des patterns de gouvernance standard sans différenciation compétitive
 
-### Événements métier par L2
+---
 
-| L2 | Événements produits | Événements consommés |
-|----|---------------------|----------------------|
-| CAP.PIL.001.GOV | `PolitiqueGouvernance.MisÀJour` | `ModèleScore.MisÀJour` (DAT.001.MOD) — pour valider les évolutions de modèle avant déploiement |
+## Context
+
+CAP.PIL.001 steers the Reliever remediation program at scale — beyond the individual follow-up of a beneficiary. It answers the question: "Is the program effective? Is it compliant? Should the rules evolve?"
+
+Per ADR-BCM-URBA-0001, the PILOTAGE zone holds enterprise steering, compliance, and governance capabilities. CAP.PIL.001 is distinct from CAP.SUP.001 (transverse IS compliance): PIL.001 steers the program's overall regulatory compliance; SUP.001 guarantees data compliance at the technical level.
+
+## Decision
+
+CAP.PIL.001 is decomposed into **3 L2 capabilities**:
+
+| ID | Name | Responsibility |
+|----|------|----------------|
+| CAP.PIL.001.GOV | Program Governance | Define and evolve the program's governance policies — eligibility rules, tier thresholds, co-decision protocols |
+| CAP.PIL.001.KPI | Performance Monitoring | Measure the program's effectiveness at scale — progression rate, relapse rate, exit rate, perceived dignity |
+| CAP.PIL.001.AUD | Program Compliance Audit | Verify the program's overall regulatory compliance (respect of banking, medical, and social frameworks) |
+
+### Business Events per L2
+
+| L2 | Events Produced | Events Consumed |
+|----|-----------------|-----------------|
+| CAP.PIL.001.GOV | `PolitiqueGouvernance.MisÀJour` | `ModèleScore.MisÀJour` (DAT.001.MOD) — to validate model evolutions before deployment |
 | CAP.PIL.001.KPI | `PerformanceProgramme.Évaluée` | `RapportProgramme.Généré` (DAT.001.REP) |
-| CAP.PIL.001.AUD | `ConformitéProgramme.Vérifiée` | `AccèsDonnées.Journalisé` (SUP.001.AUD), `ConformitéProgramme.Vérifiée` — cycle d'audit périodique |
+| CAP.PIL.001.AUD | `ConformitéProgramme.Vérifiée` | `AccèsDonnées.Journalisé` (SUP.001.AUD), `ConformitéProgramme.Vérifiée` — periodic audit cycle |
 
-### Règle de validation des évolutions de modèle
+### Model Evolution Validation Rule
 
-Toute mise à jour du modèle de score (DAT.001.MOD → `ModèleScore.MisÀJour`) doit être validée par CAP.PIL.001.GOV avant déploiement en production. Cette validation produit `PolitiqueGouvernance.MisÀJour`, qui autorise BSP.001 à adopter le nouveau modèle. Cette règle prévient la dérive algorithmique non gouvernée.
+Any score model update (DAT.001.MOD → `ModèleScore.MisÀJour`) must be validated by CAP.PIL.001.GOV before production deployment. This validation produces `PolitiqueGouvernance.MisÀJour`, which authorizes BSP.001 to adopt the new model. This rule prevents ungoverned algorithmic drift.
 
-### Critères vérifiables
+### Verifiable Criteria
 
-- Chaque L2 produit au moins un événement métier (ADR-BCM-URBA-0009)
-- Aucun déploiement de modèle de score sans `PolitiqueGouvernance.MisÀJour` préalable
+- Each L2 produces at least one business event (ADR-BCM-URBA-0009)
+- No score model deployment without a prior `PolitiqueGouvernance.MisÀJour`
 
-## Justification
+## Rationale
 
-La séparation GOV / KPI / AUD reflète trois niveaux de pilotage distincts : la gouvernance est normative (définit les règles), les KPIs sont descriptifs (mesure les résultats), l'audit est probatoire (certifie la conformité). Ces trois activités ont des acteurs, des fréquences et des destinataires différents.
+The GOV / KPI / AUD separation reflects three distinct steering levels: governance is normative (defines rules), KPIs are descriptive (measures results), audit is probative (certifies compliance). These three activities have different actors, frequencies, and audiences.
 
-### Alternatives considérées
+### Alternatives Considered
 
-- **KPI dans CAP.DAT.001.REP** — rejeté car la mesure de performance programme est une décision de pilotage (quels indicateurs, quels seuils, quelle interprétation) ; la production des données sous-jacentes est DATA_ANALYTIQUE, mais la décision d'évaluation est PILOTAGE
-- **AUD dans CAP.SUP.001** — rejeté car SUP.001 audite les accès données au niveau technique (RGPD) ; PIL.001.AUD audite la conformité réglementaire du programme dans son ensemble (cadres bancaire, médical, social) — ce sont deux niveaux d'audit distincts avec des acteurs différents (DPO vs Compliance Officer programme)
+- **KPI in CAP.DAT.001.REP** — rejected because program performance measurement is a steering decision (which indicators, which thresholds, which interpretation); producing the underlying data is DATA_ANALYTIQUE, but the evaluation decision is PILOTAGE
+- **AUD in CAP.SUP.001** — rejected because SUP.001 audits data accesses at the technical level (GDPR); PIL.001.AUD audits the program's overall regulatory compliance (banking, medical, social frameworks) — these are two distinct audit levels with different actors (DPO vs Program Compliance Officer)
 
-## Impacts sur la BCM
+## BCM Impacts
 
 ### Structure
 
-- 3 L2 créés sous CAP.PIL.001
-- Rôle de validation sur l'évolution du modèle de score (chaîne DAT.001 → PIL.001.GOV → BSP.001)
+- 3 L2s created under CAP.PIL.001
+- Validation role over score model evolution (chain DAT.001 → PIL.001.GOV → BSP.001)
 
-### Mapping SI / Data / Org
+### SI / Data / Org Mapping
 
-- **ORG** : owner recommandé : Direction Programme Reliever / Compliance Officer
+- **ORG**: recommended owner: Reliever Program Director / Compliance Officer
 
-## Conséquences
+## Consequences
 
-### Positives
+### Positive
 
-- La gouvernance algorithmique est de première classe — aucune dérive de modèle sans validation
-- L'audit réglementaire est distinct de l'audit technique
+- Algorithmic governance is first-class — no model drift without validation
+- Regulatory audit is distinct from technical audit
 
-### Négatives / Risques
+### Negative / Risks
 
-- PIL.001.GOV crée une dépendance humaine dans la chaîne de déploiement du modèle — latence possible
+- PIL.001.GOV creates a human dependency in the model deployment chain — potential latency
 
-### Dette acceptée
+### Accepted Debt
 
-- Les KPIs précis du programme (taux de progression acceptable, définition de "succès") ne sont pas modélisés ici
+- The precise program KPIs (acceptable progression rate, definition of "success") are not modeled here
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : Modéré
-- Date de revue recommandée : 2028-04-24
-- Indicateur de stabilité attendu : 100% des évolutions de modèle validées par PIL.001.GOV avant déploiement
+- Criticality level: Moderate
+- Recommended review date: 2028-04-24
+- Expected stability indicator: 100% of model evolutions validated by PIL.001.GOV before deployment
 
-## Traçabilité
+## Traceability
 
-- Atelier : Session BCM Reliever — 2026-04-24
-- Participants : yremy
-- Références :
+- Workshop: BCM Reliever Session — 2026-04-24
+- Participants: yremy
+- References:
   - ADR-BCM-FUNC-0004, ADR-BCM-FUNC-0014

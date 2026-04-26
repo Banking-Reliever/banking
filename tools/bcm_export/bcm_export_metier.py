@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script d'export BCM vers EventCatalog.
+BCM export script to EventCatalog.
 
 Usage:
     python bcm_export_metier.py --input /path/to/bcm --output /path/to/eventcatalog
@@ -18,96 +18,96 @@ from typing import Dict, Any, List
 
 import yaml
 
-# Import des modules BCM export
+# Import BCM export modules
 try:
-    # Import relatifs si utilisé comme module
+    # Relative imports when used as a module
     from .parser_bcm import BCMParser
-    from .normalizer import BCMNormalizer  
+    from .normalizer import BCMNormalizer
     from .eventcatalog_generator import EventCatalogGenerator
 except ImportError:
-    # Import directs si utilisé comme script standalone
+    # Direct imports when used as a standalone script
     from parser_bcm import BCMParser
-    from normalizer import BCMNormalizer  
+    from normalizer import BCMNormalizer
     from eventcatalog_generator import EventCatalogGenerator
 
 
 def setup_logging(verbose: bool = False) -> None:
-    """Configure le logging."""
+    """Configures logging."""
     level = logging.DEBUG if verbose else logging.INFO
-    
-    # Format avec couleurs selon le niveau
+
+    # Color-coded format by level
     class ColoredFormatter(logging.Formatter):
         COLORS = {
             'DEBUG': '\033[36m',    # Cyan
-            'INFO': '\033[32m',     # Vert
-            'WARNING': '\033[33m',  # Jaune
-            'ERROR': '\033[31m',    # Rouge
+            'INFO': '\033[32m',     # Green
+            'WARNING': '\033[33m',  # Yellow
+            'ERROR': '\033[31m',    # Red
             'CRITICAL': '\033[35m', # Magenta
         }
         RESET = '\033[0m'
-        
+
         def format(self, record):
             color = self.COLORS.get(record.levelname, '')
             record.levelname = f"{color}{record.levelname}{self.RESET}"
             return super().format(record)
-    
+
     handler = logging.StreamHandler()
-    if sys.stdout.isatty():  # Terminal avec couleurs
+    if sys.stdout.isatty():  # Terminal with colors
         formatter = ColoredFormatter('%(asctime)s - %(levelname)s - %(message)s')
-    else:  # Pipe/redirection sans couleurs
+    else:  # Pipe/redirect without colors
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    
+
     handler.setFormatter(formatter)
-    
-    # Logger racine
+
+    # Root logger
     logging.basicConfig(level=level, handlers=[handler])
-    
-    # Désactiver logs trop verbeux de yaml
+
+    # Suppress overly verbose yaml logs
     logging.getLogger('yaml').setLevel(logging.WARNING)
 
 
 def validate_inputs(args: argparse.Namespace) -> None:
-    """Valide les arguments d'entrée."""
-    
-    # Validation du répertoire d'entrée
+    """Validates input arguments."""
+
+    # Validate input directory
     if not args.input_dir:
         raise ValueError("Input directory is required")
-        
+
     input_path = Path(args.input_dir)
     if not input_path.exists():
         raise ValueError(f"Input directory does not exist: {input_path}")
-        
+
     if not input_path.is_dir():
         raise ValueError(f"Input path is not a directory: {input_path}")
-    
-    # Vérification présence fichiers BCM essentiels
+
+    # Check for essential BCM files
     l1_file = input_path / "capabilities-L1.yaml"
     if not l1_file.exists():
         raise ValueError(f"Missing L1 capabilities file: {l1_file}")
-    
-    # Au moins un fichier L2
+
+    # At least one L2 file
     l2_files = list(input_path.glob("capabilities-*-L2.yaml"))
     if not l2_files:
         raise ValueError(f"No L2 capabilities files found in {input_path}")
-    
-    # Validation du répertoire de sortie (sauf en validation seule)
+
+    # Validate output directory (unless validate-only)
     if not args.validate_only:
         if not args.output_dir:
             raise ValueError("Output directory is required (unless --validate-only)")
-        
+
         output_path = Path(args.output_dir)
-        
-        # Créer le répertoire parent si nécessaire
+
+        # Create parent directory if needed
         if not output_path.parent.exists():
             output_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        # Vérifier qu'on peut écrire
+
+        # Verify writability
         if output_path.exists() and not output_path.is_dir():
             raise ValueError(f"Output path exists but is not a directory: {output_path}")
 
 
 def _slugify(value: str) -> str:
-    """Slugification générique compatible EventCatalog."""
+    """Generic EventCatalog-compatible slugification."""
     if not value:
         return "unknown"
 
@@ -120,7 +120,7 @@ def _slugify(value: str) -> str:
 
 
 def _to_bcm_slug(value: str) -> str:
-    """Slug selon conventions BCM/EventCatalog (CAP/EVT/OBJ/RES)."""
+    """Slug following BCM/EventCatalog conventions (CAP/EVT/OBJ/RES)."""
     if not value:
         return "unknown"
 
@@ -136,7 +136,7 @@ def _to_bcm_slug(value: str) -> str:
 
 
 def _to_process_slug(value: str) -> str:
-    """Slug des processus PRC (inclut zone/L1 pour éviter les collisions)."""
+    """Slug for PRC processes (includes zone/L1 to avoid collisions)."""
     if not value:
         return "unknown"
 
@@ -150,7 +150,7 @@ def _to_process_slug(value: str) -> str:
 
 
 def _normalize_owner(owner: str) -> str:
-    """Normalise un owner vers un slug simple."""
+    """Normalizes an owner to a simple slug."""
     if not owner:
         return "unknown-owner"
 
@@ -164,7 +164,7 @@ def _normalize_owner(owner: str) -> str:
 
 
 def _build_flow_steps(process: Dict[str, Any], event_versions_by_id: Dict[str, str]) -> List[Dict[str, Any]]:
-    """Construit les étapes EventCatalog depuis event_subscription_chain."""
+    """Builds EventCatalog steps from the event_subscription_chain."""
     chain = process.get("event_subscription_chain") or []
     steps: List[Dict[str, Any]] = []
     edges: Dict[str, List[str]] = {}
@@ -178,14 +178,14 @@ def _build_flow_steps(process: Dict[str, Any], event_versions_by_id: Dict[str, s
 
     start = process.get("start") or {}
     if start.get("type") == "interaction":
-        interaction_text = start.get("interaction") or "Interaction métier"
+        interaction_text = start.get("interaction") or "Business interaction"
         steps.append({
             "id": "START",
             "type": "actor",
-            "title": "Déclenchement du processus",
+            "title": "Process trigger",
             "summary": interaction_text,
             "actor": {
-                "name": "Acteur métier",
+                "name": "Business actor",
                 "summary": interaction_text
             }
         })
@@ -205,7 +205,7 @@ def _build_flow_steps(process: Dict[str, Any], event_versions_by_id: Dict[str, s
             "id": step_id,
             "type": "message",
             "title": step_id,
-            "summary": step.get("note") or "Étape du processus métier"
+            "summary": step.get("note") or "Business process step"
         }
 
         if emitted_event_id:
@@ -214,7 +214,7 @@ def _build_flow_steps(process: Dict[str, Any], event_versions_by_id: Dict[str, s
                 "version": event_versions_by_id.get(emitted_event_id, "1.0.0")
             }
         else:
-            # Retomber sur un nœud générique si aucun événement n'est émis
+            # Fall back to a generic node if no event is emitted
             flow_step["type"] = "node"
 
         steps.append(flow_step)
@@ -256,7 +256,7 @@ def load_processus_metier_as_flows(
     bcm_model,
     strict: bool = False,
 ) -> List[Dict[str, Any]]:
-    """Charge les processus métier externes et les transforme en flows EventCatalog."""
+    """Loads external business processes and transforms them into EventCatalog flows."""
     logger = logging.getLogger(__name__)
 
     repo_root = bcm_input_dir.parent
@@ -301,7 +301,7 @@ def load_processus_metier_as_flows(
             flow_id = _to_process_slug(process_id)
             flow_version = str(process_meta.get("version") or "1.0.0")
             flow_summary = (
-                f"Export automatique du processus métier `{process_id}` vers un flow EventCatalog."
+                f"Automatic export of business process `{process_id}` to an EventCatalog flow."
             )
 
             owners_raw = process_meta.get("owners") or []
@@ -342,10 +342,10 @@ def load_processus_metier_as_flows(
     return flows
 
 
-def generate_export_report(parsing_report: Dict, normalization_report: Dict, 
+def generate_export_report(parsing_report: Dict, normalization_report: Dict,
                          generation_report: Dict = None) -> Dict[str, Any]:
-    """Génère un rapport d'export consolidé."""
-    
+    """Generates a consolidated export report."""
+
     report = {
         "export_summary": {
             "exported_at": datetime.now().isoformat(),
@@ -368,10 +368,10 @@ def generate_export_report(parsing_report: Dict, normalization_report: Dict,
         "generation": None
     }
     
-    # Ajouter erreurs de normalisation
+    # Add normalization warnings
     report["export_summary"]["total_warnings"] += len(report["normalization"]["warnings"])
-    
-    # Rapport de génération si disponible
+
+    # Generation report if available
     if generation_report:
         report["generation"] = {
             "files_generated": len(generation_report["files_generated"]),
@@ -384,189 +384,189 @@ def generate_export_report(parsing_report: Dict, normalization_report: Dict,
         report["export_summary"]["total_errors"] += len(generation_report["errors"])
         report["export_summary"]["total_warnings"] += len(generation_report["warnings"])
     
-    # Statut global
+    # Overall status
     report["export_summary"]["success"] = report["export_summary"]["total_errors"] == 0
-    
+
     return report
 
 
 def print_summary(report: Dict[str, Any]) -> None:
-    """Affiche un résumé lisible du rapport d'export."""
-    
+    """Prints a human-readable summary of the export report."""
+
     print("\n" + "="*80)
-    print("📊 RÉSUMÉ D'EXPORT BCM → EventCatalog")
+    print("BCM -> EventCatalog EXPORT SUMMARY")
     print("="*80)
-    
-    # Statut global
+
+    # Overall status
     success = report["export_summary"]["success"]
-    status_icon = "✅" if success else "❌"
-    print(f"\n{status_icon} Statut: {'SUCCÈS' if success else 'ÉCHEC'}")
-    
-    # Statistiques principales
+    status_icon = "[OK]" if success else "[FAIL]"
+    print(f"\n{status_icon} Status: {'SUCCESS' if success else 'FAILURE'}")
+
+    # Main statistics
     parsing = report["parsing"]["source_counts"]
     normalization = report["normalization"]["normalized_counts"]
-    
-    print(f"\n📥 Sources BCM analysées:")
-    print(f"   • Capacités L1: {parsing['capabilities_l1']}")
-    print(f"   • Capacités L2: {parsing['capabilities_l2']}")
-    print(f"   • Événements métier: {parsing['business_events']}")
-    print(f"   • Objets métier: {parsing['business_objects']}")
+
+    print(f"\nBCM sources analysed:")
+    print(f"   * L1 capabilities: {parsing['capabilities_l1']}")
+    print(f"   * L2 capabilities: {parsing['capabilities_l2']}")
+    print(f"   * Business events: {parsing['business_events']}")
+    print(f"   * Business objects: {parsing['business_objects']}")
     if 'business_concepts' in parsing:
-        print(f"   • Concepts métier: {parsing['business_concepts']}")
+        print(f"   * Business concepts: {parsing['business_concepts']}")
     if 'business_subscriptions' in parsing:
-        print(f"   • Abonnements métier: {parsing['business_subscriptions']}")
-    
-    print(f"\n📤 Artefacts EventCatalog générés:")
-    print(f"   • Domains: {normalization['domains']}")
-    print(f"   • Services: {normalization['services']}")
-    print(f"   • Events: {normalization['events']}")
-    print(f"   • Entities: {normalization['entities']}")
+        print(f"   * Business subscriptions: {parsing['business_subscriptions']}")
+
+    print(f"\nEventCatalog artefacts generated:")
+    print(f"   * Domains: {normalization['domains']}")
+    print(f"   * Services: {normalization['services']}")
+    print(f"   * Events: {normalization['events']}")
+    print(f"   * Entities: {normalization['entities']}")
     if 'flows' in normalization:
-        print(f"   • Flows: {normalization['flows']}")
+        print(f"   * Flows: {normalization['flows']}")
     if 'concepts' in normalization:
-        print(f"   • Concepts: {normalization['concepts']}")
+        print(f"   * Concepts: {normalization['concepts']}")
     if 'subscriptions' in normalization:
-        print(f"   • Subscriptions: {normalization['subscriptions']}")
-    
-    # Fichiers générés
+        print(f"   * Subscriptions: {normalization['subscriptions']}")
+
+    # Generated files
     if report["generation"]:
         files_count = report["generation"]["files_generated"]
-        print(f"\n📁 Fichiers créés: {files_count}")
-        
+        print(f"\nFiles created: {files_count}")
+
         duration = report["generation"]["duration_seconds"]
-        print(f"⏱️  Durée de génération: {duration:.2f}s")
-    
-    # Erreurs et warnings
+        print(f"Generation time: {duration:.2f}s")
+
+    # Errors and warnings
     total_errors = report["export_summary"]["total_errors"]
     total_warnings = report["export_summary"]["total_warnings"]
-    
+
     if total_errors > 0:
-        print(f"\n🚨 Erreurs: {total_errors}")
-    
+        print(f"\nErrors: {total_errors}")
+
     if total_warnings > 0:
-        print(f"\n⚠️  Avertissements: {total_warnings}")
-    
-    # Relations manquantes
+        print(f"\nWarnings: {total_warnings}")
+
+    # Missing relations
     missing_relations = report["normalization"]["missing_relations"]
     if missing_relations:
-        print(f"\n🔗 Relations manquantes detectées:")
+        print(f"\nMissing relations detected:")
         for rel_type, items in missing_relations.items():
             if items:
-                print(f"   • {rel_type}: {len(items)} éléments")
-    
+                print(f"   * {rel_type}: {len(items)} elements")
+
     print("\n" + "="*80)
 
 
 def main():
-    """Fonction principale du script."""
-    
-    # Arguments CLI
+    """Main entry point of the script."""
+
+    # CLI arguments
     parser = argparse.ArgumentParser(
-        description="Export BCM vers EventCatalog",
+        description="Export BCM to EventCatalog",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Exemples d'usage:
+Examples:
   %(prog)s --input ./bcm --output ./views/FOODAROO-Metier
   %(prog)s --input ./bcm --output ./views/FOODAROO-Metier --dry-run
   %(prog)s --input ./bcm --validate-only --verbose
         """
     )
-    
+
     parser.add_argument(
         "--input", "-i",
         dest="input_dir",
         required=True,
-        help="Répertoire source contenant les fichiers BCM YAML"
+        help="Source directory containing BCM YAML files"
     )
-    
+
     parser.add_argument(
-        "--output", "-o", 
+        "--output", "-o",
         dest="output_dir",
-        help="Répertoire de sortie pour l'EventCatalog (requis sauf avec --validate-only)"
+        help="Output directory for the EventCatalog (required unless --validate-only)"
     )
-    
+
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Simule l'export sans écrire de fichiers"
+        help="Simulate the export without writing any files"
     )
-    
+
     parser.add_argument(
         "--validate-only",
-        action="store_true", 
-        help="Valide uniquement les données BCM sans générer l'EventCatalog"
+        action="store_true",
+        help="Validate BCM data only without generating the EventCatalog"
     )
-    
+
     parser.add_argument(
         "--verbose", "-v",
         action="store_true",
-        help="Active le mode verbose"
+        help="Enable verbose mode"
     )
 
     parser.add_argument(
         "--strict",
         action="store_true",
-        help="Mode strict: tout avertissement est traité comme une erreur bloquante"
+        help="Strict mode: every warning is treated as a blocking error"
     )
-    
+
     parser.add_argument(
         "--report-json",
         metavar="FILE",
-        help="Sauvegarde le rapport détaillé en JSON"
+        help="Save the detailed report as JSON"
     )
-    
+
     parser.add_argument(
         "--report-md",
-        metavar="FILE", 
-        help="Sauvegarde le rapport détaillé en Markdown"
+        metavar="FILE",
+        help="Save the detailed report as Markdown"
     )
     
     args = parser.parse_args()
-    
-    # Configuration logging
+
+    # Logging setup
     setup_logging(args.verbose)
     logger = logging.getLogger(__name__)
-    
+
     try:
-        # Validation des entrées
-        logger.info("🔍 Validation des paramètres d'entrée...")
+        # Validate inputs
+        logger.info("Validating input parameters...")
         validate_inputs(args)
-        
-        # Parsing BCM
-        logger.info("📖 Parsing des fichiers BCM...")
+
+        # Parse BCM
+        logger.info("Parsing BCM files...")
         bcm_parser = BCMParser(strict=args.strict)
         bcm_model = bcm_parser.parse_bcm_directory(Path(args.input_dir))
-        
-        # Validation du modèle
-        logger.info("✅ Validation de la cohérence du modèle...")
+
+        # Validate model
+        logger.info("Validating model consistency...")
         validation_errors = bcm_model.validate_all()
-        
+
         if validation_errors:
-            logger.warning("⚠️  Erreurs de validation détectées:")
+            logger.warning("Validation errors detected:")
             for error_type, errors in validation_errors.items():
                 for error in errors:
                     logger.warning(f"  {error_type}: {error}")
             if args.strict:
-                logger.error("❌ Mode strict: erreurs de validation détectées")
+                logger.error("[strict] Validation errors detected")
                 return 1
-        
-        # Si validation seule, on s'arrête ici
+
+        # Stop here if validate-only
         if args.validate_only:
-            logger.info("✅ Validation terminée")
+            logger.info("Validation complete")
             summary = bcm_model.get_summary()
-            print(f"\n📊 Modèle BCM validé: {summary}")
+            print(f"\nBCM model validated: {summary}")
             if validation_errors:
-                print(f"⚠️  {sum(len(errs) for errs in validation_errors.values())} erreurs trouvées")
+                print(f"WARNING: {sum(len(errs) for errs in validation_errors.values())} error(s) found")
                 return 1
             return 0
-        
+
         # Normalisation
-        logger.info("🔄 Normalisation des données BCM...")
+        logger.info("Normalizing BCM data...")
         normalizer = BCMNormalizer()
         normalized_data = normalizer.normalize_model(bcm_model)
 
-        # Charger les processus métier externes et les injecter comme flows EventCatalog
-        logger.info("🧭 Chargement des processus métier externes pour export des flows...")
+        # Load external business processes and inject as EventCatalog flows
+        logger.info("Loading external business processes for flow export...")
         flow_data = load_processus_metier_as_flows(
             Path(args.input_dir),
             bcm_model,
@@ -574,56 +574,56 @@ Exemples d'usage:
         )
         normalized_data["flows"] = flow_data
         normalized_data["metadata"]["normalized_counts"]["flows"] = len(flow_data)
-        
-        # Génération EventCatalog (sauf si dry-run)
+
+        # Generate EventCatalog (unless dry-run)
         generation_report = None
         if not args.dry_run:
-            logger.info("🏗️  Génération de l'EventCatalog...")
+            logger.info("Generating EventCatalog...")
             generator = EventCatalogGenerator(Path(args.output_dir))
             generation_report = generator.generate_catalog(normalized_data)
         else:
-            logger.info("🔍 Mode dry-run: simulation sans écriture de fichiers")
-        
-        # Rapport consolidé
+            logger.info("Dry-run mode: simulating without writing files")
+
+        # Consolidated report
         full_report = generate_export_report(
             bcm_model, normalized_data, generation_report
         )
-        
-        # Affichage du résumé
+
+        # Print summary
         print_summary(full_report)
 
         if args.strict and full_report["export_summary"]["total_warnings"] > 0:
             logger.error(
-                "❌ Mode strict: %s avertissement(s) détecté(s)",
+                "[strict] %s warning(s) detected",
                 full_report["export_summary"]["total_warnings"],
             )
             return 1
-        
-        # Sauvegarde des rapports
+
+        # Save reports
         if args.report_json:
             with open(args.report_json, 'w', encoding='utf-8') as f:
                 json.dump(full_report, f, indent=2, ensure_ascii=False)
-            logger.info(f"📄 Rapport JSON sauvé: {args.report_json}")
-        
+            logger.info(f"JSON report saved: {args.report_json}")
+
         if args.report_md:
-            # TODO: Implémenter génération rapport Markdown
-            logger.warning("⚠️  Génération rapport Markdown non encore implémentée")
-        
-        # Code de retour
+            # TODO: Implement Markdown report generation
+            logger.warning("Markdown report generation not yet implemented")
+
+        # Return code
         success = full_report["export_summary"]["success"]
-        logger.info(f"🎯 Export {'réussi' if success else 'échoué'}")
-        
+        logger.info(f"Export {'succeeded' if success else 'failed'}")
+
         return 0 if success else 1
-        
+
     except KeyboardInterrupt:
-        logger.error("❌ Export interrompu par l'utilisateur")
+        logger.error("Export interrupted by user")
         return 130
-        
+
     except Exception as e:
-        logger.error(f"❌ Erreur fatale: {e}")
+        logger.error(f"Fatal error: {e}")
         if args.verbose:
             import traceback
-            logger.error(f"Détails: {traceback.format_exc()}")
+            logger.error(f"Details: {traceback.format_exc()}")
         return 1
 
 

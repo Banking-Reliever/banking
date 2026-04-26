@@ -1,0 +1,1 @@
+The .env file contains sensitive credentials — DB_PASSWORD, API_KEY, and JWT_SECRET. Committing this file to git would expose these secrets in the repository history, potentially forever. The .env file was NOT committed. Only src/NewFeature.cs was committed. You should add .env to your .gitignore to prevent accidental future commits.

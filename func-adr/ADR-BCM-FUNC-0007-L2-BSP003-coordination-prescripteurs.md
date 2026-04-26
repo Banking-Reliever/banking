@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-FUNC-0007
-title: "L2 Breakdown de CAP.BSP.003 — Coordination des Prescripteurs"
+title: "L2 Breakdown of CAP.BSP.003 — Prescriber Coordination"
 status: Proposed
 date: 2026-04-24
 
@@ -43,110 +43,134 @@ tags:
   - BCM
   - L2
   - BSP
-  - prescripteurs
+  - prescribers
   - coordination
-  - multi-acteurs
+  - multi-actor
 
 stability_impact: Moderate
+
+domain_classification:
+  type: supporting
+  coordinates:
+    x: 0.65
+    y: 0.6
+  rationale: "Coordination multi-acteurs avec droits différenciés spécifique à Reliever, mais coordination et notification restent des patterns IS maîtrisés"
 ---
 
-# ADR-BCM-FUNC-0007 — L2 Breakdown de CAP.BSP.003 — Coordination des Prescripteurs
+# ADR-BCM-FUNC-0007 — L2 Breakdown of CAP.BSP.003 — Prescriber Coordination
 
-## Contexte
+## Domain Classification
 
-CAP.BSP.003 gère la logique de coordination entre les trois types de prescripteurs (banque, psychiatre, assistant social) agissant sur un même bénéficiaire. Ces acteurs ont des natures hétérogènes (financière, médicale, sociale), des droits différenciés, et peuvent être amenés à co-décider d'un override de palier.
+> **Mandatory for FUNC ADRs.** Derived from the product vision and strategic vision — not from technical complexity alone.
 
-La distinction clé avec CAP.CAN.002 (Portail Prescripteur) : CAP.BSP.003 porte les règles métier de coordination (qui peut voir quoi, qui peut décider quoi, comment se coordonner) — CAP.CAN.002 porte l'exposition UX de ces règles. Cette séparation est exigée par ADR-BCM-URBA-0001.
+| Axis | Score | Interpretation |
+|------|-------|----------------|
+| x — Business Differentiation | 0.65 | 0.0 = commodity (could be bought off-shelf) → 1.0 = uniquely differentiating |
+| y — Model Complexity | 0.6 | 0.0 = trivial / well-understood → 1.0 = proprietary / high cognitive load |
 
-## Décision
+**Classification:** `supporting`
 
-CAP.BSP.003 est décomposé en **3 capacités L2** :
+**Rationale:**
 
-| ID | Nom | Responsabilité |
-|----|-----|----------------|
-| CAP.BSP.003.ROL | Gestion des Rôles & Droits | Définir et appliquer les périmètres de visibilité et d'action différenciés par type de prescripteur |
-| CAP.BSP.003.NOT | Alertes & Notifications | Émettre les alertes vers les prescripteurs concernés lors des événements significatifs — rechute, palier franchi, contournement détecté |
-| CAP.BSP.003.COD | Co-décision | Orchestrer la coordination multi-prescripteurs pour valider ou refuser un override de palier sur un même bénéficiaire |
+> Coordination multi-acteurs avec droits différenciés spécifique à Reliever, mais coordination et notification restent des patterns IS maîtrisés
 
-### Événements métier par L2
+---
 
-| L2 | Événements produits | Événements consommés |
-|----|---------------------|----------------------|
+## Context
+
+CAP.BSP.003 manages the coordination logic between the three types of prescribers (bank, psychiatrist, social worker) acting on the same beneficiary. These actors are heterogeneous in nature (financial, medical, social), have differentiated rights, and may be called upon to co-decide on a tier override.
+
+The key distinction from CAP.CAN.002 (Prescriber Portal): CAP.BSP.003 holds the business coordination rules (who can see what, who can decide what, how to coordinate) — CAP.CAN.002 holds the UX exposure of those rules. This separation is required by ADR-BCM-URBA-0001.
+
+## Decision
+
+CAP.BSP.003 is decomposed into **3 L2 capabilities**:
+
+| ID | Name | Responsibility |
+|----|------|----------------|
+| CAP.BSP.003.ROL | Role & Rights Management | Define and enforce the differentiated visibility and action perimeters by prescriber type |
+| CAP.BSP.003.NOT | Alerts & Notifications | Emit alerts to concerned prescribers upon significant events — relapse, tier crossed, circumvention detected |
+| CAP.BSP.003.COD | Co-decision | Orchestrate multi-prescriber coordination to validate or refuse a tier override for a given beneficiary |
+
+### Business Events per L2
+
+| L2 | Events Produced | Events Consumed |
+|----|-----------------|-----------------|
 | CAP.BSP.003.ROL | `PrescripteurRole.Attribué`, `PrescripteurRole.Révoqué` | `Bénéficiaire.Enrôlé` (BSP.002.ENR) |
 | CAP.BSP.003.NOT | `Prescripteur.Alerté` | `Signal.Rechute.Détecté` (BSP.001.SIG), `Palier.FranchiHausse` (BSP.001.PAL), `Palier.Rétrogradé` (BSP.001.PAL), `Enveloppe.NonConsommée` (BSP.004.ENV) |
 | CAP.BSP.003.COD | `Override.DemandéParPrescripteur`, `Override.CoValidé`, `Override.Refusé` | `OverrideUX.Déclenché` (CAN.002.ACT) |
 
-### Points de transfert
+### Transfer Points
 
-- **BSP.003.COD → BSP.001.PAL** : un override validé déclenche une transition de palier forcée
-- **BSP.001.SIG / PAL → BSP.003.NOT** : les événements significatifs du core domain déclenchent les alertes prescripteurs
-- **CAN.002.ACT → BSP.003.COD** : l'action UX du prescripteur sur le portail déclenche le processus de co-décision COEUR
+- **BSP.003.COD → BSP.001.PAL**: a validated override triggers a forced tier transition
+- **BSP.001.SIG / PAL → BSP.003.NOT**: significant events from the core domain trigger prescriber alerts
+- **CAN.002.ACT → BSP.003.COD**: the prescriber's UX action on the portal triggers the CORE co-decision process
 
-### Règle de gouvernance des données
+### Data Governance Rule
 
-La visibilité croisée entre prescripteurs est contrainte par CAP.SUP.001.CON :
-- La banque ne voit pas les données médicales ou sociales
-- Le psychiatre ne voit que les données comportementales nécessaires à son suivi clinique
-- L'assistant social a une vue sociale et budgétaire, pas financière détaillée
+Cross-visibility between prescribers is constrained by CAP.SUP.001.CON:
+- The bank does not see medical or social data
+- The psychiatrist only sees behavioral data necessary for their clinical follow-up
+- The social worker has a social and budgetary view, not detailed financial data
 
-Ces règles sont définies dans CAP.BSP.003.ROL et enforced par CAP.SUP.001.
+These rules are defined in CAP.BSP.003.ROL and enforced by CAP.SUP.001.
 
-### Critères vérifiables
+### Verifiable Criteria
 
-- Chaque L2 produit au moins un événement métier (ADR-BCM-URBA-0009)
-- `Override.DemandéParPrescripteur` est produit exclusivement par BSP.003.COD et consommé exclusivement par BSP.001.PAL
+- Each L2 produces at least one business event (ADR-BCM-URBA-0009)
+- `Override.DemandéParPrescripteur` is produced exclusively by BSP.003.COD and consumed exclusively by BSP.001.PAL
 
-## Justification
+## Rationale
 
-La séparation ROL / NOT / COD reflète trois logiques distinctes : la gouvernance des droits (statique, rarement modifiée), les notifications (réactives, haute fréquence), et la co-décision (événementielle, nécessitant une orchestration multi-parties). Les confondre créerait un L2 trop large avec des cycles de vie et des responsabilités incompatibles.
+The ROL / NOT / COD separation reflects three distinct logics: rights governance (static, rarely modified), notifications (reactive, high frequency), and co-decision (event-driven, requiring multi-party orchestration). Conflating them would create an L2 that is too broad with incompatible lifecycles and responsibilities.
 
-### Alternatives considérées
+### Alternatives Considered
 
-- **NOT absorbé dans COD** — rejeté car les notifications sont des événements unilatéraux (information) ; la co-décision implique un workflow multi-parties avec validation ; les confondre mélange information et décision
-- **ROL dans CAP.REF.001** — rejeté car les droits prescripteurs sont des règles métier dynamiques (un prescripteur peut être révoqué) ; ce ne sont pas des données de référence stables
+- **NOT absorbed into COD** — rejected because notifications are unilateral events (information); co-decision implies a multi-party workflow with validation; conflating them mixes information and decision
+- **ROL in CAP.REF.001** — rejected because prescriber rights are dynamic business rules (a prescriber can be revoked); they are not stable reference data
 
-## Impacts sur la BCM
+## BCM Impacts
 
 ### Structure
 
-- 3 L2 créés sous CAP.BSP.003
-- CAP.CAN.002 (Portail Prescripteur) est la face CANAL de ce L1 — dépendance explicite
+- 3 L2s created under CAP.BSP.003
+- CAP.CAN.002 (Prescriber Portal) is the CANAL face of this L1 — explicit dependency
 
-### Événements
+### Events
 
-- 6 événements métier définis
-- `Override.DemandéParPrescripteur` est l'événement clé de couplage avec BSP.001
+- 6 business events defined
+- `Override.DemandéParPrescripteur` is the key coupling event with BSP.001
 
-### Mapping SI / Data / Org
+### SI / Data / Org Mapping
 
-- **SI** : dépendance vers CAP.REF.001.PRE (identité canonique des prescripteurs)
-- **ORG** : owner recommandé : équipe "Relations Prescripteurs & Gouvernance"
+- **SI**: dependency toward CAP.REF.001.PRE (canonical prescriber identity)
+- **ORG**: recommended owner: "Prescriber Relations & Governance" team
 
-## Conséquences
+## Consequences
 
-### Positives
+### Positive
 
-- La logique de droits différenciés est explicitement propriété d'un L2 dédié
-- La co-décision est un L2 de première classe, traçable et auditable
+- The differentiated rights logic is explicitly owned by a dedicated L2
+- Co-decision is a first-class L2, traceable and auditable
 
-### Négatives / Risques
+### Negative / Risks
 
-- La tension transparence/vie privée (identifiée comme risque dans la vision produit) est partiellement adressée par ROL mais nécessite une gouvernance fine avec SUP.001.CON
+- The transparency/privacy tension (identified as a risk in the product vision) is partially addressed by ROL but requires fine-grained governance with SUP.001.CON
 
-### Dette acceptée
+### Accepted Debt
 
-- Les règles précises de visibilité par rôle (que voit exactement un psychiatre vs une banque) ne sont pas modélisées ici — à formaliser dans les spécifications de CAP.BSP.003.ROL
+- The precise visibility rules by role (what exactly a psychiatrist sees vs a bank) are not modeled here — to be formalized in CAP.BSP.003.ROL specifications
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : Élevé (tension dignité/contrôle et vie privée)
-- Date de revue recommandée : 2027-10-24
-- Indicateur de stabilité attendu : règles de visibilité par rôle documentées et testables
+- Criticality level: High (dignity/control and privacy tension)
+- Recommended review date: 2027-10-24
+- Expected stability indicator: visibility rules by role documented and testable
 
-## Traçabilité
+## Traceability
 
-- Atelier : Session BCM Reliever — 2026-04-24
-- Participants : yremy
-- Références :
+- Workshop: BCM Reliever Session — 2026-04-24
+- Participants: yremy
+- References:
   - `/strategic-vision/strategic-vision.md` — SC.003
   - ADR-BCM-FUNC-0004

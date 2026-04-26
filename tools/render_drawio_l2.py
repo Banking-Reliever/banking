@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
-render_drawio_l2.py — Génère un diagramme draw.io (.drawio) montrant les
-capacités L2 regroupées dans leurs capacités L1, elles-mêmes dans leurs zones.
+render_drawio_l2.py — Generates a draw.io diagram (.drawio) showing L2
+capabilities grouped within their L1 capabilities, which are in turn within their zones.
 
-Le script :
-  1. Lit tous les fichiers capabilities-*.yaml du répertoire bcm/
-  2. Regroupe les capacités par zoning → L1 → L2
-  3. Génère un fichier .drawio avec un diagramme Business Capability Map
-     où chaque L1 est un groupe draw.io contenant ses boîtes L2.
+The script:
+  1. Reads all capabilities-*.yaml files from the bcm/ directory
+  2. Groups capabilities by zoning → L1 → L2
+  3. Generates a .drawio file with a Business Capability Map diagram
+     where each L1 is a draw.io group containing its L2 boxes.
 
-Usage :
+Usage:
     python tools/render_drawio_l2.py
     python tools/render_drawio_l2.py --input-dir bcm --output views/BCM-L2-generated.drawio
     python tools/render_drawio_l2.py --l2-cols 3
     python tools/render_drawio_l2.py --help
 
-Pré-requis :
+Prerequisites:
     pip install pyyaml
 """
 
@@ -34,7 +34,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 
 # ──────────────────────────────────────────────────────────────
-# Configuration visuelle des zones  (identique à render_drawio.py)
+# Visual zone configuration  (identical to render_drawio.py)
 # ──────────────────────────────────────────────────────────────
 
 ZONE_CONFIG = {
@@ -76,45 +76,45 @@ ZONE_CONFIG = {
 }
 
 # ──────────────────────────────────────────────────────────────
-# Palette pastels pour les fonds de groupe L1
-# (identique à render_drawio.py)
+# Pastel palette for L1 group backgrounds
+# (identical to render_drawio.py)
 # ──────────────────────────────────────────────────────────────
 
 CAPABILITY_PALETTE = [
-    ("#fff2cc", "#d6b656"),   # jaune pâle
-    ("#dae8fc", "#6c8ebf"),   # bleu ciel
-    ("#ffe6cc", "#d79b00"),   # pêche
-    ("#e1d5e7", "#9673a6"),   # lavande
-    ("#f8cecc", "#b85450"),   # rose
-    ("#d5e8d4", "#82b366"),   # vert d'eau
-    ("#f5f5f5", "#666666"),   # gris clair
-    ("#d4e1f5", "#3a7bbf"),   # bleu pervenche
-    ("#fce5cd", "#c27b30"),   # abricot
-    ("#cfe2f3", "#6fa8dc"),   # bleu pastel
-    ("#d9ead3", "#6aa84f"),   # vert amande
-    ("#ead1dc", "#a64d79"),   # rose ancien
-    ("#d0e0e3", "#45818e"),   # turquoise pâle
-    ("#fce8b2", "#bf9000"),   # doré doux
-    ("#e6d8f0", "#7b57a0"),   # violet pastel
-    ("#c9daf8", "#3d78d8"),   # bleu layette
+    ("#fff2cc", "#d6b656"),   # pale yellow
+    ("#dae8fc", "#6c8ebf"),   # sky blue
+    ("#ffe6cc", "#d79b00"),   # peach
+    ("#e1d5e7", "#9673a6"),   # lavender
+    ("#f8cecc", "#b85450"),   # pink
+    ("#d5e8d4", "#82b366"),   # seafoam green
+    ("#f5f5f5", "#666666"),   # light gray
+    ("#d4e1f5", "#3a7bbf"),   # periwinkle blue
+    ("#fce5cd", "#c27b30"),   # apricot
+    ("#cfe2f3", "#6fa8dc"),   # pastel blue
+    ("#d9ead3", "#6aa84f"),   # almond green
+    ("#ead1dc", "#a64d79"),   # antique rose
+    ("#d0e0e3", "#45818e"),   # pale teal
+    ("#fce8b2", "#bf9000"),   # soft gold
+    ("#e6d8f0", "#7b57a0"),   # pastel violet
+    ("#c9daf8", "#3d78d8"),   # baby blue
 ]
 
 # ──────────────────────────────────────────────────────────────
-# Couleurs L2 par zone  (extraites du fichier BCM L2 template.drawio)
+# L2 colors by zone  (extracted from BCM L2 template.drawio)
 # ──────────────────────────────────────────────────────────────
 
 L2_ZONE_COLORS: dict[str, tuple[str, str]] = {
-    "PILOTAGE":                    ("#dae8fc", "#6c8ebf"),  # bleu ciel
-    "SERVICES_COEUR": ("#ffe6cc", "#d79b00"),  # pêche
-    "SUPPORT":                     ("#ffe6cc", "#d79b00"),  # pêche
-    "REFERENTIEL":                 ("#ffe6cc", "#d79b00"),  # pêche
-    "ECHANGE_B2B":                ("#FFE599", "#d6b656"),  # doré
-    "CANAL":                     ("#FFE599", "#d6b656"),  # doré
-    "DATA_ANALYTIQUE":              ("#e1d5e7", "#9673a6"),  # lavande pastel
+    "PILOTAGE":                    ("#dae8fc", "#6c8ebf"),  # sky blue
+    "SERVICES_COEUR": ("#ffe6cc", "#d79b00"),  # peach
+    "SUPPORT":                     ("#ffe6cc", "#d79b00"),  # peach
+    "REFERENTIEL":                 ("#ffe6cc", "#d79b00"),  # peach
+    "ECHANGE_B2B":                ("#FFE599", "#d6b656"),  # gold
+    "CANAL":                     ("#FFE599", "#d6b656"),  # gold
+    "DATA_ANALYTIQUE":              ("#e1d5e7", "#9673a6"),  # pastel lavender
 }
 
 # ──────────────────────────────────────────────────────────────
-# Disposition des zones  (identique à render_drawio.py)
+# Zone layout  (identical to render_drawio.py)
 # ──────────────────────────────────────────────────────────────
 #
 #   ┌──────────────────────────────────────────────────────┐
@@ -143,26 +143,26 @@ BOTTOM_ZONE = "DATA_ANALYTIQUE"
 # Dimensions
 # ──────────────────────────────────────────────────────────────
 
-# Boîtes L2 à l'intérieur d'un groupe L1
-L2_BOX_W = 130       # largeur d'une boîte L2
-L2_BOX_H = 50        # hauteur d'une boîte L2
-L2_GAP = 10          # espacement entre boîtes L2
-L2_COLS = 2          # colonnes L2 par groupe L1
+# L2 boxes inside an L1 group
+L2_BOX_W = 130       # width of an L2 box
+L2_BOX_H = 50        # height of an L2 box
+L2_GAP = 10          # spacing between L2 boxes
+L2_COLS = 2          # L2 columns per L1 group
 
-# Groupes L1
-GROUP_PAD = 15       # padding interne d'un groupe L1
-GROUP_TITLE_H = 35   # hauteur du titre L1 dans le groupe
-GROUP_GAP = 20       # espacement entre groupes L1
+# L1 groups
+GROUP_PAD = 15       # internal padding of an L1 group
+GROUP_TITLE_H = 35   # height of the L1 title within the group
+GROUP_GAP = 20       # spacing between L1 groups
 
 # Zones
-ZONE_PAD = 30        # padding interne d'une zone
-ZONE_LABEL_H = 35    # hauteur réservée au label de zone
-ZONE_GAP = 15        # espacement entre zones
+ZONE_PAD = 30        # internal padding of a zone
+ZONE_LABEL_H = 35    # height reserved for the zone label
+ZONE_GAP = 15        # spacing between zones
 
-# Groupes L1 par ligne selon la position de la zone
-L1_COLS_CENTER = 3   # zones centrales (COEUR, Support, Referentiel)
-L1_COLS_SIDE = 1     # zones latérales (B2B, Canal)
-L1_COLS_FULL = 4     # zones pleine largeur (Pilotage, Data)
+# L1 groups per row depending on zone position
+L1_COLS_CENTER = 3   # center zones (COEUR, Support, Referentiel)
+L1_COLS_SIDE = 1     # side zones (B2B, Canal)
+L1_COLS_FULL = 4     # full-width zones (Pilotage, Data)
 
 # ──────────────────────────────────────────────────────────────
 # Helpers
@@ -170,17 +170,17 @@ L1_COLS_FULL = 4     # zones pleine largeur (Pilotage, Data)
 
 
 def _uid() -> str:
-    """Génère un identifiant unique pour une cellule draw.io."""
+    """Generates a unique identifier for a draw.io cell."""
     return "cell-" + uuid.uuid4().hex[:12]
 
 
 # ──────────────────────────────────────────────────────────────
-# Chargement YAML
+# YAML loading
 # ──────────────────────────────────────────────────────────────
 
 
 def load_all_capabilities(input_dir: Path) -> list[dict]:
-    """Charge toutes les capacités depuis les fichiers capabilities-*.yaml."""
+    """Loads all capabilities from capabilities-*.yaml files."""
     caps: list[dict] = []
     found_files: list[Path] = []
     for f in sorted(input_dir.glob("capabilities-*.yaml")):
@@ -188,18 +188,18 @@ def load_all_capabilities(input_dir: Path) -> list[dict]:
         file_caps = data.get("capabilities", [])
         caps.extend(file_caps)
         found_files.append(f)
-        print(f"  • {f.name}: {len(file_caps)} capacité(s)")
+        print(f"  • {f.name}: {len(file_caps)} capability(ies)")
     if not found_files:
-        print(f"[WARN] Aucun fichier capabilities-*.yaml trouvé dans {input_dir}")
+        print(f"[WARN] No capabilities-*.yaml file found in {input_dir}")
     return caps
 
 
 def build_hierarchy(caps: list[dict]) -> dict[str, list[dict]]:
     """
-    Construit la hiérarchie zoning → L1 → L2.
+    Builds the zoning → L1 → L2 hierarchy.
 
-    Retourne un dict  zone_key → [L1 caps], chaque L1 ayant une clé
-    "children" contenant la liste ordonnée de ses L2.
+    Returns a dict zone_key → [L1 caps], each L1 having a
+    "children" key containing the ordered list of its L2s.
     """
     l1_map: dict[str, dict] = {}
     l2_list: list[dict] = []
@@ -207,13 +207,13 @@ def build_hierarchy(caps: list[dict]) -> dict[str, list[dict]]:
     for c in caps:
         level = c.get("level", "L1")
         if level == "L1":
-            c = dict(c)  # copie pour ne pas muter l'original
+            c = dict(c)  # copy to avoid mutating the original
             c["children"] = []
             l1_map[c["id"]] = c
         elif level == "L2":
             l2_list.append(c)
 
-    # Rattache les L2 à leur parent L1
+    # Attach L2s to their parent L1
     orphans = 0
     for l2 in l2_list:
         parent_id = l2.get("parent")
@@ -222,15 +222,15 @@ def build_hierarchy(caps: list[dict]) -> dict[str, list[dict]]:
         else:
             orphans += 1
     if orphans:
-        print(f"[WARN] {orphans} capacité(s) L2 sans parent L1 valide (ignorée(s))")
+        print(f"[WARN] {orphans} L2 capability(ies) without a valid L1 parent (ignored)")
 
-    # Groupe par zone
+    # Group by zone
     by_zone: dict[str, list[dict]] = defaultdict(list)
     for l1 in l1_map.values():
         zone = l1.get("zoning", "UNKNOWN")
         by_zone[zone].append(l1)
 
-    # Tri par id
+    # Sort by id
     for zone in by_zone:
         by_zone[zone].sort(key=lambda c: c["id"])
         for l1 in by_zone[zone]:
@@ -245,10 +245,10 @@ def build_hierarchy(caps: list[dict]) -> dict[str, list[dict]]:
 
 
 def _l1_group_size(l1: dict) -> tuple[int, int]:
-    """Retourne (largeur, hauteur) d'un groupe L1 incluant ses L2."""
+    """Returns (width, height) of an L1 group including its L2s."""
     n = len(l1.get("children", []))
     if n == 0:
-        # L1 sans L2 : espace minimal (1 boîte placeholder)
+        # L1 without L2: minimal space (1 placeholder box)
         content_w = L2_BOX_W
         content_h = L2_BOX_H
     else:
@@ -262,13 +262,13 @@ def _l1_group_size(l1: dict) -> tuple[int, int]:
 
 
 def _zone_l2_size(l1s: list[dict], group_cols: int) -> tuple[int, int]:
-    """Retourne (largeur, hauteur) d'une zone contenant des groupes L1."""
+    """Returns (width, height) of a zone containing L1 groups."""
     if not l1s:
         return (300, 100)
 
     sizes = [_l1_group_size(l1) for l1 in l1s]
 
-    # Arrange les groupes en lignes de `group_cols`
+    # Arrange groups in rows of `group_cols`
     rows_of_sizes: list[list[tuple[int, int]]] = []
     for i in range(0, len(sizes), group_cols):
         rows_of_sizes.append(sizes[i : i + group_cols])
@@ -303,7 +303,7 @@ def _add_cell(
     h: int,
     parent: str = "1",
 ) -> ET.Element:
-    """Ajoute un mxCell (vertex) au XML."""
+    """Adds an mxCell (vertex) to the XML."""
     cell = ET.SubElement(root_el, "mxCell")
     cell.set("id", cell_id)
     cell.set("value", value)
@@ -328,7 +328,7 @@ def _add_group(
     h: int,
     parent: str = "1",
 ) -> ET.Element:
-    """Ajoute un groupe draw.io (conteneur L1)."""
+    """Adds a draw.io group (L1 container)."""
     cell = ET.SubElement(root_el, "mxCell")
     cell.set("id", group_id)
     cell.set("value", "")
@@ -391,7 +391,7 @@ def _l2_box_style(fill: str, stroke: str) -> str:
 
 
 def build_drawio_l2(by_zone: dict[str, list[dict]]) -> str:
-    """Construit le XML draw.io complet pour la vue L2."""
+    """Builds the complete draw.io XML for the L2 view."""
 
     def _group_cols(zone: str) -> int:
         if zone in (LEFT_ZONE, RIGHT_ZONE):
@@ -403,7 +403,7 @@ def build_drawio_l2(by_zone: dict[str, list[dict]]) -> str:
     def _l1s(zone: str) -> list[dict]:
         return by_zone.get(zone, [])
 
-    # ── Calcul des tailles ──────────────────────────────────
+    # ── Size calculations ──────────────────────────────────
 
     center_sizes: dict[str, tuple[int, int]] = {}
     for z in CENTER_ZONES:
@@ -431,7 +431,7 @@ def build_drawio_l2(by_zone: dict[str, list[dict]]) -> str:
         else 120
     )
 
-    # ── Positions absolues ──────────────────────────────────
+    # ── Absolute positions ──────────────────────────────────
 
     top_x, top_y = 0, 0
     mid_y = top_y + top_h + ZONE_GAP
@@ -446,7 +446,7 @@ def build_drawio_l2(by_zone: dict[str, list[dict]]) -> str:
     bottom_x = 0
     bottom_y = mid_y + center_total_h + ZONE_GAP
 
-    # ── Construction XML ────────────────────────────────────
+    # ── XML construction ────────────────────────────────────
 
     mxfile = ET.Element("mxfile")
     mxfile.set("host", "render_drawio_l2.py")
@@ -483,7 +483,7 @@ def build_drawio_l2(by_zone: dict[str, list[dict]]) -> str:
     cell1.set("id", "1")
     cell1.set("parent", "0")
 
-    # Compteur global pour la palette (partagé entre toutes les zones)
+    # Global counter for the palette (shared across all zones)
     palette_idx = [0]
 
     def _render_zone(
@@ -494,7 +494,7 @@ def build_drawio_l2(by_zone: dict[str, list[dict]]) -> str:
         zh: int,
         group_cols: int,
     ) -> None:
-        """Rend une zone : fond + label + groupes L1 contenant les L2."""
+        """Renders a zone: background + label + L1 groups containing the L2s."""
         cfg = ZONE_CONFIG.get(
             zone_key,
             {"label": zone_key, "zone_fill": "#f5f5f5", "zone_stroke": "#999999"},
@@ -502,7 +502,7 @@ def build_drawio_l2(by_zone: dict[str, list[dict]]) -> str:
         l1s = by_zone.get(zone_key, [])
         l2_fill, l2_stroke = L2_ZONE_COLORS.get(zone_key, ("#ffe6cc", "#d79b00"))
 
-        # Fond de zone
+        # Zone background
         _add_cell(
             root,
             _uid(),
@@ -514,7 +514,7 @@ def build_drawio_l2(by_zone: dict[str, list[dict]]) -> str:
             zh,
         )
 
-        # Label de zone
+        # Zone label
         label_html = (
             f'<font style="font-size: 18px;">'
             f"{html.escape(cfg['label'])}</font>"
@@ -533,7 +533,7 @@ def build_drawio_l2(by_zone: dict[str, list[dict]]) -> str:
         if not l1s:
             return
 
-        # ── Disposition des groupes L1 ──────────────────────
+        # ── Layout of L1 groups ──────────────────────
         sizes = [_l1_group_size(l1) for l1 in l1s]
 
         content_x0 = zx + ZONE_PAD
@@ -550,11 +550,11 @@ def build_drawio_l2(by_zone: dict[str, list[dict]]) -> str:
             ]
             palette_idx[0] += 1
 
-            # Groupe draw.io (conteneur L1)
+            # draw.io group (L1 container)
             group_id = _uid()
             _add_group(root, group_id, gx, gy, gw, gh)
 
-            # Fond du groupe L1
+            # L1 group background
             _add_cell(
                 root,
                 _uid(),
@@ -567,7 +567,7 @@ def build_drawio_l2(by_zone: dict[str, list[dict]]) -> str:
                 parent=group_id,
             )
 
-            # Titre L1
+            # L1 title
             l1_label = f"<b>{html.escape(l1['name'])}</b>"
             _add_cell(
                 root,
@@ -581,7 +581,7 @@ def build_drawio_l2(by_zone: dict[str, list[dict]]) -> str:
                 parent=group_id,
             )
 
-            # Boîtes L2
+            # L2 boxes
             children = l1.get("children", [])
             if children:
                 for j, l2 in enumerate(children):
@@ -602,13 +602,13 @@ def build_drawio_l2(by_zone: dict[str, list[dict]]) -> str:
                         parent=group_id,
                     )
             else:
-                # L1 sans L2 : une boîte placeholder
+                # L1 without L2: one placeholder box
                 bx = GROUP_PAD
                 by = GROUP_TITLE_H + GROUP_PAD
                 _add_cell(
                     root,
                     _uid(),
-                    "<i>(pas de L2 défini)</i>",
+                    "<i>(no L2 defined)</i>",
                     _l2_box_style("#f5f5f5", "#999999"),
                     bx,
                     by,
@@ -617,7 +617,7 @@ def build_drawio_l2(by_zone: dict[str, list[dict]]) -> str:
                     parent=group_id,
                 )
 
-            # Avance position
+            # Advance position
             gx += gw + GROUP_GAP
             row_max_h = max(row_max_h, gh)
             col_idx += 1
@@ -627,7 +627,7 @@ def build_drawio_l2(by_zone: dict[str, list[dict]]) -> str:
                 gy += row_max_h + GROUP_GAP
                 row_max_h = 0
 
-    # ── Rendu de chaque zone ────────────────────────────────
+    # ── Render each zone ────────────────────────────────────
 
     # TOP — Pilotage
     _render_zone(TOP_ZONE, top_x, top_y, total_w, top_h, _group_cols(TOP_ZONE))
@@ -652,7 +652,7 @@ def build_drawio_l2(by_zone: dict[str, list[dict]]) -> str:
         BOTTOM_ZONE, bottom_x, bottom_y, total_w, bottom_h, _group_cols(BOTTOM_ZONE)
     )
 
-    # ── Sérialisation ──────────────────────────────────────
+    # ── Serialization ──────────────────────────────────────
 
     ET.indent(mxfile, space="  ")
     return '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(
@@ -668,23 +668,23 @@ def build_drawio_l2(by_zone: dict[str, list[dict]]) -> str:
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description=(
-            "Génère un diagramme draw.io L2 à partir des fichiers "
-            "capabilities-*.yaml du répertoire bcm/."
+            "Generates a draw.io L2 diagram from capabilities-*.yaml files "
+            "in the bcm/ directory."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Exemples :
+Examples:
   python tools/render_drawio_l2.py
   python tools/render_drawio_l2.py --input-dir bcm
   python tools/render_drawio_l2.py --input-dir bcm --output views/BCM-L2.drawio
   python tools/render_drawio_l2.py --l2-cols 3
   python tools/render_drawio_l2.py --l1-cols 4
 
-Couleurs :
-  • Zones       : codes couleur identiques à render_drawio.py (ZONE_CONFIG)
-  • Groupes L1  : palette pastel tournante (CAPABILITY_PALETTE)
-  • Boîtes L2   : couleur par zone issue de BCM L2 template.drawio
-                   (ex. pêche #ffe6cc pour COEUR, bleu ciel #dae8fc pour Pilotage)
+Colors:
+  - Zones     : color codes identical to render_drawio.py (ZONE_CONFIG)
+  - L1 groups : rotating pastel palette (CAPABILITY_PALETTE)
+  - L2 boxes  : color per zone from BCM L2 template.drawio
+                 (e.g. peach #ffe6cc for COEUR, sky blue #dae8fc for Pilotage)
         """,
     )
     p.add_argument(
@@ -692,26 +692,26 @@ Couleurs :
         "--input-dir",
         type=Path,
         default=ROOT / "bcm",
-        help="Répertoire contenant les fichiers capabilities-*.yaml (défaut : bcm/)",
+        help="Directory containing capabilities-*.yaml files (default: bcm/)",
     )
     p.add_argument(
         "-o",
         "--output",
         type=Path,
         default=ROOT / "views" / "BCM-L2-generated.drawio",
-        help="Chemin de sortie du fichier .drawio (défaut : views/BCM-L2-generated.drawio)",
+        help="Output path for the .drawio file (default: views/BCM-L2-generated.drawio)",
     )
     p.add_argument(
         "--l2-cols",
         type=int,
         default=L2_COLS,
-        help=f"Nombre de colonnes L2 dans un groupe L1 (défaut : {L2_COLS})",
+        help=f"Number of L2 columns within an L1 group (default: {L2_COLS})",
     )
     p.add_argument(
         "--l1-cols",
         type=int,
         default=L1_COLS_CENTER,
-        help=f"Nombre de groupes L1 par ligne dans les zones centrales (défaut : {L1_COLS_CENTER})",
+        help=f"Number of L1 groups per row in center zones (default: {L1_COLS_CENTER})",
     )
     return p.parse_args()
 
@@ -732,13 +732,13 @@ def main() -> None:
         output_path = ROOT / output_path
 
     if not input_dir.exists():
-        print(f"[ERREUR] Répertoire introuvable : {input_dir}")
+        print(f"[ERROR] Directory not found: {input_dir}")
         raise SystemExit(1)
 
-    print(f"[INFO] Lecture des capacités depuis {input_dir}/capabilities-*.yaml …")
+    print(f"[INFO] Reading capabilities from {input_dir}/capabilities-*.yaml ...")
     caps = load_all_capabilities(input_dir)
     if not caps:
-        print("[ERREUR] Aucune capacité trouvée.")
+        print("[ERROR] No capabilities found.")
         raise SystemExit(1)
 
     by_zone = build_hierarchy(caps)
@@ -747,7 +747,7 @@ def main() -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(xml_str, encoding="utf-8")
 
-    # ── Résumé ──────────────────────────────────────────────
+    # ── Summary ──────────────────────────────────────────────
     total_l1 = sum(len(v) for v in by_zone.values())
     total_l2 = sum(
         len(l1.get("children", []))
@@ -756,7 +756,7 @@ def main() -> None:
     )
     zones_used = [z for z in ZONE_CONFIG if by_zone.get(z)]
     print(
-        f"\n[OK] {total_l1} L1, {total_l2} L2 dans {len(zones_used)} zone(s) "
+        f"\n[OK] {total_l1} L1, {total_l2} L2 in {len(zones_used)} zone(s) "
         f"→ {output_path}"
     )
     for z in ZONE_CONFIG:

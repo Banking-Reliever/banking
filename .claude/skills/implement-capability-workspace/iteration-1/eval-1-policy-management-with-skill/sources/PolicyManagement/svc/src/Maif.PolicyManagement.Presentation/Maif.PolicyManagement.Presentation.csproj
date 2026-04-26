@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultContentItems>false</EnableDefaultContentItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.0.0" />
+    <PackageReference Include="NaiveUnicorn.Component.Bus" Version="1.2.0" />
+    <PackageReference Include="NaiveUnicorn.Component.Correlation.Http" Version="1.2.0" />
+    <PackageReference Include="NaiveUnicorn.Component.MessagePublisher" Version="1.2.0" />
+    <PackageReference Include="NaiveUnicorn.Component.Reactor" Version="1.2.0" />
+    <ProjectReference Include="../Maif.PolicyManagement.Application/Maif.PolicyManagement.Application.csproj" />
+    <ProjectReference Include="../Maif.PolicyManagement.Domain/Maif.PolicyManagement.Domain.csproj" />
+    <ProjectReference Include="../Maif.PolicyManagement.Infrastructure/Maif.PolicyManagement.Infrastructure.csproj" />
+    <ProjectReference Include="../Maif.PolicyManagement.Contracts/Maif.PolicyManagement.Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Dockerfile" CopyToOutputDirectory="Never" CopyToPublishDirectory="Always" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="config/cold.json" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config/hot.json" CopyToOutputDirectory="Always" CopyToPublishDirectory="Never">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+</Project>

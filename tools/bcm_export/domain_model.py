@@ -1,9 +1,9 @@
 """
-Modèle de données intermédiaire pour l'export BCM vers EventCatalog.
+Intermediate data model for BCM export to EventCatalog.
 
-Ce module définit les classes Python qui représentent les éléments BCM
-de manière normalisée, indépendante du format source YAML et du format 
-cible EventCatalog.
+This module defines the Python classes that represent BCM elements
+in a normalised form, independent of both the YAML source format and
+the EventCatalog target format.
 """
 
 from dataclasses import dataclass, field
@@ -13,7 +13,7 @@ from enum import Enum
 
 
 class BCMType(Enum):
-    """Types d'éléments BCM."""
+    """Types of BCM elements."""
     CAPABILITY_L1 = "capability_l1"
     CAPABILITY_L2 = "capability_l2"
     CAPABILITY_L3 = "capability_l3"
@@ -24,7 +24,7 @@ class BCMType(Enum):
 
 
 class EventScope(Enum):
-    """Portée de visibilité des événements métier."""
+    """Visibility scope of business events."""
     PUBLIC = "public"
     INTERNAL = "internal"
     PRIVATE = "private"
@@ -32,7 +32,7 @@ class EventScope(Enum):
 
 @dataclass
 class SourceTraceability:
-    """Métadonnées de traçabilité vers les sources BCM."""
+    """Traceability metadata pointing back to the BCM sources."""
     source_id: str
     source_file: str
     bcm_type: BCMType
@@ -46,14 +46,14 @@ class SourceTraceability:
 
 @dataclass
 class DataField:
-    """Champ de données d'un objet métier."""
+    """Data field of a business object."""
     name: str
     type: str
     description: str
     required: bool = False
-    
+
     def to_eventcatalog_property(self) -> Dict[str, Any]:
-        """Convertit vers le format propriété EventCatalog."""
+        """Converts to EventCatalog property format."""
         return {
             "name": self.name,
             "type": self.type,
@@ -64,7 +64,7 @@ class DataField:
 
 @dataclass
 class BusinessConcept:
-    """Concept métier canonique (source de langage ubiquitaire)."""
+    """Canonical business concept (ubiquitous language source)."""
     id: str
     name: str
     definition: str
@@ -75,7 +75,7 @@ class BusinessConcept:
     source: Optional[SourceTraceability] = None
 
     def validate(self) -> List[str]:
-        """Valide la cohérence du concept métier."""
+        """Validates the consistency of the business concept."""
         errors = []
         if not self.id.startswith('CPT.'):
             errors.append(f"Concept ID must start with 'CPT.': {self.id}")
@@ -88,7 +88,7 @@ class BusinessConcept:
 
 @dataclass
 class CapabilityL1:
-    """Capacité métier de niveau L1 (Domain EventCatalog)."""
+    """L1 business capability (EventCatalog Domain)."""
     id: str
     name: str
     description: str
@@ -98,19 +98,19 @@ class CapabilityL1:
     source: Optional[SourceTraceability] = None
     
     def get_slug(self) -> str:
-        """Génère le slug EventCatalog à partir de l'ID BCM."""
+        """Generates the EventCatalog slug from the BCM ID."""
         # CAP.COEUR.005 -> coeur-005
         parts = self.id.split('.')
         if len(parts) >= 3:
             return f"{parts[1].lower()}-{parts[2].lower()}"
         return self.id.lower().replace('.', '-')
-    
+
     def get_eventcatalog_id(self) -> str:
-        """ID EventCatalog (identique au slug pour les domains)."""
+        """EventCatalog ID (identical to slug for domains)."""
         return self.get_slug()
-    
+
     def validate(self) -> List[str]:
-        """Valide la cohérence de la capacité L1."""
+        """Validates the consistency of the L1 capability."""
         errors = []
         if not self.id.startswith('CAP.'):
             errors.append(f"L1 ID must start with 'CAP.': {self.id}")
@@ -121,9 +121,9 @@ class CapabilityL1:
         return errors
 
 
-@dataclass 
+@dataclass
 class CapabilityL2:
-    """Capacité métier de niveau L2 (Service EventCatalog)."""
+    """L2 business capability (EventCatalog Service)."""
     id: str
     name: str
     description: str
@@ -136,27 +136,27 @@ class CapabilityL2:
     source: Optional[SourceTraceability] = None
     
     def get_slug(self) -> str:
-        """Génère le slug EventCatalog à partir de l'ID BCM."""
+        """Generates the EventCatalog slug from the BCM ID."""
         # CAP.COEUR.005.DSP -> dsp
         parts = self.id.split('.')
         if len(parts) >= 4:
             return parts[-1].lower().replace('_', '-')
         return self.id.lower().replace('.', '-').replace('_', '-')
-    
+
     def get_eventcatalog_id(self) -> str:
-        """ID EventCatalog (identique au slug pour les services)."""
+        """EventCatalog ID (identical to slug for services)."""
         return self.get_slug()
-    
+
     def get_parent_domain_slug(self) -> str:
-        """Slug del domain parent pour EventCatalog."""
+        """Parent domain slug for EventCatalog."""
         # CAP.COEUR.005 -> coeur-005
         parts = self.parent_l1_id.split('.')
         if len(parts) >= 3:
             return f"{parts[1].lower()}-{parts[2].lower()}"
         return self.parent_l1_id.lower().replace('.', '-')
-    
+
     def validate(self) -> List[str]:
-        """Valide la cohérence de la capacité L2."""
+        """Validates the consistency of the L2 capability."""
         errors = []
         if not self.id.startswith('CAP.'):
             errors.append(f"L2 ID must start with 'CAP.': {self.id}")
@@ -173,7 +173,7 @@ class CapabilityL2:
 
 @dataclass
 class BusinessEvent:
-    """Événement métier (Event EventCatalog)."""
+    """Business event (EventCatalog Event)."""
     id: str
     name: str
     version: str
@@ -186,43 +186,43 @@ class BusinessEvent:
     source: Optional[SourceTraceability] = None
     
     def get_slug(self) -> str:
-        """Génère le slug EventCatalog à partir de l'ID BCM."""
+        """Generates the EventCatalog slug from the BCM ID."""
         # EVT.COEUR.005.DECLARATION_SINISTRE_RECUE -> declaration-sinistre-recue
         parts = self.id.split('.')
         if len(parts) >= 4:
             return parts[-1].lower().replace('_', '-')
         return self.id.lower().replace('.', '-').replace('_', '-')
-    
+
     def get_eventcatalog_id(self) -> str:
-        """ID EventCatalog (identique au slug pour les événements)."""
+        """EventCatalog ID (identical to slug for events)."""
         return self.get_slug()
-    
+
     def get_service_slug(self) -> str:
-        """Slug du service émetteur pour EventCatalog."""
+        """Slug of the emitting service for EventCatalog."""
         # CAP.COEUR.005.DSP -> dsp
         parts = self.emitting_capability_l2_id.split('.')
         if len(parts) >= 4:
             return parts[-1].lower().replace('_', '-')
         return self.emitting_capability_l2_id.lower().replace('.', '-').replace('_', '-')
-    
+
     def get_domain_slug(self) -> str:
-        """Slug du domain pour EventCatalog (via la capacité émettrice)."""
+        """Domain slug for EventCatalog (via the emitting capability)."""
         # CAP.COEUR.005.DSP -> coeur-005
         parts = self.emitting_capability_l2_id.split('.')
         if len(parts) >= 3:
             return f"{parts[1].lower()}-{parts[2].lower()}"
         return "unknown-domain"
-    
+
     def get_business_object_slug(self) -> str:
-        """Slug de l'objet métier associé."""
+        """Slug of the associated business object."""
         # OBJ.COEUR.005.DECLARATION_SINISTRE_RECUE -> declaration-sinistre-recue
         parts = self.business_object_id.split('.')
         if len(parts) >= 4:
             return parts[-1].lower().replace('_', '-')
         return self.business_object_id.lower().replace('.', '-').replace('_', '-')
-    
+
     def validate(self) -> List[str]:
-        """Valide la cohérence de l'événement."""
+        """Validates the consistency of the event."""
         errors = []
         if not self.id.startswith('EVT.'):
             errors.append(f"Event ID must start with 'EVT.': {self.id}")
@@ -237,7 +237,7 @@ class BusinessEvent:
 
 @dataclass
 class BusinessObject:
-    """Objet métier (Entity EventCatalog)."""
+    """Business object (EventCatalog Entity)."""
     id: str
     name: str
     definition: str
@@ -249,27 +249,27 @@ class BusinessObject:
     source: Optional[SourceTraceability] = None
     
     def get_slug(self) -> str:
-        """Génère le slug EventCatalog à partir de l'ID BCM."""
+        """Generates the EventCatalog slug from the BCM ID."""
         # OBJ.COEUR.005.DECLARATION_SINISTRE_RECUE -> declaration-sinistre-recue
         parts = self.id.split('.')
         if len(parts) >= 4:
             return parts[-1].lower().replace('_', '-')
         return self.id.lower().replace('.', '-').replace('_', '-')
-    
+
     def get_eventcatalog_id(self) -> str:
-        """ID EventCatalog (identique au slug pour les entités)."""
+        """EventCatalog ID (identical to slug for entities)."""
         return self.get_slug()
-    
+
     def get_domain_slug(self) -> str:
-        """Slug du domain pour EventCatalog (via la capacité émettrice)."""
+        """Domain slug for EventCatalog (via the emitting capability)."""
         # CAP.COEUR.005.DSP -> coeur-005
         parts = self.emitting_capability_l2_id.split('.')
         if len(parts) >= 3:
             return f"{parts[1].lower()}-{parts[2].lower()}"
         return "unknown-domain"
-    
+
     def validate(self) -> List[str]:
-        """Valide la cohérence de l'objet métier."""
+        """Validates the consistency of the business object."""
         errors = []
         if not self.id.startswith('OBJ.'):
             errors.append(f"Object ID must start with 'OBJ.': {self.id}")
@@ -280,7 +280,7 @@ class BusinessObject:
 
 @dataclass
 class BusinessSubscription:
-    """Abonnement métier (consommation d'un événement par une capacité L2)."""
+    """Business subscription (consumption of an event by an L2 capability)."""
     id: str
     consumer_capability_l2_id: str
     subscribed_event_id: str
@@ -293,7 +293,7 @@ class BusinessSubscription:
     source: Optional[SourceTraceability] = None
 
     def validate(self) -> List[str]:
-        """Valide la cohérence de l'abonnement."""
+        """Validates the consistency of the subscription."""
         errors = []
         if not self.id.startswith('SUB.'):
             errors.append(f"Subscription ID must start with 'SUB.': {self.id}")
@@ -314,7 +314,7 @@ class BusinessSubscription:
 
 @dataclass
 class BCMModel:
-    """Modèle BCM complet chargé en mémoire."""
+    """Complete BCM model loaded in memory."""
     capabilities_l1: List[CapabilityL1] = field(default_factory=list)
     capabilities_l2: List[CapabilityL2] = field(default_factory=list)
     business_events: List[BusinessEvent] = field(default_factory=list)
@@ -323,31 +323,31 @@ class BCMModel:
     business_concepts: List[BusinessConcept] = field(default_factory=list)
     
     def get_capability_l1_by_id(self, capability_id: str) -> Optional[CapabilityL1]:
-        """Trouve une capacité L1 par son ID."""
+        """Finds an L1 capability by its ID."""
         return next((cap for cap in self.capabilities_l1 if cap.id == capability_id), None)
-    
+
     def get_capability_l2_by_id(self, capability_id: str) -> Optional[CapabilityL2]:
-        """Trouve une capacité L2 par son ID."""
+        """Finds an L2 capability by its ID."""
         return next((cap for cap in self.capabilities_l2 if cap.id == capability_id), None)
-    
+
     def get_business_event_by_id(self, event_id: str) -> Optional[BusinessEvent]:
-        """Trouve un événement métier par son ID."""
+        """Finds a business event by its ID."""
         return next((evt for evt in self.business_events if evt.id == event_id), None)
-    
+
     def get_business_object_by_id(self, object_id: str) -> Optional[BusinessObject]:
-        """Trouve un objet métier par son ID."""
+        """Finds a business object by its ID."""
         return next((obj for obj in self.business_objects if obj.id == object_id), None)
 
     def get_business_subscription_by_id(self, subscription_id: str) -> Optional[BusinessSubscription]:
-        """Trouve une abonnement métier par son ID."""
+        """Finds a business subscription by its ID."""
         return next((sub for sub in self.business_subscriptions if sub.id == subscription_id), None)
 
     def get_business_concept_by_id(self, concept_id: str) -> Optional[BusinessConcept]:
-        """Trouve un concept métier par son ID."""
+        """Finds a business concept by its ID."""
         return next((concept for concept in self.business_concepts if concept.id == concept_id), None)
-    
+
     def validate_all(self) -> Dict[str, List[str]]:
-        """Valide la cohérence globale du modèle."""
+        """Validates the overall consistency of the model."""
         all_errors = {
             "capabilities_l1": [],
             "capabilities_l2": [],
@@ -358,28 +358,28 @@ class BCMModel:
             "relations": []
         }
         
-        # Validation des éléments individuels
+        # Validate individual elements
         for cap_l1 in self.capabilities_l1:
             all_errors["capabilities_l1"].extend(cap_l1.validate())
-            
+
         for cap_l2 in self.capabilities_l2:
             all_errors["capabilities_l2"].extend(cap_l2.validate())
-            # Validation relation L2 -> L1
+            # Validate L2 -> L1 relation
             if not self.get_capability_l1_by_id(cap_l2.parent_l1_id):
                 all_errors["relations"].append(f"L2 {cap_l2.id} references non-existent L1 {cap_l2.parent_l1_id}")
         
         for event in self.business_events:
             all_errors["business_events"].extend(event.validate())
-            # Validation relation Event -> L2
+            # Validate Event -> L2 relation
             if not self.get_capability_l2_by_id(event.emitting_capability_l2_id):
                 all_errors["relations"].append(f"Event {event.id} references non-existent L2 {event.emitting_capability_l2_id}")
-            # Validation relation Event -> Object
+            # Validate Event -> Object relation
             if not self.get_business_object_by_id(event.business_object_id):
                 all_errors["relations"].append(f"Event {event.id} references non-existent object {event.business_object_id}")
         
         for obj in self.business_objects:
             all_errors["business_objects"].extend(obj.validate())
-            # Validation relation Object -> L2
+            # Validate Object -> L2 relation
             if not self.get_capability_l2_by_id(obj.emitting_capability_l2_id):
                 all_errors["relations"].append(f"Object {obj.id} references non-existent L2 {obj.emitting_capability_l2_id}")
 
@@ -404,11 +404,11 @@ class BCMModel:
         for concept in self.business_concepts:
             all_errors["business_concepts"].extend(concept.validate())
         
-        # Filtrer les erreurs vides
+        # Filter out empty error lists
         return {k: v for k, v in all_errors.items() if v}
-    
+
     def get_summary(self) -> Dict[str, int]:
-        """Résumé statistique du modèle."""
+        """Statistical summary of the model."""
         return {
             "capabilities_l1": len(self.capabilities_l1),
             "capabilities_l2": len(self.capabilities_l2),  

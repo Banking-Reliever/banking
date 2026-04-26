@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>FoodarooExperience.ClaimsProcessing.Infrastructure</RootNamespace>
+    <AssemblyName>ClaimsProcessing.Infrastructure</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ClaimsProcessing.Application\ClaimsProcessing.Application.csproj" />
+    <ProjectReference Include="..\ClaimsProcessing.Contracts\ClaimsProcessing.Contracts.csproj" />
+    <ProjectReference Include="..\ClaimsProcessing.Domain\ClaimsProcessing.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

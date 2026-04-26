@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-GOV-0001
-title: "Gouvernance des décisions BCM – hiérarchie GOV / URBA / FUNC"
+title: "BCM Decision Governance – GOV / URBA / FUNC Hierarchy"
 status: Proposed
 date: 2026-02-26
 
@@ -29,8 +29,8 @@ related_adr: []
 supersedes: []
 
 tags:
-  - gouvernance
-  - hiérarchie
+  - governance
+  - hierarchy
   - GOV
   - URBA
   - FUNC
@@ -38,192 +38,192 @@ tags:
 stability_impact: Structural
 ---
 
-# ADR-BCM-GOV-0001 — Gouvernance des décisions BCM
+# ADR-BCM-GOV-0001 — BCM Decision Governance
 
-## Contexte
+## Context
 
-Le plan d'occupation des sols (POS, une BCM qui ne dit pas son nom) constitue le référentiel fonctionnel structurant du Système d’Information.
+The land use plan (BCM under a different name) constitutes the structuring functional referential of the Information System.
 
-Trois types de décisions distinctes sont identifiés :
+Three distinct types of decisions are identified:
 
-1. **Décisions de gouvernance (GOV)**
-   - Organisation du cadre décisionnel
-   - Hiérarchie des ADR
-   - Mécanismes d'arbitrage
-   - Cycle de vie et revue périodique des décisions
+1. **Governance decisions (GOV)**
+   - Organization of the decision-making framework
+   - ADR hierarchy
+   - Arbitration mechanisms
+   - Decision lifecycle and periodic review
 
-2. **Décisions d'urbanisation (URBA)**
-   - Définition des principes de modélisation
-   - Règles de zoning
-   - Règles de niveau L1/L2/L3
-   - Règles de découplage logique / physique
-   - Principes d'ownership et de responsabilité
+2. **Urbanization decisions (URBA)**
+   - Definition of modeling principles
+   - Zoning rules
+   - L1/L2/L3 level rules
+   - Logical / physical decoupling rules
+   - Ownership and responsibility principles
 
-3. **Décisions de modélisation fonctionnelle (FUNC)**
-   - Split / merge de capabilities
-   - Placement d'une capacité dans une zone
-   - Création ou suppression de L3
-   - Ajustement de périmètre fonctionnel
+3. **Functional modeling decisions (FUNC)**
+   - Split / merge of capabilities
+   - Placement of a capability in a zone
+   - Creation or deletion of L3
+   - Functional scope adjustment
 
-Ces décisions relèvent de compétences différentes et doivent être gouvernées de manière explicite afin d’éviter :
-- La divergence du modèle,
-- Les contradictions entre principes et implémentations,
-- La dérive progressive de la BCM.
+These decisions belong to different areas of competence and must be governed explicitly in order to avoid:
+- Model divergence,
+- Contradictions between principles and implementations,
+- Progressive BCM drift.
 
-## Décision
+## Decision
 
-La gouvernance des ADR BCM est structurée selon une hiérarchie explicite à **trois niveaux** :
+BCM ADR governance is structured according to an explicit **three-level** hierarchy:
 
-### 1. ADR de niveau GOV (Gouvernance)
+### 1. GOV-level ADRs (Governance)
 
-- Définissent les **méta-règles** du cadre décisionnel BCM lui-même.
-- Portée : transverse, applicable à l’ensemble du référentiel.
-- Exemples : hiérarchie des ADR, collège d’arbitrage, revue périodique.
-- Très peu fréquents, très stables.
-- Ne peuvent être modifiés que par un autre ADR GOV.
-- Validés par le collège BCM ou l’équivalent d’une cellule d’urbanisme d’entreprise.
+- Define the **meta-rules** of the BCM decision-making framework itself.
+- Scope: cross-cutting, applicable to the entire referential.
+- Examples: ADR hierarchy, arbitration board, periodic review.
+- Very infrequent, very stable.
+- Can only be modified by another GOV ADR.
+- Validated by the BCM board or equivalent enterprise architecture body.
 
-### 2. ADR de niveau URBA (Urbanisme)
+### 2. URBA-level ADRs (Urbanization)
 
-- Définissent les **règles structurantes du modèle BCM**.
-- Portée : transverse, applicable à l’ensemble des capabilities.
-- Exemples : zoning en 7 zones, découpage L1/L2/L3, principe 1 capacité = 1 responsabilité.
-- Peu fréquents, fortement stables.
-- Ne peuvent être modifiés que par un autre ADR URBA ou GOV.
-- Validés par les architectes d’entreprise.
+- Define the **structuring rules of the BCM model**.
+- Scope: cross-cutting, applicable to all capabilities.
+- Examples: 7-zone zoning, L1/L2/L3 breakdown, 1 capability = 1 responsibility principle.
+- Infrequent, highly stable.
+- Can only be modified by another URBA or GOV ADR.
+- Validated by enterprise architects.
 
-### 3. ADR de niveau FUNC (Fonctionnel)
+### 3. FUNC-level ADRs (Functional)
 
-- Appliquent les règles URBA à un **périmètre fonctionnel précis**.
-- Impactent explicitement une ou plusieurs capabilities.
-- Peuvent évoluer plus fréquemment.
-- Doivent obligatoirement référencer les ADR URBA applicables.
-- Validés par les architectes fonctionnels ou les équipes métier concernées.
+- Apply URBA rules to a **specific functional scope**.
+- Explicitly impact one or more capabilities.
+- May evolve more frequently.
+- Must mandatorily reference applicable URBA ADRs.
+- Validated by functional architects or the relevant business teams.
 
-### Règle de classification
+### Classification Rule
 
-| Critère                       | GOV | URBA | FUNC |
-|-------------------------------|-----|------|------|
-| Porte sur le cadre décisionnel | ✅  |      |      |
-| Porte sur la structure du modèle |   | ✅   |      |
-| Porte sur un périmètre fonctionnel |  |    | ✅   |
+| Criterion                          | GOV | URBA | FUNC |
+|------------------------------------|-----|------|------|
+| Concerns the decision-making framework | ✅  |      |      |
+| Concerns the model structure        |     | ✅   |      |
+| Concerns a functional scope         |     |      | ✅   |
 
-### Règles de hiérarchie
+### Hierarchy Rules
 
-- Un ADR FUNC **ne peut pas contredire** un ADR URBA.
-- Un ADR URBA **ne peut pas contredire** un ADR GOV.
-- Tout ADR FUNC doit inclure un champ `related_adr` pointant vers les ADR URBA concernés.
-- La BCM (capabilities.yaml) est modifiée uniquement à la suite d’un ADR accepté.
+- A FUNC ADR **cannot contradict** a URBA ADR.
+- A URBA ADR **cannot contradict** a GOV ADR.
+- Every FUNC ADR must include a `related_adr` field pointing to the relevant URBA ADRs.
+- The BCM (capabilities.yaml) is modified only following an accepted ADR.
 
 ```text
-ADR GOV  — Méta-règles du cadre décisionnel
-  ↓ encadre
-ADR URBA — Principes structurants du modèle
-  ↓ contraint
-ADR FUNC — Décisions de modélisation fonctionnelle
-  ↓ matérialise
+ADR GOV  — Meta-rules of the decision-making framework
+  ↓ governs
+ADR URBA — Structuring principles of the model
+  ↓ constrains
+ADR FUNC — Functional modeling decisions
+  ↓ materializes
 BCM (capabilities.yaml)
 ```
 
-### Organisation documentaire
+### Documentary Organization
 
-- Tous les ADR sont stockés dans un référentiel unique.
-- Un template commun est utilisé.
-- La distinction est assurée par le champ `family`.
+- All ADRs are stored in a single referential.
+- A common template is used.
+- The distinction is ensured by the `family` field.
 
-### Clause d’évolutivité et anti-dogme
+### Evolutivity Clause and Anti-Dogma
 
-La BCM est un modèle vivant.
+The BCM is a living model.
 
-Aucun ADR (GOV, URBA ou FUNC) ne constitue une règle intangible ou définitive.
+No ADR (GOV, URBA, or FUNC) constitutes an immutable or definitive rule.
 
-Afin d'éviter toute dérive dogmatique :
+To avoid any dogmatic drift:
 
-- Tout ADR doit pouvoir être challengé par un ADR ultérieur de même niveau ou supérieur.
-- Un mécanisme formel de remise en question est autorisé à l'initiative :
-  - d'un membre du collège BCM,
-  - d'une équipe projet,
-  - ou d'un représentant métier impacté.
-- Les ADR GOV et URBA doivent faire l'objet d'une revue périodique (minimum tous les 24 mois).
+- Any ADR must be challengeable by a subsequent ADR of the same or higher level.
+- A formal challenge mechanism is allowed at the initiative of:
+  - a BCM board member,
+  - a project team,
+  - or an affected business representative.
+- GOV and URBA ADRs must undergo a periodic review (minimum every 24 months).
 
-Le principe directeur est :
+The guiding principle is:
 
-> La cohérence du modèle ne doit jamais primer sur la valeur métier.
+> Model coherence must never take precedence over business value.
 
-La BCM est un outil d’alignement, non une finalité en soi.
+The BCM is an alignment tool, not an end in itself.
 
 ## Justification
 
-Cette structuration en trois niveaux permet :
+This three-level structure allows:
 
-- De clarifier les responsabilités décisionnelles à chaque niveau.
-- De séparer gouvernance institutionnelle (GOV), principes d'urbanisation (URBA) et modélisation opérationnelle (FUNC).
-- D'éviter les conflits entre équipes (gouvernance vs urbanisation vs métier).
-- D'assurer la cohérence du modèle dans le temps.
-- De permettre un pilotage de la stabilité du modèle.
+- Clarifying decision-making responsibilities at each level.
+- Separating institutional governance (GOV), urbanization principles (URBA), and operational modeling (FUNC).
+- Avoiding conflicts between teams (governance vs. urbanization vs. business).
+- Ensuring model coherence over time.
+- Enabling model stability governance.
 
-Elle introduit une analogie explicite :
+It introduces an explicit analogy:
 
-- ADR GOV = Constitution du modèle (comment on décide)
-- ADR URBA = Lois fondamentales (les règles du jeu)
-- ADR FUNC = Décrets d'application (les décisions opérationnelles)
+- GOV ADR = Model Constitution (how decisions are made)
+- URBA ADR = Fundamental Laws (the rules of the game)
+- FUNC ADR = Implementation Decrees (operational decisions)
 
-### Alternatives considérées
+### Alternatives Considered
 
-- Approche non hiérarchisée (un seul type d'ADR) — rejetée car elle mélange gouvernance, principes structurants et décisions opérationnelles.
-- Hiérarchie à 2 niveaux (Structural / Functional) — rejetée car elle ne distingue pas explicitement les décisions de gouvernance (comment on décide) des décisions d'urbanisation (les règles du modèle).
-- Gouvernance uniquement centralisée par urbanisation — rejetée car elle réduit l’appropriation par les équipes fonctionnelles.
+- Non-hierarchical approach (single ADR type) — rejected because it mixes governance, structuring principles, and operational decisions.
+- 2-level hierarchy (Structural / Functional) — rejected because it does not explicitly distinguish governance decisions (how decisions are made) from urbanization decisions (model rules).
+- Governance centralized solely by urbanization — rejected because it reduces ownership by functional teams.
 
-## Impacts sur la BCM
+## Impacts on the BCM
 
 ### Structure
 
-- Formalisation d'une hiérarchie décisionnelle à trois niveaux : GOV → URBA → FUNC.
-- Obligation de traçabilité croisée entre niveaux via le champ `related_adr`.
-- Stabilisation des principes de gouvernance (GOV) et d'urbanisation (URBA), sécurisation des évolutions fonctionnelles (FUNC).
+- Formalization of a three-level decision hierarchy: GOV → URBA → FUNC.
+- Mandatory cross-level traceability via the `related_adr` field.
+- Stabilization of governance (GOV) and urbanization (URBA) principles, securing functional evolutions (FUNC).
 
-### Événements (si applicable)
+### Events (if applicable)
 
-- Aucun impact direct sur les événements métier.
+- No direct impact on business events.
 
 ### Mapping SI / Data / Org
 
-- Applications impactées : gouvernance transverse (SI).
-- Flux impactés : gouvernance et traçabilité des décisions (DATA/ORG).
+- Impacted applications: cross-cutting governance (SI).
+- Impacted flows: decision governance and traceability (DATA/ORG).
 
-## Conséquences
+## Consequences
 
-### Positives
+### Positive
 
-- Gouvernance claire.
-- Responsabilités explicites.
-- Modèle plus robuste.
-- Réduction des conflits décisionnels.
-- Meilleure auditabilité des évolutions.
+- Clear governance.
+- Explicit responsibilities.
+- More robust model.
+- Reduced decision conflicts.
+- Better auditability of evolutions.
 
-### Négatives / Risques
+### Negative / Risks
 
-- Complexité de gouvernance accrue.
-- Nécessite discipline documentaire.
-- Risque de rigidité si trop formalisé.
+- Increased governance complexity.
+- Requires documentary discipline.
+- Risk of rigidity if over-formalized.
 
-### Dette acceptée
+### Accepted Debt
 
-- Nécessité d’acculturation des équipes.
-- Ajustements possibles dans la pratique.
+- Need for team onboarding and acculturation.
+- Possible adjustments in practice.
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : Élevé (décision structurante transverse).
-- Date de revue recommandée : 2028-02-26.
-- Indicateur de stabilité attendu :
-  - Nombre d'ADR FUNC non rattachés à un ADR URBA = 0.
-  - Nombre d'ADR URBA non rattachés à un ADR GOV = 0.
-  - Toute modification structurelle du modèle passe par un ADR URBA ou GOV.
-  - Chaque famille (GOV, URBA, FUNC) est correctement affectée via le champ `family`.
+- Criticality level: High (structuring cross-cutting decision).
+- Recommended review date: 2028-02-26.
+- Expected stability indicator:
+  - Number of FUNC ADRs not linked to a URBA ADR = 0.
+  - Number of URBA ADRs not linked to a GOV ADR = 0.
+  - Any structural modification of the model goes through a URBA or GOV ADR.
+  - Each family (GOV, URBA, FUNC) is correctly assigned via the `family` field.
 
-## Traçabilité
+## Traceability
 
-- Atelier Gouvernance BCM – 2026-02-26
-- Participants : EA / Business Architecture
-- Références : 
+- Workshop: BCM Governance – 2026-02-26
+- Participants: EA / Business Architecture
+- References:

@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-URBA-0004
-title: "Décider au bon niveau (L1/L2/L3)"
+title: "Deciding at the Right Level (L1/L2/L3)"
 status: Proposed
 date: 2026-02-26
 
@@ -24,110 +24,110 @@ impacted_mappings:
     - ORG
 
 related_adr:
-  - ADR-BCM-GOV-0001  # hiérarchie GOV → URBA → FUNC
-  - ADR-BCM-GOV-0002  # collège d'arbitrage
+  - ADR-BCM-GOV-0001  # GOV → URBA → FUNC hierarchy
+  - ADR-BCM-GOV-0002  # Arbitration board
   - ADR-BCM-URBA-0002
 
 supersedes: []
 
 tags:
   - BCM
-  - Gouvernance
-  - Décisions
+  - Governance
+  - Decisions
 
 stability_impact: Structural
 ---
 
-# ADR-BCM-URBA-0004 — Décider au bon niveau (L1/L2/L3)
+# ADR-BCM-URBA-0004 — Deciding at the Right Level (L1/L2/L3)
 
-## Contexte
-Sans règle explicite de “niveau de décision”, les arbitrages se font :
-- trop macro (au L1) : décisions floues, non actionnables,
-- trop fin (au L3) : micro-optimisation, discussions interminables, instabilité du modèle.
+## Context
+Without an explicit "decision level" rule, arbitrations are made:
+- too macro (at L1): vague, non-actionable decisions,
+- too granular (at L3): micro-optimization, endless discussions, model instability.
 
-Cela impacte directement :
-- la priorisation des roadmaps,
-- la rationalisation applicative,
-- la définition des services et contrats d’intégration.
+This directly impacts:
+- roadmap prioritization,
+- application rationalization,
+- service and integration contract definition.
 
-## Décision
-- **L1** sert au cadrage stratégique, à la communication et au pilotage “valeur”.
-- **L2** sert aux arbitrages d’urbanisation : ownership, rationalisation, budgets, priorisation, trajectoires.
-- **L3** sert au design actionnable : services métiers, contrats (API/événements), règles détaillées, tests de couverture.
+## Decision
+- **L1** serves for strategic framing, communication, and "value" steering.
+- **L2** serves for urbanization arbitrations: ownership, rationalization, budgets, prioritization, trajectories.
+- **L3** serves for actionable design: business services, contracts (API/events), detailed rules, coverage testing.
 
-Le domaine L3 ne doit être explicité que dans des cas exceptionnels :
-- Très fort axe d'avantage cométitif, axe prioritaire de developpement stratégique de l'entreprise
-- Niveau de complexité nécessitant de descendre encore d'un niveau pour permettre d'appréhender cette complexité et de réaliser les arbitrages généralement réalisé au niveau 2
+The L3 domain should only be made explicit in exceptional cases:
+- Very strong competitive advantage axis, a strategic development priority for the company
+- Level of complexity requiring going down one more level to understand the complexity and perform the arbitrations normally carried out at level 2
 
-Le niveau 3 ne doit pas resté en l'état, c'est un stade transitoire :
-- Il doit suivre la stratégie du moment et ne pas alourdir la carto avec des visions passées
-- s'effacer pour revoir l'organistion en niveau L1 et niveau L2 pour résoudre la complexité accidentelle qui aura été trouvée.
+Level 3 must not remain as-is; it is a transitional stage:
+- It must follow the current strategy and not burden the map with past visions
+- It should recede to revisit the organization at the L1 and L2 level to resolve accidental complexity that has been found.
 
-Cette carte doit permettre de servir de guide et rester à un certain niveau de simplicité pour permettre à tous les acteurs s'en emparer simplement et ainsi d'appuyer les challenges stratégiques de l'entreprise.
+This map must serve as a guide and remain at a certain level of simplicity to allow all stakeholders to easily grasp it and thereby support the company's strategic challenges.
 
 ## Justification
-- **L1** offre la vision stratégique et la communication : stable, pérenne, compréhensible par tous.
-- **L2** est le niveau pivot pour l'urbanisation : suffisamment stable pour organiser responsabilités, investissements et transformation, suffisamment granulaire pour arbitrer la rationalisation applicative.
-- **L3** existe dans le modèle mais est **utilisé de manière exceptionnelle et transitoire** :
-  - **Exceptionnel** : uniquement sur les axes d'avantage compétitif ou les zones de forte complexité où L2 ne suffit plus pour arbitrer
-  - **Transitoire** : une fois les arbitrages faits et la complexité accidentelle résolue, L3 doit soit s'effacer (retour à L2), soit conduire à une réorganisation L1/L2 plus pertinente
-  - **Guidant** : L3 sert à éclairer temporairement des décisions de design (services métiers, contrats API/événements, règles détaillées) mais ne doit pas alourdir durablement la carte
+- **L1** provides the strategic vision and communication: stable, lasting, understandable by all.
+- **L2** is the pivot level for urbanization: stable enough to organize responsibilities, investments, and transformation, granular enough to arbitrate application rationalization.
+- **L3** exists in the model but is **used in an exceptional and transitional manner**:
+  - **Exceptional**: only on competitive advantage axes or areas of high complexity where L2 is no longer sufficient for arbitration
+  - **Transitional**: once arbitrations are done and accidental complexity resolved, L3 must either recede (return to L2) or lead to a more relevant L1/L2 reorganization
+  - **Guiding**: L3 temporarily illuminates design decisions (business services, API/event contracts, detailed rules) but must not permanently burden the map
 
-L'objectif est de **garder la BCM simple et appropriable** par tous les acteurs, tout en permettant des zooms ponctuels sur les zones critiques.
+The objective is to **keep the BCM simple and appropriable** by all stakeholders, while allowing temporary zooms on critical areas.
 
-### Alternatives considérées
+### Alternatives Considered
 
-- **Décider tout au L1** — rejeté car insuffisant pour l'urbanisation, trop macro pour les arbitrages.
-- **Décider tout au L3** — rejeté car instable, trop coûteux, favorise la dérive “process map”, perte de lisibilité.
-- **L3 permanent et exhaustif** — rejeté car complexité excessive, maintenance coûteuse, risque de cartographie encyclopédique non actuelle.
+- **Decide everything at L1** — rejected because insufficient for urbanization, too macro for arbitrations.
+- **Decide everything at L3** — rejected because unstable, too costly, promotes "process map" drift, loss of readability.
+- **Permanent and exhaustive L3** — rejected because excessive complexity, costly maintenance, risk of an encyclopedic non-current map.
 
-## Impacts sur la BCM
+## Impacts on the BCM
 
 ### Structure
 
-- **Roadmaps** : structurées par capabilities **L2** (niveau de pilotage par défaut).
-- **Backlogs de transformation** : détaillés en **L3** uniquement sur les domaines critiques / en transformation / à fort avantage compétitif.
-- **Revues d'architecture** : décisions de découpage au **L2**, décisions de contrats/intégration au **L3**.
-- **Gouvernance du L3** :
-  - Création d'un L3 nécessite justification explicite (complexité, criticité, enjeu stratégique)
-  - Revue périodique pour supprimer ou "remonter" les L3 devenus non pertinents
-  - Les vues par défaut (BCM L1/L2) ne montrent **pas** les L3 pour garder la lisibilité
+- **Roadmaps**: structured by **L2** capabilities (default steering level).
+- **Transformation backlogs**: detailed in **L3** only for critical / transforming / high-competitive-advantage domains.
+- **Architecture reviews**: breakdown decisions at **L2**, contract/integration decisions at **L3**.
+- **L3 Governance**:
+  - Creating an L3 requires explicit justification (complexity, criticality, strategic stake)
+  - Periodic review to delete or "elevate" L3s that have become irrelevant
+  - Default views (BCM L1/L2) do **not** show L3s to maintain readability
 
-### Événements (si applicable)
+### Events (if applicable)
 
-- Aucun impact direct.
+- No direct impact.
 
 ### Mapping SI / Data / Org
 
-- Aucun impact direct.
+- No direct impact.
 
-## Conséquences
-### Positives
-- Arbitrages plus rapides et comparables (concentration sur L2).
-- Réduction des débats de granularité (règle claire : L2 par défaut, L3 si justifié).
-- Meilleure cohérence des contrats d'intégration (API/événements) avec le modèle.
-- **BCM agile** : possibilité de zoomer temporairement (L3) sans alourdir durablement la carte.
-- **Alignement priorités stratégiques** : L3 suit la stratégie du moment, évite l'accumulation de dette de modélisation.
+## Consequences
+### Positive
+- Faster and comparable arbitrations (focus on L2).
+- Reduction of granularity debates (clear rule: L2 by default, L3 if justified).
+- Better coherence of integration contracts (API/events) with the model.
+- **Agile BCM**: ability to temporarily zoom in (L3) without permanently burdening the map.
+- **Strategic priority alignment**: L3 follows the current strategy, avoids accumulation of modeling debt.
 
-### Négatives / Risques
-- Nécessite une discipline de gouvernance (templates d'ateliers, règles de modélisation).
-- **Discipline de nettoyage** : risque d'oublier de faire "remonter" ou supprimer les L3 devenus obsolètes.
-- **Débats sur le seuil** : quand déclencher un L3 ? Critères subjectifs (complexité, criticité) peuvent créer des désaccords.
-- **Tentation du détail** : risque de vouloir tout détailler en L3 malgré la règle (nécessite des revues régulières).
+### Negative / Risks
+- Requires governance discipline (workshop templates, modeling rules).
+- **Cleanup discipline**: risk of forgetting to "elevate" or delete obsolete L3s.
+- **Debates on the threshold**: when to trigger an L3? Subjective criteria (complexity, criticality) can create disagreements.
+- **Temptation of detail**: risk of wanting to detail everything in L3 despite the rule (requires regular reviews).
 
-### Dette acceptée
+### Accepted Debt
 
-- Critères de déclenchement du L3 partiellement subjectifs (complexité, criticité) ; à affiner avec la pratique.
-- Discipline de nettoyage du L3 à instaurer progressivement.
+- L3 trigger criteria partially subjective (complexity, criticality); to be refined in practice.
+- L3 cleanup discipline to be progressively established.
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : Élevé (règle structurante transverse).
-- Date de revue recommandée : 2028-01-21.
-- Indicateur de stabilité attendu : aucun L3 présent dans les vues par défaut sans justification formalisée.
+- Criticality level: High (structuring transverse rule).
+- Recommended review date: 2028-01-21.
+- Expected stability indicator: no L3 present in default views without formalized justification.
 
-## Traçabilité
+## Traceability
 
-- Atelier : Guide d'urbanisation BCM v1 — section "Niveaux de décision"
-- Participants : EA / Urbanisation, Business Architecture
-- Références : ADR-BCM-URBA-0002
+- Workshop: BCM Urbanization Guide v1 — "Decision Levels" section
+- Participants: EA / Urbanization, Business Architecture
+- References: ADR-BCM-URBA-0002

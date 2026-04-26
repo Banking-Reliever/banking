@@ -1,81 +1,81 @@
-# 🛠 Outils BCM
+# BCM Tools
 
-Ce répertoire contient les scripts utilitaires du référentiel BCM :
-validation, génération de vues et export de diagrammes.
+This directory contains utility scripts for the BCM repository:
+validation, view generation and diagram export.
 
-## Pré-requis
+## Prerequisites
 
 ```bash
 pip install -r tools/requirements.txt
 ```
 
-Seule dépendance : **PyYAML** (`pyyaml`).
+Only dependency: **PyYAML** (`pyyaml`).
 
 ---
 
-## Sommaire
+## Table of Contents
 
 | Script | Description |
 |--------|-------------|
-| [`render_drawio.py`](#render_drawiopy) | Génère un diagramme draw.io L1 (`.drawio`) à partir d'un fichier YAML de capacités |
-| [`render_drawio_l2.py`](#render_drawio_l2py) | Génère un diagramme draw.io L2 (`.drawio`) avec les capacités L2 groupées dans leurs L1 |
-| [`render_drawio_capability_chain.py`](#render_drawio_capability_chainpy) | Génère une chaîne production/consommation interne à une capacité L1 |
-| [`render_drawio_subscriptions.py`](#render_drawio_subscriptionspy) | Génère une vue draw.io des abonnements métier à partir du template de abonnement |
-| [`validate_events.py`](#validate_eventspy) | Valide les références d'événements contre les capacités BCM |
-| [`validate_repo.py`](#validate_repopy) | Validation structurelle du repository (fichiers, YAML, cohérence) |
-| [`check_docs_links.py`](#check_docs_linkspy) | Vérifie les liens Markdown internes (fichiers + ancres) pour CI/CD |
-| [`semantic_review.py`](#semantic_reviewpy) | Agent CI de cohérence sémantique PR (ADR puis ADR+BCM) + rapport PR |
-| [`concat_files.py`](#concat_filespy) | Concatène tous les fichiers ADR et BCM en un seul document |
-| [`run_eventcatalogs.sh`](#run_eventcatalogssh) | Lance FOODAROO-Metier et FOODAROO-SI en parallèle avec arrêt propre |
+| [`render_drawio.py`](#render_drawiopy) | Generates a draw.io L1 diagram (`.drawio`) from a capabilities YAML file |
+| [`render_drawio_l2.py`](#render_drawio_l2py) | Generates a draw.io L2 diagram (`.drawio`) with L2 capabilities grouped inside their L1 |
+| [`render_drawio_capability_chain.py`](#render_drawio_capability_chainpy) | Generates an internal production/consumption chain for an L1 capability |
+| [`render_drawio_subscriptions.py`](#render_drawio_subscriptionspy) | Generates a draw.io view of business subscriptions from the subscription template |
+| [`validate_events.py`](#validate_eventspy) | Validates event references against BCM capabilities |
+| [`validate_repo.py`](#validate_repopy) | Structural validation of the repository (files, YAML, coherence) |
+| [`check_docs_links.py`](#check_docs_linkspy) | Checks internal Markdown links (files + anchors) for CI/CD |
+| [`semantic_review.py`](#semantic_reviewpy) | PR semantic coherence CI agent (ADR then ADR+BCM) + PR report |
+| [`concat_files.py`](#concat_filespy) | Concatenates all ADR and BCM files into a single document |
+| [`run_eventcatalogs.sh`](#run_eventcatalogssh) | Launches FOODAROO-Metier and FOODAROO-SI in parallel with clean shutdown |
 ---
 
 ## run_eventcatalogs.sh
 
-Lance simultanément les deux instances EventCatalog :
+Simultaneously launches both EventCatalog instances:
 
-- `views/FOODAROO-Metier` (port par défaut `4444`)
-- `views/FOODAROO-SI` (port par défaut `4445`)
+- `views/FOODAROO-Metier` (default port `4444`)
+- `views/FOODAROO-SI` (default port `4445`)
 
-Le script :
+The script:
 
-- vérifie la présence des projets (`package.json`) ;
-- installe automatiquement les dépendances npm si `node_modules` est absent ;
-- démarre les deux serveurs en parallèle ;
-- gère un arrêt propre des deux processus (`Ctrl+C`).
+- checks for the presence of projects (`package.json`);
+- automatically installs npm dependencies if `node_modules` is absent;
+- starts both servers in parallel;
+- handles clean shutdown of both processes (`Ctrl+C`).
 
 ### Usage
 
 ```bash
-# Depuis la racine du repository
+# From the repository root
 bash tools/run_eventcatalogs.sh
 
-# Ports personnalisés
+# Custom ports
 METIER_PORT=3010 SI_PORT=3011 bash tools/run_eventcatalogs.sh
 ```
 
-### Variables d'environnement
+### Environment Variables
 
-| Variable | Description | Défaut |
-|----------|-------------|--------|
-| `METIER_PORT` | Port de `views/FOODAROO-Metier` | `4444` |
-| `SI_PORT` | Port de `views/FOODAROO-SI` | `4445` |
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `METIER_PORT` | Port for `views/FOODAROO-Metier` | `4444` |
+| `SI_PORT` | Port for `views/FOODAROO-SI` | `4445` |
 
 ---
 
 ## render_drawio.py
 
-Génère un diagramme draw.io **L1** (`.drawio`) à partir d'un fichier YAML de capacités,
-avec la disposition classique du POS.
-Chaque capacité L1 est une boîte colorée placée dans sa zone.
+Generates a draw.io **L1** diagram (`.drawio`) from a capabilities YAML file,
+with the classic BCM layout.
+Each L1 capability is a colored box placed in its zone.
 
-### Fonctionnalités
+### Features
 
-- **7 zones colorées** disposées selon le layout BCM standard
-- **Couleurs pastels distinctives** par capacité L1 (palette de 16 couleurs en cycle)
-- **Disposition en grille** automatique des boîtes à l'intérieur de chaque zone
-- **Zones vides** rendues comme rectangles colorés (se remplissent quand les capacités sont ajoutées au YAML)
+- **7 colored zones** arranged according to the standard BCM layout
+- **Distinctive pastel colors** per L1 capability (palette of 16 colors cycling)
+- **Automatic grid layout** of boxes inside each zone
+- **Empty zones** rendered as colored rectangles (filled when capabilities are added to the YAML)
 
-### Disposition des zones
+### Zone Layout
 
 ```
 ┌──────────────────────────────────────────────────────┐
@@ -94,32 +94,32 @@ Chaque capacité L1 est une boîte colorée placée dans sa zone.
 ### Usage
 
 ```bash
-# Génération par défaut
-#   entrée : bcm/capabilities-L1.yaml
-#   sortie : views/BCM-L1-generated.drawio
+# Default generation
+#   input : bcm/capabilities-L1.yaml
+#   output: views/BCM-L1-generated.drawio
 python tools/render_drawio.py
 
-# Fichier d'entrée spécifique
+# Specific input file
 python tools/render_drawio.py --input bcm/capabilities-L1.yaml
 
-# Fichier de sortie personnalisé
-python tools/render_drawio.py --output views/mon-bcm.drawio
+# Custom output file
+python tools/render_drawio.py --output views/my-bcm.drawio
 
-# Modifier le nombre de colonnes dans les zones centrales (défaut : 4)
+# Change the number of columns in central zones (default: 4)
 python tools/render_drawio.py --cols 3
 ```
 
 ### Options
 
-| Option | Description | Défaut |
-|--------|-------------|--------|
-| `-i`, `--input` | Fichier YAML source des capacités | `bcm/capabilities-L1.yaml` |
-| `-o`, `--output` | Chemin du fichier `.drawio` généré | `views/BCM-L1-generated.drawio` |
-| `--cols` | Nombre de colonnes dans les zones centrales | `4` |
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-i`, `--input` | Source YAML capabilities file | `bcm/capabilities-L1.yaml` |
+| `-o`, `--output` | Path of the generated `.drawio` file | `views/BCM-L1-generated.drawio` |
+| `--cols` | Number of columns in central zones | `4` |
 
-### Format YAML attendu
+### Expected YAML Format
 
-Le fichier d'entrée doit suivre la structure de `bcm/capabilities-L1.yaml` :
+The input file must follow the structure of `bcm/capabilities-L1.yaml`:
 
 ```yaml
 meta:
@@ -128,51 +128,51 @@ meta:
 
 capabilities:
   - id: CAP.COEUR.001
-    name: Produits & Tarification
+    name: Products & Pricing
     level: L1
-    zoning: SERVICES_COEUR   # détermine la zone de placement
+    zoning: SERVICES_COEUR   # determines the placement zone
     description: ...
     owner: ...
     adrs: []
 ```
 
-Le champ `zoning` détermine dans quelle zone la capacité sera placée.
-Valeurs reconnues : `PILOTAGE`, `SERVICES_COEUR`, `SUPPORT`,
+The `zoning` field determines which zone the capability is placed in.
+Recognized values: `PILOTAGE`, `SERVICES_COEUR`, `SUPPORT`,
 `REFERENTIEL`, `ECHANGE_B2B`, `CANAL`, `DATA_ANALYTIQUE`.
 
-### Sortie
+### Output
 
-Le fichier `.drawio` généré s'ouvre directement dans :
+The generated `.drawio` file opens directly in:
 
-- **draw.io Desktop** (fichier → ouvrir)
+- **draw.io Desktop** (file → open)
 - **draw.io Web** ([app.diagrams.net](https://app.diagrams.net))
-- **Extension VS Code** draw.io
+- **VS Code** draw.io extension
 
-Le diagramme peut être enrichi manuellement après génération.
+The diagram can be manually enriched after generation.
 
 ---
 
 ## render_drawio_l2.py
 
-Génère un diagramme draw.io **L2** (`.drawio`) à partir de **tous** les fichiers
-`capabilities-*.yaml` du répertoire `bcm/`.
-Chaque capacité L1 est un *groupe draw.io* contenant ses boîtes L2.
+Generates a draw.io **L2** diagram (`.drawio`) from **all**
+`capabilities-*.yaml` files in the `bcm/` directory.
+Each L1 capability is a *draw.io group* containing its L2 boxes.
 
-### Fonctionnalités
+### Features
 
-- **Lecture automatique** de tous les fichiers `bcm/capabilities-*.yaml` (L1 + L2)
-- **Hiérarchie L1 → L2** : les L2 sont rattachées à leur parent via le champ `parent`
-- **Groupes draw.io** : chaque L1 est un groupe contenant un fond coloré, un titre et les boîtes L2
-- **Couleurs fidèles au template** `BCM L2 template.drawio` :
-  - Zones : mêmes codes couleur que `render_drawio.py` (`ZONE_CONFIG`)
-  - Fonds L1 : palette pastel tournante (`CAPABILITY_PALETTE`, 16 couleurs)
-  - Boîtes L2 : couleur par zone (pêche `#ffe6cc` pour COEUR, bleu ciel `#dae8fc` pour Pilotage, doré `#FFE599` pour B2B/Canal, lavande `#e1d5e7` pour Data)
-- **Placeholder** pour les L1 sans L2 défini
-- **Contenu 100 % YAML** — rien n'est inventé
+- **Automatic reading** of all `bcm/capabilities-*.yaml` files (L1 + L2)
+- **L1 → L2 hierarchy**: L2s are linked to their parent via the `parent` field
+- **draw.io groups**: each L1 is a group containing a colored background, a title and L2 boxes
+- **Colors matching the template** `BCM L2 template.drawio`:
+  - Zones: same color codes as `render_drawio.py` (`ZONE_CONFIG`)
+  - L1 backgrounds: rotating pastel palette (`CAPABILITY_PALETTE`, 16 colors)
+  - L2 boxes: color by zone (peach `#ffe6cc` for COEUR, sky blue `#dae8fc` for Pilotage, golden `#FFE599` for B2B/Canal, lavender `#e1d5e7` for Data)
+- **Placeholder** for L1 without defined L2
+- **100% YAML content** — nothing is invented
 
-### Disposition
+### Layout
 
-Même layout que `render_drawio.py` :
+Same layout as `render_drawio.py`:
 
 ```
 ┌──────────────────────────────────────────────────────┐
@@ -180,7 +180,7 @@ Même layout que `render_drawio.py` :
 ├──────────┬──────────────────────────────┬────────────┤
 │          │  COEUR  ┌─────────┐ ┌────────┐│            │
 │  B2B     │       │ L1      │ │ L1     ││  CANAL   │
-│ EXCHANGE │       │  ┌─L2─┐ │ │ (vide) ││            │
+│ EXCHANGE │       │  ┌─L2─┐ │ │ (empty)││            │
 │          │       │  └────┘ │ └────────┘│            │
 │          ├───────┴─────────┴───────────┤            │
 │          │       SUPPORT               │            │
@@ -194,51 +194,51 @@ Même layout que `render_drawio.py` :
 ### Usage
 
 ```bash
-# Génération par défaut
-#   entrée : bcm/capabilities-*.yaml
-#   sortie : views/BCM-L2-generated.drawio
+# Default generation
+#   input : bcm/capabilities-*.yaml
+#   output: views/BCM-L2-generated.drawio
 python tools/render_drawio_l2.py
 
-# Répertoire d'entrée spécifique
+# Specific input directory
 python tools/render_drawio_l2.py --input-dir bcm
 
-# Fichier de sortie personnalisé
-python tools/render_drawio_l2.py --output views/mon-bcm-l2.drawio
+# Custom output file
+python tools/render_drawio_l2.py --output views/my-bcm-l2.drawio
 
-# Modifier le nombre de colonnes L2 dans un groupe L1 (défaut : 2)
+# Change the number of L2 columns in an L1 group (default: 2)
 python tools/render_drawio_l2.py --l2-cols 3
 
-# Modifier le nombre de groupes L1 par ligne dans les zones centrales (défaut : 3)
+# Change the number of L1 groups per row in central zones (default: 3)
 python tools/render_drawio_l2.py --l1-cols 4
 ```
 
 ### Options
 
-| Option | Description | Défaut |
-|--------|-------------|--------|
-| `-d`, `--input-dir` | Répertoire contenant les `capabilities-*.yaml` | `bcm/` |
-| `-o`, `--output` | Chemin du fichier `.drawio` généré | `views/BCM-L2-generated.drawio` |
-| `--l2-cols` | Nombre de colonnes L2 dans un groupe L1 | `2` |
-| `--l1-cols` | Nombre de groupes L1 par ligne (zones centrales) | `3` |
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-d`, `--input-dir` | Directory containing `capabilities-*.yaml` files | `bcm/` |
+| `-o`, `--output` | Path of the generated `.drawio` file | `views/BCM-L2-generated.drawio` |
+| `--l2-cols` | Number of L2 columns in an L1 group | `2` |
+| `--l1-cols` | Number of L1 groups per row (central zones) | `3` |
 
-### Format YAML attendu
+### Expected YAML Format
 
-Le script attend des fichiers `capabilities-*.yaml` avec des entrées L1 et L2 :
+The script expects `capabilities-*.yaml` files with L1 and L2 entries:
 
 ```yaml
 capabilities:
-  # Capacité L1
+  # L1 capability
   - id: CAP.COEUR.005
-    name: Sinistres & Prestations
+    name: Claims & Benefits
     level: L1
     zoning: SERVICES_COEUR
     ...
 
-  # Capacité L2 (rattachée via parent)
+  # L2 capability (linked via parent)
   - id: CAP.COEUR.005.DSP
-    name: Déclaration du sinistre
+    name: Claim Declaration
     level: L2
-    parent: CAP.COEUR.005              # ← rattachement au L1
+    parent: CAP.COEUR.005              # ← link to L1
     zoning: SERVICES_COEUR
     ...
 ```
@@ -247,266 +247,266 @@ capabilities:
 
 ## render_drawio_subscriptions.py
 
-Génère une vue draw.io des **abonnements métier** en appliquant la géométrie
-et les styles du template `views/template-abonnement.drawio` :
+Generates a draw.io view of **business subscriptions** by applying the geometry
+and styles from the template `views/template-abonnement.drawio`:
 
-- **sans argument** : rend toutes les capacités souscriptrices, un fichier par capacité,
-  dans `views/abonnements/`,
-- capacité émettrice → événement (ancre haut vers milieu),
-- événement → capacité consommatrice (flèche pointillée, ancre haut/bas selon position),
-- mode consolidé par capacité souscriptrice : une seule brique avec toutes ses abonnements,
-  et toutes les capacités émettrices alignées sur une même colonne.
+- **without argument**: renders all subscribing capabilities, one file per capability,
+  in `views/abonnements/`,
+- emitting capability → event (top anchor to middle),
+- event → consuming capability (dashed arrow, top/bottom anchor depending on position),
+- consolidated mode per subscribing capability: a single brick with all its subscriptions,
+  and all emitting capabilities aligned on the same column.
 
 ### Usage
 
 ```bash
-# Génération par défaut (batch: toutes les capacités souscriptrices)
+# Default generation (batch: all subscribing capabilities)
 python tools/render_drawio_subscriptions.py
 
-# Rendu consolidé pour une capacité souscriptrice
+# Consolidated rendering for a subscribing capability
 python tools/render_drawio_subscriptions.py \
-  --consumer-capacité CAP.COEUR.005.CAD
+  --consumer-capability CAP.COEUR.005.CAD
 
-# Nom de fichier auto basé sur l'ID de la capacité souscriptrice si --output n'est pas fourni
-# ex: views/COEUR.005.CAD-abonnements.drawio
+# Auto filename based on the subscribing capability ID if --output is not provided
+# e.g.: views/COEUR.005.CAD-abonnements.drawio
 
-# Répertoire de sortie personnalisé en mode batch
+# Custom output directory in batch mode
 python tools/render_drawio_subscriptions.py --output-dir views/abonnements
 
-# Fichier de sortie explicite (mode mono-capacité uniquement)
+# Explicit output file (single-capability mode only)
 python tools/render_drawio_subscriptions.py \
-  --consumer-capacité CAP.COEUR.005.CAD \
+  --consumer-capability CAP.COEUR.005.CAD \
   --output views/abonnements/COEUR.005.CAD-abonnements.drawio
 
-# Filtrage sur un parent L1 (ex: CAP.COEUR.005)
+# Filter on an L1 parent (e.g.: CAP.COEUR.005)
 python tools/render_drawio_subscriptions.py --focus-parent-l1 CAP.COEUR.005
 
-# Entrées/sortie personnalisées
+# Custom inputs/output
 python tools/render_drawio_subscriptions.py \
   --bcm-dir bcm \
-  --events-dir bcm/evenement-metier \
+  --events-dir bcm/business-event \
   --template views/template-abonnement.drawio \
-  --output views/abonnements-metier-generated.drawio
+  --output views/business-subscriptions-generated.drawio
 ```
 
 ### Options
 
-| Option | Description | Défaut |
-|--------|-------------|--------|
-| `--bcm-dir` | Répertoire contenant les `capabilities-*.yaml` | `bcm` |
-| `--events-dir` | Répertoire des `evenement-metier-*.yaml` et `abonnement-metier-*.yaml` | `bcm/evenement-metier` |
-| `--template` | Template draw.io de référence | `views/template-abonnement.drawio` |
-| `--output` | Fichier `.drawio` généré (mono-capacité uniquement) | *(optionnel)* |
-| `--output-dir` | Répertoire de sortie des rendus | `views/abonnements` |
-| `--focus-parent-l1` | Filtre sur un parent L1 | *(optionnel)* |
-| `--consumer-capacité` | Capacité souscriptrice cible ; active le rendu consolidé | *(optionnel)* |
-| `--diagram-name` | Nom de l'onglet draw.io | `Abonnements metier` |
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--bcm-dir` | Directory containing `capabilities-*.yaml` files | `bcm` |
+| `--events-dir` | Directory of `business-event-*.yaml` and `business-subscription-*.yaml` | `bcm/business-event` |
+| `--template` | Reference draw.io template | `views/template-abonnement.drawio` |
+| `--output` | Generated `.drawio` file (single-capability mode only) | *(optional)* |
+| `--output-dir` | Output directory for renderings | `views/abonnements` |
+| `--focus-parent-l1` | Filter on an L1 parent | *(optional)* |
+| `--consumer-capability` | Target subscribing capability; enables consolidated rendering | *(optional)* |
+| `--diagram-name` | draw.io tab name | `Business subscriptions` |
 
-En mode `--consumer-capacité`, si `--output` n'est pas précisé,
-le nom du fichier est généré automatiquement avec le format `<ID_L2>-abonnements.drawio`
-(ex: `COEUR.005.CAD-abonnements.drawio`).
+In `--consumer-capability` mode, if `--output` is not specified,
+the filename is auto-generated in the format `<L2_ID>-abonnements.drawio`
+(e.g.: `COEUR.005.CAD-abonnements.drawio`).
 
-Sans `--consumer-capacité`, le script rend toutes les capacités souscriptrices et écrit
-un fichier par capacité dans `--output-dir`.
+Without `--consumer-capability`, the script renders all subscribing capabilities and writes
+one file per capability to `--output-dir`.
 
 ---
 
 ## render_drawio_capability_chain.py
 
-Génère un rendu Draw.io de la **chaîne de production/consommation** au sein d'une
-capacité **L1** (capabilités L2/L3 internes), en s'alignant sur le template
+Generates a Draw.io rendering of the **production/consumption chain** within an
+**L1** capability (internal L2/L3 capabilities), aligned with the template
 `views/capacites/COEUR.005-chaine-abonnements-template.drawio`.
 
-Principes de rendu :
+Rendering principles:
 
-- toutes les capacités de la L1 sont incluses,
-- la chaîne principale est positionnée de gauche à droite,
-- les événements intermédiaires sont rendus entre producteur et consommateur,
-  plus haut que leur capacité productrice,
-- les origines/cibles des flèches sont individualisées pour limiter les croisements,
-- placement des événements avec évitement de collision pour réduire la superposition des textes.
+- all capabilities of the L1 are included,
+- the main chain is positioned left to right,
+- intermediate events are rendered between producer and consumer,
+  above their producing capability,
+- arrow origins/targets are individualized to limit crossings,
+- event placement with collision avoidance to reduce text overlap.
 
 ### Usage
 
 ```bash
-# Batch par défaut : toutes les L1 ayant une chaîne interne détectée
+# Default batch: all L1 with an internal chain detected
 python tools/render_drawio_capability_chain.py
 
-# Rendu ciblé sur une L1
-python tools/render_drawio_capability_chain.py --l1-capacité CAP.COEUR.005
+# Targeted rendering for an L1
+python tools/render_drawio_capability_chain.py --l1-capability CAP.COEUR.005
 
-# Répertoire de sortie personnalisé
+# Custom output directory
 python tools/render_drawio_capability_chain.py --output-dir views/capacites
 ```
 
 ### Options
 
-| Option | Description | Défaut |
-|--------|-------------|--------|
-| `--bcm-dir` | Répertoire contenant les `capabilities-*.yaml` | `bcm` |
-| `--events-dir` | Répertoire des `evenement-metier-*.yaml` et `abonnement-metier-*.yaml` | `bcm/evenement-metier` |
-| `--template` | Template draw.io de référence | `views/capacites/COEUR.005-chaine-abonnements-template.drawio` |
-| `--l1-capacité` | Capacité L1 ciblée | *(optionnel)* |
-| `--output` | Fichier `.drawio` généré (mono-capacité uniquement) | *(optionnel)* |
-| `--output-dir` | Répertoire de sortie des rendus | `views/capacites` |
-| `--diagram-name` | Nom de l'onglet draw.io | `Chaine capacite L1` |
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--bcm-dir` | Directory containing `capabilities-*.yaml` files | `bcm` |
+| `--events-dir` | Directory of `business-event-*.yaml` and `business-subscription-*.yaml` | `bcm/business-event` |
+| `--template` | Reference draw.io template | `views/capacites/COEUR.005-chaine-abonnements-template.drawio` |
+| `--l1-capability` | Target L1 capability | *(optional)* |
+| `--output` | Generated `.drawio` file (single-capability mode only) | *(optional)* |
+| `--output-dir` | Output directory for renderings | `views/capacites` |
+| `--diagram-name` | draw.io tab name | `Capability L1 Chain` |
 
-Le nom de fichier suit le format `<ID_L1>-chaine-abonnements.drawio`
-(ex: `COEUR.005-chaine-abonnements.drawio`).
+The filename follows the format `<L1_ID>-chaine-abonnements.drawio`
+(e.g.: `COEUR.005-chaine-abonnements.drawio`).
 
 ---
 
 ## validate_events.py
 
-Valide **en masse** les assets d'événements (sous-répertoires de `bcm/`) contre les capacités BCM
-(`bcm/capabilities-*.yaml`) et vérifie les relations cross-assets :
+Validates **in bulk** the event assets (subdirectories of `bcm/`) against BCM capabilities
+(`bcm/capabilities-*.yaml`) and checks cross-asset relations:
 
-- événements métier ↔ objets métier,
-- relation unidirectionnelle événement métier → objet métier (pas de référence inverse dans l'objet métier),
-- événements ressource ↔ ressources ↔ événements métier,
-- abonnements métier ↔ événements métier,
-- abonnements ressource ↔ événements ressource ↔ abonnements métier,
-- objets métier ↔ capacités L2/L3 avec contrainte `emitting_capability_L3` si la L2 référencée possède des L3.
-- processus externes ↔ capacités/événements :
-  - `externals/processus-metier/*.yaml` : vérifie l'existence des capacités, événements métier **et abonnements métier** référencés,
-  - `externals/processus-ressource/*.yaml` : vérifie l'existence des capacités, événements ressource **et abonnements ressource** référencés.
+- business events ↔ business objects,
+- unidirectional relation business event → business object (no reverse reference in the business object),
+- resource events ↔ resources ↔ business events,
+- business subscriptions ↔ business events,
+- resource subscriptions ↔ resource events ↔ business subscriptions,
+- business objects ↔ L2/L3 capabilities with `emitting_capability_L3` constraint if the referenced L2 has L3s.
+- external processes ↔ capabilities/events:
+  - `externals/processus-metier/*.yaml`: checks existence of referenced capabilities, business events **and business subscriptions**,
+  - `externals/processus-ressource/*.yaml`: checks existence of referenced capabilities, resource events **and resource subscriptions**.
 
-Les fichiers `template-*.yaml` sont ignorés automatiquement.
+`template-*.yaml` files are automatically ignored.
 
 ### Usage
 
 ```bash
-# Mode batch (défaut recommandé)
+# Batch mode (recommended default)
 python tools/validate_events.py
 
-# Mode batch avec répertoires personnalisés
+# Batch mode with custom directories
 python tools/validate_events.py \
   --bcm-dir bcm \
   --events-dir bcm
 
-# Mode legacy fichier unique (compatibilité)
+# Legacy single-file mode (compatibility)
 python tools/validate_events.py \
   --bcm bcm/capabilities-L1.yaml \
-  --events bcm/evenement-metier/evenement-metier-COEUR-005.yaml
+  --events bcm/business-event/business-event-COEUR-005.yaml
 ```
 
 ### Options
 
-| Option | Description | Défaut |
-|--------|-------------|--------|
-| `--bcm-dir` | Répertoire contenant les `capabilities-*.yaml` | `bcm` |
-| `--events-dir` | Répertoire racine contenant les assets événements | `bcm` |
-| `--bcm` | Mode legacy : fichier unique de capacités | *(optionnel)* |
-| `--events` | Mode legacy : fichier unique d'événements métier | *(optionnel)* |
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--bcm-dir` | Directory containing `capabilities-*.yaml` files | `bcm` |
+| `--events-dir` | Root directory containing event assets | `bcm` |
+| `--bcm` | Legacy mode: single capabilities file | *(optional)* |
+| `--events` | Legacy mode: single business events file | *(optional)* |
 
 ---
 ---
 
 ## validate_repo.py
 
-Validation structurelle du référentiel BCM.
-Charge **tous** les fichiers `bcm/capabilities-*.yaml` et vérifie la cohérence
-globale des capacités, tous fichiers confondus.
+Structural validation of the BCM repository.
+Loads **all** `bcm/capabilities-*.yaml` files and checks global coherence
+of capabilities across all files.
 
-### Règles actuelles (extraites du code)
+### Current Rules (extracted from code)
 
-Le script applique les règles suivantes, dans cet ordre.
+The script applies the following rules, in this order.
 
-#### 0) Pré-contrôles bloquants (`FATAL`)
+#### 0) Blocking pre-checks (`FATAL`)
 
-1. `bcm/vocab.yaml` doit exister, sinon arrêt immédiat.
-2. Au moins un fichier `bcm/capabilities-*.yaml` doit exister, sinon arrêt immédiat.
+1. `bcm/vocab.yaml` must exist, otherwise immediate stop.
+2. At least one `bcm/capabilities-*.yaml` file must exist, otherwise immediate stop.
 
-#### 1) Passe 1 — Validation individuelle de chaque capacité
+#### 1) Pass 1 — Individual validation of each capability
 
-1. `id` obligatoire.
-2. `id` unique sur l'ensemble des fichiers chargés.
-3. `level` doit appartenir à `vocab.yaml -> levels`.
-4. `zoning` doit appartenir à `vocab.yaml -> zoning`.
-5. Règle `parent` par niveau :
-  - si `level == L1` : le champ `parent` ne doit pas être présent ;
-  - sinon (L2/L3/...) : le champ `parent` est obligatoire.
-6. Heatmap (optionnelle) : si `heatmap.maturity` est renseigné,
-  alors sa valeur doit appartenir à `vocab.yaml -> heatmap_scales -> maturity`
-  **uniquement si** cette liste est définie et non vide dans le vocabulaire.
+1. `id` required.
+2. `id` unique across all loaded files.
+3. `level` must belong to `vocab.yaml -> levels`.
+4. `zoning` must belong to `vocab.yaml -> zoning`.
+5. `parent` rules by level:
+  - if `level == L1`: the `parent` field must not be present;
+  - otherwise (L2/L3/...): the `parent` field is required.
+6. Heatmap (optional): if `heatmap.maturity` is set,
+  its value must belong to `vocab.yaml -> heatmap_scales -> maturity`
+  **only if** this list is defined and non-empty in the vocabulary.
 
-#### 2) Passe 2 — Cohérence des relations parent/enfant
+#### 2) Pass 2 — Parent/child relationship coherence
 
-Appliquée uniquement aux capacités non-L1 qui ont un `parent` :
+Applied only to non-L1 capabilities that have a `parent`:
 
-1. Le `parent` référencé doit exister dans l'ensemble des capacités chargées.
-2. Le niveau du parent doit être conforme à la hiérarchie codée en dur :
-  - un `L2` doit avoir un parent `L1` ;
-  - un `L3` doit avoir un parent `L2`.
+1. The referenced `parent` must exist in the set of loaded capabilities.
+2. The parent level must comply with the hardcoded hierarchy:
+  - an `L2` must have an `L1` parent;
+  - an `L3` must have an `L2` parent.
 
-> Note: cette hiérarchie est portée par `LEVEL_HIERARCHY = {"L2": "L1", "L3": "L2"}`.
-> Aucun contrôle supplémentaire n'est défini pour d'autres niveaux.
+> Note: this hierarchy is held by `LEVEL_HIERARCHY = {"L2": "L1", "L3": "L2"}`.
+> No additional check is defined for other levels.
 
-#### 2 bis) Contrôles cross-assets (fichiers `bcm/**` non-template)
+#### 2 bis) Cross-asset checks (non-template `bcm/**` files)
 
-1. **Événement métier**
-  - `emitting_capability` obligatoire, existante, et de niveau `L2` ou `L3`.
-  - `version` obligatoire.
-  - `carried_business_object` obligatoire et existant dans `business-object-*.yaml`.
-2. **Objet métier**
-  - `emitting_capability` obligatoire, existante, et de niveau `L2` ou `L3`.
-  - si `emitting_capability` pointe une **L2 qui possède des L3**, alors `emitting_capability_L3` est obligatoire,
-    doit être une liste non vide, et chaque entrée doit être une L3 existante rattachée à cette même L2.
-  - si la L2 ne possède aucune L3, `emitting_capability_L3` est interdit.
-  - `emitting_business_event` / `emitting_business_events` interdits (la relation est portée par l'événement métier).
-3. **Événement ressource**
-  - `carried_resource` obligatoire et existant dans `resource-*.yaml`.
-  - `business_event` obligatoire (valeur unique) et doit exister dans `business-event-*.yaml`.
-4. **Ressource**
-  - `business_object` obligatoire et existant dans `objet-metier-*.yaml`.
-5. **Abonnement métier**
-  - `consumer_capability` obligatoire, existante, et de niveau `L2` ou `L3`.
-  - `subscribed_event.id` obligatoire et existant dans `evenement-metier-*.yaml`.
-  - `subscribed_event.version` obligatoire et égale à la version de l'événement métier.
-  - `subscribed_event.emitting_capability` obligatoire et cohérente avec l'événement métier.
-6. **Abonnement ressource**
-  - `consumer_capability` obligatoire, existante, et de niveau `L2` ou `L3`.
-  - `linked_business_subscription` obligatoire et existante dans `abonnement-metier-*.yaml`.
-  - `subscribed_resource_event.id` obligatoire et existant dans `evenement-ressource-*.yaml`.
-  - `subscribed_resource_event.emitting_capability` obligatoire et cohérente avec l'événement ressource.
-  - `subscribed_resource_event.linked_business_event` obligatoire et cohérent avec le `business_event` de l'événement ressource.
-  - cohérence entre abonnement ressource et abonnement métier liée (consumer, événement métier, émetteur).
-7. **Couverture croisée des abonnements**
-  - toute abonnement métier doit être référencée par au moins une abonnement ressource.
+1. **Business event**
+  - `emitting_capability` required, existing, and at level `L2` or `L3`.
+  - `version` required.
+  - `carried_business_object` required and existing in `business-object-*.yaml`.
+2. **Business object**
+  - `emitting_capability` required, existing, and at level `L2` or `L3`.
+  - if `emitting_capability` points to an **L2 that has L3 children**, then `emitting_capability_L3` is required,
+    must be a non-empty list, and each entry must be an existing L3 linked to that same L2.
+  - if the L2 has no L3 children, `emitting_capability_L3` is forbidden.
+  - `emitting_business_event` / `emitting_business_events` forbidden (the relation is held by the business event).
+3. **Resource event**
+  - `carried_resource` required and existing in `resource-*.yaml`.
+  - `business_event` required (single value) and must exist in `business-event-*.yaml`.
+4. **Resource**
+  - `business_object` required and existing in `business-object-*.yaml`.
+5. **Business subscription**
+  - `consumer_capability` required, existing, and at level `L2` or `L3`.
+  - `subscribed_event.id` required and existing in `business-event-*.yaml`.
+  - `subscribed_event.version` required and equal to the business event version.
+  - `subscribed_event.emitting_capability` required and consistent with the business event.
+6. **Resource subscription**
+  - `consumer_capability` required, existing, and at level `L2` or `L3`.
+  - `linked_business_subscription` required and existing in `business-subscription-*.yaml`.
+  - `subscribed_resource_event.id` required and existing in `resource-event-*.yaml`.
+  - `subscribed_resource_event.emitting_capability` required and consistent with the resource event.
+  - `subscribed_resource_event.linked_business_event` required and consistent with the `business_event` of the resource event.
+  - coherence between resource subscription and linked business subscription (consumer, business event, emitter).
+7. **Cross-subscription coverage**
+  - every business subscription must be referenced by at least one resource subscription.
 
-Des contrôles d'unicité d'`id` sont également appliqués, par type d'asset,
-sur les fichiers chargés dans `bcm/`.
+`id` uniqueness checks are also applied, per asset type,
+on files loaded from `bcm/`.
 
-#### 2 ter) Contrôles processus externes (`externals/processus-*/*.yaml`)
+#### 2 ter) External process checks (`externals/processus-*/*.yaml`)
 
-1. **Processus métier** (`processus_metier`)
-  - les capacités référencées (ex: `parent_capability`, `decision_point`, `internal_capabilities`, `event_capability_chain[].capability`) doivent exister dans `bcm/capabilities-*.yaml` ;
-  - les événements métier référencés (ex: `entry_event`, `business_assets.evenements_metier`, `event_subscription_chain`, `exits_metier`) doivent exister dans `bcm/evenement-metier/*.yaml`.
-  - les abonnements métier référencées (ex: `business_assets.abonnements_metier`, `event_subscription_chain[].via_subscription`) doivent exister dans `bcm/evenement-metier/abonnement-metier-*.yaml`.
-2. **Processus ressource** (`processus_ressource`)
-  - les capacités référencées doivent exister dans `bcm/capabilities-*.yaml` ;
-  - les événements ressource référencés (ex: `entry_event`, `resource_assets.evenements_ressource`, `event_subscription_chain`, `exits_ressource`) doivent exister dans `bcm/evenement-ressource/*.yaml`.
-  - les abonnements ressource référencées (ex: `resource_assets.abonnements_ressource`, `event_subscription_chain[].via_subscription`) doivent exister dans `bcm/evenement-ressource/abonnement-ressource-*.yaml`.
+1. **Business process** (`processus_metier`)
+  - referenced capabilities (e.g.: `parent_capability`, `decision_point`, `internal_capabilities`, `event_capability_chain[].capability`) must exist in `bcm/capabilities-*.yaml`;
+  - referenced business events (e.g.: `entry_event`, `business_assets.evenements_metier`, `event_subscription_chain`, `exits_metier`) must exist in `bcm/business-event/*.yaml`.
+  - referenced business subscriptions (e.g.: `business_assets.abonnements_metier`, `event_subscription_chain[].via_subscription`) must exist in `bcm/business-event/business-subscription-*.yaml`.
+2. **Resource process** (`processus_ressource`)
+  - referenced capabilities must exist in `bcm/capabilities-*.yaml`;
+  - referenced resource events (e.g.: `entry_event`, `resource_assets.evenements_ressource`, `event_subscription_chain`, `exits_ressource`) must exist in `bcm/resource-event/*.yaml`.
+  - referenced resource subscriptions (e.g.: `resource_assets.abonnements_ressource`, `event_subscription_chain[].via_subscription`) must exist in `bcm/resource-event/resource-subscription-*.yaml`.
 
-Convention de préfixes appliquée dans ces contrôles :
-- `OBJ.*` pour les objets métier,
-- `RES.*` pour les ressources,
-- `ABO.METIER.*` et `ABO.RESSOURCE.*` pour les abonnements.
+Prefix conventions used in these checks:
+- `OBJ.*` for business objects,
+- `RES.*` for resources,
+- `ABO.METIER.*` and `ABO.RESSOURCE.*` for subscriptions.
 
-#### 3) Rapport final
+#### 3) Final report
 
-- S'il existe au moins une erreur: sortie `[FAIL]` + code de sortie `1`.
-- Sinon: sortie `[OK]` avec le nombre de capacités et la répartition L1/L2/L3.
-- Les warnings seraient affichés en `[WARN]`, mais aucune règle actuelle n'alimente cette liste.
+- If there is at least one error: `[FAIL]` output + exit code `1`.
+- Otherwise: `[OK]` output with the number of capabilities and L1/L2/L3 breakdown.
+- Warnings would be displayed as `[WARN]`, but no current rule populates this list.
 
 ### Usage
 
 ```bash
-# Validation complète du référentiel
+# Full repository validation
 python tools/validate_repo.py
 
-# Validation ciblée d'un seul objet métier
-python tools/validate_repo.py --objet-metier OBJ.COEUR.005.DECLARATION_SINISTRE
+# Targeted validation of a single business object
+python tools/validate_repo.py --business-object OBJ.COEUR.005.DECLARATION_SINISTRE
 python tools/validate_repo.py -o OBJ.COEUR.005.DECLARATION_SINISTRE
 ```
 
@@ -514,74 +514,74 @@ python tools/validate_repo.py -o OBJ.COEUR.005.DECLARATION_SINISTRE
 
 | Option | Alias | Description |
 |--------|-------|-------------|
-| `--objet-metier ID` | `-o ID` | Valide un objet métier spécifique et affiche un rapport détaillé |
+| `--business-object ID` | `-o ID` | Validates a specific business object and displays a detailed report |
 
-Sans argument, le script parcourt automatiquement `bcm/capabilities-*.yaml`
-et `bcm/vocab.yaml` depuis la racine du repository.
+Without arguments, the script automatically scans `bcm/capabilities-*.yaml`
+and `bcm/vocab.yaml` from the repository root.
 
-### Exemple de sortie
+### Example Output
 
-#### Validation complète
-
-```
-[INFO] Fichiers chargés :
-  • capabilities-COEUR-005-L2.yaml: 10 capacité(s)
-  • capabilities-L1.yaml: 8 capacité(s)
-
-[OK] Validation réussie — 18 capacités (8 L1, 10 L2) dans 2 fichier(s)
-```
-
-En cas d'erreur :
+#### Full validation
 
 ```
-[FAIL] 1 erreur(s) détectée(s) :
+[INFO] Loaded files:
+  • capabilities-COEUR-005-L2.yaml: 10 capability(ies)
+  • capabilities-L1.yaml: 8 capability(ies)
 
-  ✗ [capabilities-COEUR-005-L2.yaml] CAP.COEUR.005.DSP: parent 'CAP.COEUR.099' introuvable
-    dans l'ensemble des capacités chargées
+[OK] Validation successful — 18 capabilities (8 L1, 10 L2) in 2 file(s)
 ```
 
-#### Validation d'un objet métier
+In case of error:
+
+```
+[FAIL] 1 error(s) detected:
+
+  ✗ [capabilities-COEUR-005-L2.yaml] CAP.COEUR.005.DSP: parent 'CAP.COEUR.099' not found
+    in the set of loaded capabilities
+```
+
+#### Business object validation
 
 ```
 ================================================================================
-              RAPPORT DE VALIDATION — OBJET MÉTIER
+              VALIDATION REPORT — BUSINESS OBJECT
 ================================================================================
 
-📋 INFORMATIONS GÉNÉRALES
+GENERAL INFORMATION
 --------------------------------------------------------------------------------
   ID       : OBJ.COEUR.005.DECLARATION_SINISTRE
-  Nom      : Déclaration de sinistre qualifiée
-  Source   : bcm/objet-metier/objet-metier-COEUR-005.yaml
+  Name     : Qualified Claim Declaration
+  Source   : bcm/business-object/business-object-COEUR-005.yaml
 
-🏢 CAPACITÉ L2 ÉMETTRICE
+EMITTING L2 CAPABILITY
 --------------------------------------------------------------------------------
-  Événement métier : EVT.COEUR.005.SINISTRE_DECLARE
-  Capacité         : CAP.COEUR.005.DSP (Déclaration de Sinistre et Prestations)
+  Business event: EVT.COEUR.005.SINISTRE_DECLARE
+  Capability    : CAP.COEUR.005.DSP (Claim Declaration and Benefits)
 
-📦 ÉVÉNEMENT MÉTIER PORTEUR
+CARRYING BUSINESS EVENT
 --------------------------------------------------------------------------------
   ID      : EVT.COEUR.005.SINISTRE_DECLARE
-  Nom     : Déclaration de Sinistre Qualifiée
+  Name    : Qualified Claim Declaration
   Version : 1.0.0
 
-📝 PROPRIÉTÉS DE L'OBJET MÉTIER
+BUSINESS OBJECT PROPERTIES
 --------------------------------------------------------------------------------
-  #   Propriété                         Couverture    Ressources
+  #   Property                          Coverage      Resources
   --- --------------------------------- ------------- ---------------------------
-  1   numeroContrat                     ✓ Couverte    RES.COEUR.005.SINISTRE_HABITATION_DEGAT_DES_EAUX, ...
-  2   dateDeclaration                   ✓ Couverte    RES.COEUR.005.SINISTRE_HABITATION_DEGAT_DES_EAUX, ...
+  1   contractNumber                    ✓ Covered     RES.COEUR.005.SINISTRE_HABITATION_DEGAT_DES_EAUX, ...
+  2   declarationDate                   ✓ Covered     RES.COEUR.005.SINISTRE_HABITATION_DEGAT_DES_EAUX, ...
   ...
 
-🔗 RESSOURCES IMPLÉMENTANT CET OBJET
+RESOURCES IMPLEMENTING THIS OBJECT
 --------------------------------------------------------------------------------
-  #   ID Ressource                                    Nom
+  #   Resource ID                                     Name
   --- ----------------------------------------------- ---------------------------
-  1   RES.COEUR.005.SINISTRE_HABITATION_DEGAT_DES_... Déclaration Sinistre Dégât...
-  2   RES.COEUR.005.DECLARATION_SINISTRE_HABITATION_VOL Déclaration Sinistre Vol
-  3   RES.COEUR.005.DECLARATION_SINISTRE_HABITATION_INCENDIE Déclaration Sinistre Incendie
+  1   RES.COEUR.005.SINISTRE_HABITATION_DEGAT_DES_... Water Damage Claim...
+  2   RES.COEUR.005.DECLARATION_SINISTRE_HABITATION_VOL Theft Claim Declaration
+  3   RES.COEUR.005.DECLARATION_SINISTRE_HABITATION_INCENDIE Fire Claim Declaration
 
 ================================================================================
-✅ RÉSUMÉ : Objet métier valide — 3 ressource(s), 10/10 propriétés couvertes
+SUMMARY: Valid business object — 3 resource(s), 10/10 properties covered
 ================================================================================
 ```
 
@@ -589,25 +589,25 @@ En cas d'erreur :
 
 ## check_docs_links.py
 
-Vérifie la cohérence documentaire Markdown du repository :
+Checks Markdown documentation coherence in the repository:
 
-- liens internes vers fichiers (ex: `path/to/file.md`) ;
-- liens d'ancres (ex: `file.md#section` ou `#section`).
+- internal links to files (e.g.: `path/to/file.md`);
+- anchor links (e.g.: `file.md#section` or `#section`).
 
-Le script est conçu pour la CI/CD : il retourne `0` si tout est valide,
-`1` si au moins une incohérence est détectée.
+The script is designed for CI/CD: it returns `0` if everything is valid,
+`1` if at least one inconsistency is detected.
 
 ### Usage
 
 ```bash
-# Depuis la racine du repository
+# From the repository root
 python tools/check_docs_links.py
 
-# Racine personnalisée
+# Custom root
 python tools/check_docs_links.py --root .
 ```
 
-### Exemple d'intégration CI
+### CI Integration Example
 
   ```bash
   python tools/check_docs_links.py
@@ -617,46 +617,46 @@ python tools/check_docs_links.py --root .
 
 ## semantic_review.py
 
-Agent de cohérence sémantique pour Pull Request, en **2 phases** :
+Semantic coherence agent for Pull Requests, in **2 phases**:
 
-1. **ADR** : vérification structure ADR + contrôles de cohérence documentaire ADR + revue LLM urbaniste SI,
-2. **ADR + BCM** : exécution des validateurs de référentiel (`validate_repo.py` et `validate_events.py`).
+1. **ADR**: ADR structure check + ADR documentary coherence checks + SI urbanist LLM review,
+2. **ADR + BCM**: execution of repository validators (`validate_repo.py` and `validate_events.py`).
 
-Le script génère :
+The script generates:
 
-- un rapport Markdown (`semantic-review.md`) prêt à être injecté dans la description de PR,
-- une synthèse JSON (`semantic-review.json`) exploitable par le workflow CI.
+- a Markdown report (`semantic-review.md`) ready to be injected into the PR description,
+- a JSON summary (`semantic-review.json`) usable by the CI workflow.
 
-Code retour :
+Return code:
 
-- `0` : cohérence globalement positive,
-- `1` : défauts majeurs détectés (build à faire échouer).
+- `0`: globally positive coherence,
+- `1`: major defects detected (build should fail).
 
-Comportement des sévérités LLM :
+LLM severity behavior:
 
-- **major_defects** : bloquants (échec du build),
-- **minor_defects** : non bloquants (propositions d'amélioration seulement).
+- **major_defects**: blocking (build failure),
+- **minor_defects**: non-blocking (improvement proposals only).
 
-Format exploitable retourné dans `semantic-review.json` (clé `llm`) :
+Usable format returned in `semantic-review.json` (key `llm`):
 
-- `score` : note de cohérence ADR (0..100)
-- `summary` : synthèse courte
-- `findings[]` : constats structurés (`id`, `severity`, `adr_refs`, `rationale`, `impact`, `proposed_fix`, `priority`, `effort`, `owner_hint`)
-- `action_plan[]` : actions prêtes à exécuter (`id`, `action`, `targets`, `severity`, `priority`, `owner_hint`, `due_hint`)
+- `score`: ADR coherence score (0..100)
+- `summary`: short summary
+- `findings[]`: structured findings (`id`, `severity`, `adr_refs`, `rationale`, `impact`, `proposed_fix`, `priority`, `effort`, `owner_hint`)
+- `action_plan[]`: ready-to-execute actions (`id`, `action`, `targets`, `severity`, `priority`, `owner_hint`, `due_hint`)
 
 ### Usage
 
 ```bash
 python tools/semantic_review.py \
   --scope pr \
-  --base-ref <sha_base_pr> \
-  --head-ref <sha_head_pr> \
+  --base-ref <pr_base_sha> \
+  --head-ref <pr_head_sha> \
   --llm-mode required \
   --report-file semantic-review.md \
   --json-file semantic-review.json
 ```
 
-Mode full repository :
+Full repository mode:
 
 ```bash
 python tools/semantic_review.py \
@@ -666,82 +666,82 @@ python tools/semantic_review.py \
   --json-file semantic-review-full.json
 ```
 
-Configuration LLM via variables d'environnement :
+LLM configuration via environment variables:
 
-- `SEMANTIC_LLM_API_KEY` (obligatoire en mode `required`),
-- `SEMANTIC_LLM_MODEL` (défaut `gpt-4.1`),
-- `SEMANTIC_LLM_API_URL` (défaut `https://api.openai.com/v1/chat/completions`),
+- `SEMANTIC_LLM_API_KEY` (required in `required` mode),
+- `SEMANTIC_LLM_MODEL` (default `gpt-4.1`),
+- `SEMANTIC_LLM_API_URL` (default `https://api.openai.com/v1/chat/completions`),
 - `SEMANTIC_LLM_MODE` (`required`, `optional`, `off`).
-- `SEMANTIC_LLM_MAX_ADR_CHARS` (défaut `3500`) : budget max de caractères par ADR envoyé au LLM.
-- `SEMANTIC_LLM_MAX_TOTAL_CHARS` (défaut `50000`) : budget global de caractères ADR dans le prompt.
-- `SEMANTIC_LLM_MAX_RETRIES` (défaut `3`) et `SEMANTIC_LLM_RETRY_DELAY_SECONDS` (défaut `2`) : retries/backoff sur rate-limit (`429`).
+- `SEMANTIC_LLM_MAX_ADR_CHARS` (default `3500`): max character budget per ADR sent to the LLM.
+- `SEMANTIC_LLM_MAX_TOTAL_CHARS` (default `50000`): global ADR character budget in the prompt.
+- `SEMANTIC_LLM_MAX_RETRIES` (default `3`) and `SEMANTIC_LLM_RETRY_DELAY_SECONDS` (default `2`): retries/backoff on rate-limit (`429`).
 
-Scripts racine associés :
+Associated root scripts:
 
-- `./test.sh` → mode `full`
-- `./test-ci.sh` → mode `pr` (fichiers impactés par la PR courante)
+- `./test.sh` → `full` mode
+- `./test-ci.sh` → `pr` mode (files impacted by the current PR)
 
 ---
 
 ## concat_files.py
 
-Concatène tous les fichiers des dossiers `adr/`, `bcm/`, `templates/` et `externals-templates/` en un seul document.
-Utile pour alimenter un LLM avec le contexte complet du référentiel BCM,
-ou pour créer un export consolidé de la documentation.
+Concatenates all files from the `adr/`, `bcm/`, `templates/` and `externals-templates/` folders into a single document.
+Useful for feeding an LLM with the complete BCM repository context,
+or for creating a consolidated export of the documentation.
 
-### Fonctionnalités
+### Features
 
-- **Parcours récursif** des dossiers `adr/`, `bcm/`, `templates/` et `externals-templates/`
-- **Filtrage par extension** : `.md`, `.yaml`, `.yml` par défaut
-- **Séparateurs visuels** indiquant le chemin relatif de chaque fichier
-- **Sortie flexible** : stdout ou fichier
-- **Modes de filtrage** : ADR uniquement, BCM uniquement, ou les deux
+- **Recursive traversal** of the `adr/`, `bcm/`, `templates/` and `externals-templates/` folders
+- **Extension filtering**: `.md`, `.yaml`, `.yml` by default
+- **Visual separators** indicating the relative path of each file
+- **Flexible output**: stdout or file
+- **Filtering modes**: ADR only, BCM only, or both
 
 ### Usage
 
 ```bash
-# Afficher tout sur stdout
+# Display everything on stdout
 python tools/concat_files.py
 
-# Sauvegarder dans un fichier
+# Save to a file
 python tools/concat_files.py -o context.txt
 
-# ADR uniquement
+# ADR only
 python tools/concat_files.py --adr-only
 
-# BCM uniquement
+# BCM only
 python tools/concat_files.py --bcm-only
 
-# Templates (internes + externes) uniquement
+# Templates (internal + external) only
 python tools/concat_files.py --templates-only
 
-# Filtrer par extension (YAML uniquement)
+# Filter by extension (YAML only)
 python tools/concat_files.py --ext .yaml --ext .yml
 
-# Markdown uniquement
+# Markdown only
 python tools/concat_files.py --ext .md
 ```
 
 ### Options
 
-| Option | Description | Défaut |
-|--------|-------------|--------|
-| `-o`, `--output` | Fichier de sortie | stdout |
-| `--adr-only` | Concatène uniquement les fichiers ADR | *(désactivé)* |
-| `--bcm-only` | Concatène uniquement les fichiers BCM | *(désactivé)* |
-| `--templates-only` | Concatène uniquement les fichiers templates (`templates/` + `externals-templates/`) | *(désactivé)* |
-| `--ext` | Extensions à inclure (répétable) | `.md`, `.yaml`, `.yml` |
-| `--no-separator` | Désactive les séparateurs entre fichiers | *(désactivé)* |
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-o`, `--output` | Output file | stdout |
+| `--adr-only` | Concatenates only ADR files | *(disabled)* |
+| `--bcm-only` | Concatenates only BCM files | *(disabled)* |
+| `--templates-only` | Concatenates only template files (`templates/` + `externals-templates/`) | *(disabled)* |
+| `--ext` | Extensions to include (repeatable) | `.md`, `.yaml`, `.yml` |
+| `--no-separator` | Disables separators between files | *(disabled)* |
 
-### Exemple de sortie
+### Example Output
 
 ```
 ================================================================================
-FILE: adr/ADR-BCM-URBA-0001-BCM-SI-orienté-TOGAF.md
+FILE: adr/ADR-BCM-URBA-0001-BCM-SI-oriented-TOGAF.md
 ================================================================================
 ---
 id: ADR-BCM-URBA-0001
-title: "BCM SI orienté TOGAF étendu (7 zones)"
+title: "TOGAF-extended BCM SI (7 zones)"
 status: Proposed
 ...
 
@@ -753,22 +753,22 @@ meta:
   version: 0.1.0
 ...
 
-# Total: 25 fichiers concaténés
+# Total: 25 files concatenated
 ```
 
 ---
 
-## Arborescence
+## Directory Structure
 
 ```
 tools/
-├── README.md              # Ce fichier
-├── check_docs_links.py    # Vérification liens Markdown (fichiers + ancres)
-├── concat_files.py        # Concaténation ADR + BCM
-├── run_eventcatalogs.sh   # Lancement FOODAROO-Metier + FOODAROO-SI
-├── render_drawio.py       # Génération draw.io L1
-├── render_drawio_l2.py    # Génération draw.io L2
-├── validate_events.py     # Validation événements
-├── validate_repo.py       # Validation repository
-└── requirements.txt       # Dépendances Python (pyyaml)
+├── README.md              # This file
+├── check_docs_links.py    # Markdown link checking (files + anchors)
+├── concat_files.py        # ADR + BCM concatenation
+├── run_eventcatalogs.sh   # Launch FOODAROO-Metier + FOODAROO-SI
+├── render_drawio.py       # draw.io L1 generation
+├── render_drawio_l2.py    # draw.io L2 generation
+├── validate_events.py     # Event validation
+├── validate_repo.py       # Repository validation
+└── requirements.txt       # Python dependencies (pyyaml)
 ```

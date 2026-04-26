@@ -36,7 +36,7 @@ def load_yaml(path: Path) -> Any:
     try:
         return yaml.safe_load(path.read_text(encoding="utf-8"))
     except Exception as exc:
-        raise SystemExit(f"[FATAL] Impossible de lire/parse {path}: {exc}")
+        raise SystemExit(f"[FATAL] Cannot read/parse {path}: {exc}")
 
 
 def _add_vertex(
@@ -120,22 +120,22 @@ def load_template_spec(template_file: Path) -> dict[str, Any]:
     xml_root = ET.fromstring(template_file.read_text(encoding="utf-8"))
     diagram = xml_root.find("diagram")
     if diagram is None:
-        raise SystemExit(f"[FATAL] Template invalide (diagram manquant): {template_file}")
+        raise SystemExit(f"[FATAL] Invalid template (diagram missing): {template_file}")
 
     graph_model = diagram.find("mxGraphModel")
     if graph_model is None:
-        raise SystemExit(f"[FATAL] Template invalide (mxGraphModel manquant): {template_file}")
+        raise SystemExit(f"[FATAL] Invalid template (mxGraphModel missing): {template_file}")
 
     root_el = graph_model.find("root")
     if root_el is None:
-        raise SystemExit(f"[FATAL] Template invalide (root manquant): {template_file}")
+        raise SystemExit(f"[FATAL] Invalid template (root missing): {template_file}")
 
     by_id = {cell.get("id"): cell for cell in root_el.findall("mxCell") if cell.get("id")}
 
     missing = [name for name, template_id in TEMPLATE_IDS.items() if template_id not in by_id]
     if missing:
         raise SystemExit(
-            f"[FATAL] Template incomplet: id(s) introuvable(s) pour {', '.join(missing)}"
+            f"[FATAL] Incomplete template: id(s) not found for {', '.join(missing)}"
         )
 
     def _cell_style(name: str) -> str:
@@ -147,7 +147,7 @@ def load_template_spec(template_file: Path) -> dict[str, Any]:
     def _geometry(name: str) -> tuple[float, float, float, float]:
         geo = by_id[TEMPLATE_IDS[name]].find("mxGeometry")
         if geo is None:
-            raise SystemExit(f"[FATAL] Géométrie manquante pour {name} dans {template_file}")
+            raise SystemExit(f"[FATAL] Missing geometry for {name} in {template_file}")
         return (
             float(geo.get("x", "0")),
             float(geo.get("y", "0")),
@@ -164,7 +164,7 @@ def load_template_spec(template_file: Path) -> dict[str, Any]:
     image_geo = by_id[TEMPLATE_IDS["event_image"]].find("mxGeometry")
     text_geo = by_id[TEMPLATE_IDS["event_text"]].find("mxGeometry")
     if image_geo is None or text_geo is None:
-        raise SystemExit("[FATAL] Géométrie de l'image/texte événement introuvable dans le template")
+        raise SystemExit("[FATAL] Event image/text geometry not found in template")
 
     return {
         "mx_attrs": {k: v for k, v in graph_model.attrib.items()},
@@ -232,7 +232,7 @@ def load_capabilities_by_id(bcm_dir: Path) -> dict[str, dict[str, Any]]:
             if isinstance(capability, dict) and capability.get("id"):
                 capabilities[capability["id"]] = capability
     if not capabilities:
-        raise SystemExit(f"[FATAL] Aucune capacité trouvée dans {bcm_dir}/capabilities-*.yaml")
+        raise SystemExit(f"[FATAL] No capability found in {bcm_dir}/capabilities-*.yaml")
     return capabilities
 
 
@@ -739,47 +739,47 @@ def build_drawio_for_consumer(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Génère une vue Draw.io des abonnements métier en répliquant "
-            "la géométrie/styles de views/template-abonnement.drawio."
+            "Generates a Draw.io view of business subscriptions by replicating "
+            "the geometry/styles from views/template-abonnement.drawio."
         )
     )
-    parser.add_argument("--bcm-dir", default="bcm", help="Répertoire des fichiers capabilities-*.yaml")
+    parser.add_argument("--bcm-dir", default="bcm", help="Directory containing capabilities-*.yaml files")
     parser.add_argument(
         "--events-dir",
         default="bcm/business-event",
-        help="Répertoire racine contenant business-event-*.yaml et business-subscription-*.yaml",
+        help="Root directory containing business-event-*.yaml and business-subscription-*.yaml",
     )
     parser.add_argument(
         "--template",
         default="views/template-abonnement.drawio",
-        help="Template draw.io de référence",
+        help="Reference draw.io template",
     )
     parser.add_argument(
         "--output",
         default=None,
         help=(
-            "Fichier .drawio de sortie (mode mono-capacité uniquement, avec --consumer-capability)."
+            "Output .drawio file (single-capability mode only, with --consumer-capability)."
         ),
     )
     parser.add_argument(
         "--output-dir",
         default="views/abonnements",
-        help="Répertoire de sortie des rendus draw.io (défaut: views/abonnements)",
+        help="Output directory for draw.io renders (default: views/abonnements)",
     )
     parser.add_argument(
         "--focus-parent-l1",
         default=None,
-        help="Filtre optionnel: ne garde que les abonnements dont émetteur et consommateur appartiennent à ce parent L1",
+        help="Optional filter: keep only subscriptions whose emitter and consumer both belong to this L1 parent",
     )
     parser.add_argument(
         "--consumer-capability",
         default=None,
         help=(
-            "Capacité souscriptrice cible (ex: CAP.COEUR.005.CAD). "
-            "Si fournie, le rendu consolide toutes ses abonnements dans une même brique."
+            "Target consumer capability (e.g. CAP.COEUR.005.CAD). "
+            "If provided, the render consolidates all its subscriptions into a single block."
         ),
     )
-    parser.add_argument("--diagram-name", default="Abonnements metier", help="Nom de l'onglet draw.io")
+    parser.add_argument("--diagram-name", default="Business subscriptions", help="Name of the draw.io tab")
     return parser.parse_args()
 
 
@@ -792,11 +792,11 @@ def main() -> int:
     output_dir = ROOT / args.output_dir
 
     if not bcm_dir.exists():
-        raise SystemExit(f"[FATAL] Répertoire introuvable: {bcm_dir}")
+        raise SystemExit(f"[FATAL] Directory not found: {bcm_dir}")
     if not events_dir.exists():
-        raise SystemExit(f"[FATAL] Répertoire introuvable: {events_dir}")
+        raise SystemExit(f"[FATAL] Directory not found: {events_dir}")
     if not template_file.exists():
-        raise SystemExit(f"[FATAL] Template introuvable: {template_file}")
+        raise SystemExit(f"[FATAL] Template not found: {template_file}")
 
     template_spec = load_template_spec(template_file)
     capabilities_by_id = load_capabilities_by_id(bcm_dir)
@@ -817,11 +817,11 @@ def main() -> int:
 
     if args.consumer_capability and args.consumer_capability not in capabilities_by_id:
         raise SystemExit(
-            f"[FATAL] Capacité souscriptrice introuvable dans les capabilities: {args.consumer_capability}"
+            f"[FATAL] Consumer capability not found in capabilities: {args.consumer_capability}"
         )
 
     if not subscriptions:
-        raise SystemExit("[FATAL] Aucune abonnement métier à rendre.")
+        raise SystemExit("[FATAL] No business subscription to render.")
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -833,7 +833,7 @@ def main() -> int:
         ]
         if not selected_subscriptions:
             raise SystemExit(
-                f"[FATAL] Aucune abonnement métier trouvée pour {args.consumer_capability}."
+                f"[FATAL] No business subscription found for {args.consumer_capability}."
             )
 
         xml_output = build_drawio(
@@ -854,17 +854,17 @@ def main() -> int:
         output_file.parent.mkdir(parents=True, exist_ok=True)
         output_file.write_text(xml_output, encoding="utf-8")
 
-        print("[OK] Draw.io généré")
+        print("[OK] Draw.io generated")
         print(f"  • template      : {template_file.relative_to(ROOT)}")
-        print(f"  • souscriptrice : {args.consumer_capability}")
-        print(f"  • abonnements : {len(selected_subscriptions)}")
-        print(f"  • sortie        : {output_file.relative_to(ROOT)}")
+        print(f"  • consumer      : {args.consumer_capability}")
+        print(f"  • subscriptions : {len(selected_subscriptions)}")
+        print(f"  • output        : {output_file.relative_to(ROOT)}")
         return 0
 
     if args.output:
         raise SystemExit(
-            "[FATAL] --output n'est pas compatible avec le mode batch (sans --consumer-capability). "
-            "Utiliser --output-dir."
+            "[FATAL] --output is not compatible with batch mode (without --consumer-capability). "
+            "Use --output-dir instead."
         )
 
     consumer_ids = sorted(
@@ -875,7 +875,7 @@ def main() -> int:
         }
     )
     if not consumer_ids:
-        raise SystemExit("[FATAL] Aucune capacité souscriptrice détectée dans les abonnements métier.")
+        raise SystemExit("[FATAL] No consumer capability detected in the business subscriptions.")
 
     rendered_files: list[Path] = []
     for consumer_id in consumer_ids:
@@ -901,10 +901,10 @@ def main() -> int:
         output_file.write_text(xml_output, encoding="utf-8")
         rendered_files.append(output_file)
 
-    print("[OK] Draw.io généré (mode batch)")
+    print("[OK] Draw.io generated (batch mode)")
     print(f"  • template      : {template_file.relative_to(ROOT)}")
-    print(f"  • capacités     : {len(rendered_files)}")
-    print(f"  • sortie dir    : {output_dir.relative_to(ROOT)}")
+    print(f"  • capabilities  : {len(rendered_files)}")
+    print(f"  • output dir    : {output_dir.relative_to(ROOT)}")
     for rendered_file in rendered_files:
         print(f"    - {rendered_file.relative_to(ROOT)}")
     return 0

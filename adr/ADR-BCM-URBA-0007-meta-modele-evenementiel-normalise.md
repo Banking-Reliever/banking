@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-URBA-0007
-title: "Méta-modèle événementiel normalisé guidé par les capabilities"
+title: "Normalized Event Meta-Model Guided by Capabilities"
 status: Proposed
 date: 2026-03-05
 
@@ -33,150 +33,150 @@ supersedes: []
 tags:
   - event-driven
   - metamodel
-  - normalisation
-  - cartographie-si
+  - normalization
+  - is-mapping
 
 stability_impact: Structural
 ---
 
-# ADR-BCM-URBA-0007 — Méta-modèle événementiel normalisé guidé par les capabilities
+# ADR-BCM-URBA-0007 — Normalized Event Meta-Model Guided by Capabilities
 
-## Contexte
+## Context
 
-La BCM évolue vers une cartographie SI construite **par modèle** et non par projection ( vues, cartographies ). Les projections s'appuient sur un ensemble de données produites selon des règles. Une projection n'est alors qu'un modèle de lecture, un usage pour accompagner une intention. Ce qui est défini ici sont le modèle d'écriture, les règles régissant comment les données décrivant le SI sont assemblées de manière normalisée.
-Les assets événementiels existent déjà (`EVT`, `OBJ`, `RES`, `ABO.*`) mais les liens
-structurels ne sont pas encore explicités comme un méta-modèle de référence unique.
+The BCM is evolving toward an IS mapping built **by model** rather than by projection (views, cartographies). Projections are based on a set of data produced according to rules. A projection is then only a reading model, a usage to support an intent. What is defined here is the writing model, the rules governing how the data describing the IS is assembled in a normalized manner.
+The event assets already exist (`EVT`, `OBJ`, `RES`, `ABO.*`) but the
+structural links are not yet explicited as a single reference meta-model.
 
-L'objectif cible est de préparer la future cartographie SI FOODAROO et de converger vers
-une **Event-Driven Enterprise** reposant sur des concepts normalisés, traçables et
-vérifiables automatiquement.
+The target objective is to prepare the future FOODAROO IS mapping and converge toward
+an **Event-Driven Enterprise** based on normalized, traceable, and
+automatically verifiable concepts.
 
-## Décision
+## Decision
 
-Le méta-modèle cible explicite les relations suivantes comme règles directrices :
+The target meta-model explicits the following relations as guiding rules:
 
-- `Capability -> Evenement Metier` (production)
-- `Capability + Evenement Metier -> Capability` (abonnement)
-- `Evenement Metier -> Objet Metier` (1 événement métier porte 1 objet métier)
-- `Objet Metier <- Ressource` (1 ressource référence 1 objet métier)
-- `Evenement Metier <- Evenement Ressource` (1 événement ressource référence 1 événement métier)
-- `Evenement Ressource -> Ressource` (1 événement ressource référence 1 ressource)
+- `Capability -> Business Event` (production)
+- `Capability + Business Event -> Capability` (subscription)
+- `Business Event -> Business Object` (1 business event carries 1 business object)
+- `Business Object <- Resource` (1 resource references 1 business object)
+- `Business Event <- Resource Event` (1 resource event references 1 business event)
+- `Resource Event -> Resource` (1 resource event references 1 resource)
 
-Le terme **abonnement** reflète une **souscription** à un contrat d'évènement. Dans le jargon d'assurance, le terme de souscription peut être confondu avec celui inhérent à la souscription d'un contrat d'assurance, c'est la raison pour laquelle , le terme abonnement sera privilégié.
+The term **subscription** reflects a subscription to an event contract. In insurance jargon, the term subscription can be confused with the inherent subscription of an insurance contract, which is why the term subscription will be preferred (using the English "subscription" rather than French "souscription").
 
-Le terme évenement porte lui aussi à confusion. Car dans le jargon de l'assurance, il indique l'occurence d'un sinistre. MAlheureusement, il n'existe pas d'équivalent avec la même charge sémantique que l'on pour utiliser sans dénaturer trop avant le propos et provoquer de la confusion. Il faudra donc faire la différence entre un évènement du système d'inforamtion et un évènement dans le contexte de la déclration d'un sinistre. Cette distinction semble claire et facilement acquérable parmi les acteurs qui s'occupe de Sinistres & Prestations.
+The term event also causes confusion. In insurance jargon, it refers to the occurrence of a claim. Unfortunately, there is no equivalent with the same semantic weight that can be used without distorting the subject and causing confusion. One must therefore distinguish between an information system event and an event in the context of a claim declaration. This distinction seems clear and easily acquired among those working on Claims & Benefits.
 
-Critères vérifiables attendus (niveau cadre) :
+Expected verifiable criteria (framework level):
 
-- chaque relation est représentable explicitement dans les assets YAML ;
-- chaque relation est contrôlable par validation automatique de cohérence ;
-- le modèle reste indépendant d'un outil de dessin.
+- each relation is explicitly representable in the YAML assets;
+- each relation is controllable by automatic coherence validation;
+- the model remains independent of a drawing tool.
 
-### Templates par type d'entité
+### Templates by entity type
 
-Les templates suivants constituent le **modèle d'écriture** de référence pour chaque type d'entité :
+The following templates constitute the reference **writing model** for each entity type:
 
-| Type d'entité | Préfixe d'ID attendu | Template de référence |
+| Entity type | Expected ID prefix | Reference template |
 |---|---|---|
-| Capability | `CAP.*` | `templates/capacité-template.yaml` |
-| Événement métier | `EVT.*` | `templates/evenement-metier/template-evenement-metier.yaml` |
-| Objet métier | `OBJ.*` | `templates/objet-metier/template-objet-metier.yaml` |
-| Ressource | `RES.*` | `templates/ressource/template-ressource.yaml` |
-| Événement ressource | `EVT.RES.*` | `templates/evenement-ressource/template-evenement-ressource.yaml` |
-| Abonnement métier | `ABO.METIER.*` | `templates/evenement-metier/template-abonnement-metier.yaml` |
-| Abonnement ressource | `ABO.RESSOURCE.*` | `templates/evenement-ressource/template-abonnement-ressource.yaml` |
+| Capability | `CAP.*` | `templates/capability-template.yaml` |
+| Business event | `EVT.*` | `templates/business-event/template-business-event.yaml` |
+| Business object | `OBJ.*` | `templates/business-object/template-business-object.yaml` |
+| Resource | `RES.*` | `templates/resource/template-resource.yaml` |
+| Resource event | `EVT.RES.*` | `templates/resource-event/template-resource-event.yaml` |
+| Business subscription | `ABO.METIER.*` | `templates/business-event/template-business-subscription.yaml` |
+| Resource subscription | `ABO.RESSOURCE.*` | `templates/resource-event/template-resource-subscription.yaml` |
 
-Règle d'usage : toute nouvelle entité introduite dans le modèle doit être initialisée
-à partir du template correspondant, puis validée par les scripts de contrôle du repository.
+Usage rule: any new entity introduced in the model must be initialized
+from the corresponding template, then validated by the repository control scripts.
 
 ## Justification
 
-Cette décision fournit un socle minimal commun pour relier capacités, contrats
-événementiels et matérialisation des données opérationnelles.
+This decision provides a minimal common base to link capabilities, event
+contracts, and materialization of operational data.
 
-Elle améliore :
+It improves:
 
-- la lisibilité des responsabilités producteur/consommateur ;
-- la traçabilité de bout en bout (capacité -> événement -> objet -> ressource) ;
-- la capacité à industrialiser les contrôles de cohérence.
+- the readability of producer/consumer responsibilities;
+- end-to-end traceability (capability -> event -> object -> resource);
+- the ability to industrialize coherence controls.
 
-### Alternatives considérées
+### Alternatives Considered
 
-- Option A — Continuer sans méta-modèle explicite : rejetée car la cohérence globale
-  dépend d'interprétations locales.
-- Option B — Cartographier uniquement par diagrammes : rejetée car peu industrialisable
-  pour le contrôle automatique et la gouvernance continue.
+- Option A — Continue without an explicit meta-model: rejected because global
+  coherence depends on local interpretations.
+- Option B — Map only through diagrams: rejected because poorly industrializable
+  for automatic control and continuous governance.
 
-## Règles avancées envisagées (non implémentées à ce stade)
+## Advanced Rules Envisioned (not implemented at this stage)
 
-À titre de perspective (inspirations de pratiques avancées), les règles suivantes pourront être étudiées ultérieurement :
+As a perspective (inspirations from advanced practices), the following rules may be studied later:
 
-- gouvernance avancée de versionnement et compatibilité des événements ;
-- qualification des contrats (stabilité, exposition, criticité, SLA/SLO) ;
-- anti-patterns de couplage (chaînes fragiles, dépendances circulaires, sur-subscription) ;
-- contrôles de qualité de domaine (ownership explicite, lifecycle, obsolescence) ;
-- règles de publication/consommation outillées via registry.
+- advanced versioning governance and event compatibility;
+- contract qualification (stability, exposure, criticality, SLA/SLO);
+- coupling anti-patterns (fragile chains, circular dependencies, over-subscription);
+- domain quality controls (explicit ownership, lifecycle, obsolescence);
+- publication/consumption rules tooled via registry.
 
 
-Ces règles ne sont **pas** imposées par cet ADR et ne doivent pas être implémentées
-dans cette phase.
+These rules are **not** imposed by this ADR and must not be implemented
+in this phase.
 
-## Impacts sur la BCM
+## Impacts on the BCM
 
 ### Structure
 
-- Impact principal : explicitation du graphe conceptuel cross-level.
-- Pas de split/merge immédiat de capabilities.
+- Main impact: explicitation of the cross-level conceptual graph.
+- No immediate capability split/merge.
 
-### Événements (si applicable)
+### Events (if applicable)
 
-- Clarification des liens entre événements métier et événements ressource.
-- Formalisation de la place des abonnements comme relation capacité-consommation.
+- Clarification of links between business events and resource events.
+- Formalization of the place of subscriptions as a capability-consumption relation.
 
 ### Mapping SI / Data / Org
 
-- SI : prépare la cartographie applicative par modèle.
-- DATA : prépare la chaîne logique événement -> objet -> ressource.
-- ORG : clarifie les responsabilités producer/consumer autour des capabilities.
+- SI: prepares the application mapping by model.
+- DATA: prepares the logical chain event -> object -> resource.
+- ORG: clarifies producer/consumer responsibilities around capabilities.
 
-## Conséquences
+## Consequences
 
-### Positives
+### Positive
 
-- Base commune pour construire la cartographie SI FOODAROO par modèle.
-- Alignement progressif vers une Event-Driven Enterprise normalisée.
-- Meilleure auditabilité des liens métier/opérationnels.
+- Common base for building the FOODAROO IS mapping by model.
+- Progressive alignment toward a normalized Event-Driven Enterprise.
+- Better auditability of business/operational links.
 
-### Négatives / Risques
+### Negative / Risks
 
-- Risque d'ambiguïté si les règles détaillées ne sont pas découpées en ADR dédiés.
-- Risque de surcharge documentaire si le périmètre reste trop large trop longtemps.
+- Risk of ambiguity if detailed rules are not broken down into dedicated ADRs.
+- Risk of documentary overload if the scope remains too broad for too long.
 
-### Dette acceptée
+### Accepted Debt
 
-Cet ADR est volontairement **cadre**. Il est destiné à être superseded, en plusieurs
-itérations, par des ADR plus précis couvrant les parties non encore prises en charge,
-notamment (liste non exhaustive- application:
+This ADR is intentionally a **framework**. It is intended to be superseded, in several
+iterations, by more precise ADRs covering the parts not yet handled,
+including (non-exhaustive list):
 
 - application
 - topic (Kafka)
 - API
 - schema
 - database/table
-- organisation
-- processus
+- organization
+- process
 - data-dictionary
-- registre des risques / contrôles / dépendances DORA
+- risk register / controls / DORA dependencies
 - infrastructure
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : élevé (structurant).
-- Date de revue recommandée : 2026-06-30.
-- Indicateur de stabilité attendu : modéré (ADR de transition vers un cadre détaillé).
+- Criticality level: High (structuring).
+- Recommended review date: 2026-06-30.
+- Expected stability indicator: moderate (transitional ADR toward a detailed framework).
 
-## Traçabilité
+## Traceability
 
-- Atelier : cadrage urbanisation événementielle BCM.
-- Participants : Urbanisme SI, Architecture, Référents domaines métier.
-- Références : ADR URBA 0002/0003, README ADR.
+- Workshop: BCM event-driven urbanization framing.
+- Participants: IS Urbanization, Architecture, Business Domain Leads.
+- References: URBA ADRs 0002/0003, ADR README.
