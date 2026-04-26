@@ -1,78 +1,78 @@
 ---
 task_id: TASK-006
 capability_id: CAP.CAN.001.TAB
-capability_name: Tableau de Bord Bénéficiaire
-epic: Épic 5 — Raccordement aux capacités COEUR réelles
+capability_name: Beneficiary Dashboard
+epic: Epic 5 — Connection to Real CORE Capabilities
 status: todo
 priority: low
 depends_on: [TASK-002, TASK-003, TASK-004, TASK-005]
 ---
 
-# TASK-006 — Raccordement aux capacités COEUR réelles et décommissionnement du stub
+# TASK-006 — Connection to real CORE capabilities and stub decommissioning
 
-## Contexte
-Les Épics 1 à 4 ont permis de construire et valider intégralement le tableau de bord en isolation, grâce au stub (TASK-002). Dès que les capacités COEUR (BSP.001.SCO, BSP.001.PAL, BSP.004.ENV, BSP.004.AUT) sont opérationnelles et publient leurs événements réels sur les points de souscription convenus, le stub peut être retiré. Cette tâche est déclenchée par la disponibilité du COEUR — pas par le calendrier interne de CAP.CAN.001.TAB. Elle est une condition de mise en production réelle du tableau de bord, mais pas une condition de livraison des vues elles-mêmes.
+## Context
+Epics 1 to 4 have allowed the dashboard to be fully built and validated in isolation, thanks to the stub (TASK-002). As soon as the CORE capabilities (BSP.001.SCO, BSP.001.PAL, BSP.004.ENV, BSP.004.AUT) are operational and publishing their real events on the agreed subscription points, the stub can be removed. This task is triggered by the CORE's availability — not by CAP.CAN.001.TAB's internal schedule. It is a precondition for the real production deployment of the dashboard, but not a precondition for delivering the views themselves.
 
-## Référence capacité
-- Capacité : Tableau de Bord Bénéficiaire (CAP.CAN.001.TAB)
-- Zone : CANAL
-- ADR gouvernants : ADR-BCM-FUNC-0009, ADR-BCM-URBA-0007, ADR-BCM-URBA-0009
+## Capability Reference
+- Capability: Beneficiary Dashboard (CAP.CAN.001.TAB)
+- Zone: CHANNEL
+- Governing ADRs: ADR-BCM-FUNC-0009, ADR-BCM-URBA-0007, ADR-BCM-URBA-0009
 
-## Ce qu'il faut produire
+## What needs to be produced
 
-### Vérification de compatibilité des contrats
-Avant le raccordement, vérifier que les événements produits par les capacités COEUR réelles sont conformes aux schémas contractualisés en TASK-001 :
-- Schéma de `ScoreComportemental.Recalculé` conforme au contrat v1.0
-- Schéma de `Palier.FranchiHausse` conforme au contrat v1.0
-- Schéma de `Enveloppe.Consommée` conforme au contrat v1.0
-- Schéma de `Transaction.Autorisée` et `Transaction.Refusée` conforme au contrat BSP.004.AUT
+### Contract compatibility check
+Before connection, verify that the events produced by the real CORE capabilities conform to the schemas contractualized in TASK-001:
+- Schema of `BehavioralScore.Recalculated` conforms to contract v1.0
+- Schema of `Tier.UpwardCrossed` conforms to contract v1.0
+- Schema of `Envelope.Consumed` conforms to contract v1.0
+- Schema of `Transaction.Authorized` and `Transaction.Declined` conforms to the BSP.004.AUT contract
 
-Toute divergence doit être résolue avant le décommissionnement du stub. Le code de consommation de CAP.CAN.001.TAB ne doit pas être modifié pour absorber une divergence : c'est au COEUR de respecter le contrat défini en TASK-001.
+Any divergence must be resolved before decommissioning the stub. The CAP.CAN.001.TAB consumption code must not be modified to absorb a divergence: it is the CORE's responsibility to comply with the contract defined in TASK-001.
 
-### Décommissionnement du stub
-Retirer le stub d'alimentation par configuration d'environnement en production. Le point de souscription de CAP.CAN.001.TAB reste inchangé — seule la source qui publie dessus change.
+### Stub decommissioning
+Remove the feed stub via environment configuration in production. The CAP.CAN.001.TAB subscription point remains unchanged — only the source that publishes to it changes.
 
-### Validation sans régression
-Valider sur les deux canaux (web et mobile) que :
-- La vue situation courante (TASK-003) affiche des données cohérentes avec les événements COEUR réels
-- L'historique transactionnel (TASK-004) est alimenté par les vraies transactions
-- La vue mobile (TASK-005) reflète le palier et les enveloppes réels
+### Regression-free validation
+Validate on both channels (web and mobile) that:
+- The current situation view (TASK-003) displays data consistent with the real CORE events
+- The transaction history (TASK-004) is fed by real transactions
+- The mobile view (TASK-005) reflects the real tier and envelopes
 
-### Supervision en production
-Confirmer, via la supervision, que le flux événementiel réel alimente le read model de CAP.CAN.001.TAB en continu et sans interruption. Aucune régression de `TableauDeBord.Consulté` n'est acceptable.
+### Production supervision
+Confirm, via supervision, that the real event stream feeds the CAP.CAN.001.TAB read model continuously and without interruption. No regression of `Dashboard.Viewed` is acceptable.
 
-## Événements métier à produire
-`TableauDeBord.Consulté` continue d'être produit normalement — aucun changement sur les événements produits.
+## Business Events to Produce
+`Dashboard.Viewed` continues to be produced normally — no change to produced events.
 
-## Objets métier impliqués
-- **Bénéficiaire** — les données affichées sont désormais réelles
-- **Score comportemental**, **Palier**, **Enveloppe**, **Transaction** — tous alimentés par les capacités COEUR réelles
+## Business Objects Involved
+- **Beneficiary** — the displayed data is now real
+- **Behavioral score**, **Tier**, **Envelope**, **Transaction** — all fed by the real CORE capabilities
 
-## Souscriptions événementielles requises
-Identiques à TASK-002 et TASK-004 — le câblage est inchangé, seul le producteur (stub → COEUR réel) change.
+## Required Event Subscriptions
+Identical to TASK-002 and TASK-004 — the wiring is unchanged, only the producer (stub → real CORE) changes.
 
-## Définition de Done
-- [ ] La compatibilité des schémas d'événements COEUR réels avec les contrats de TASK-001 est vérifiée et documentée
-- [ ] Le stub est désactivé en environnement de production
-- [ ] La vue situation courante web (TASK-003) affiche des données réelles sans régression
-- [ ] L'historique transactionnel web (TASK-004) est alimenté par les vraies transactions sans régression
-- [ ] La vue mobile (TASK-005) affiche les données réelles sans régression
-- [ ] `TableauDeBord.Consulté` continue d'être produit correctement sur les deux canaux
-- [ ] La supervision confirme le flux événementiel réel en production
-- [ ] validate_repo.py passe sans erreur
-- [ ] validate_events.py passe sans erreur
+## Definition of Done
+- [ ] Compatibility of real CORE event schemas with TASK-001 contracts is verified and documented
+- [ ] The stub is deactivated in the production environment
+- [ ] The current situation web view (TASK-003) displays real data without regression
+- [ ] The transaction history web view (TASK-004) is fed by real transactions without regression
+- [ ] The mobile view (TASK-005) displays real data without regression
+- [ ] `Dashboard.Viewed` continues to be produced correctly on both channels
+- [ ] Supervision confirms the real event stream in production
+- [ ] validate_repo.py passes without error
+- [ ] validate_events.py passes without error
 
-## Critères d'acceptation (métier)
-Un bénéficiaire réel inscrit dans le dispositif consulte son tableau de bord et voit ses données réelles (palier effectif, enveloppes réelles, historique de ses vraies transactions). Les données du tableau de bord sont cohérentes avec les décisions prises par les capacités COEUR.
+## Acceptance Criteria (business)
+A real beneficiary enrolled in the program views their dashboard and sees their real data (effective tier, real envelopes, history of their actual transactions). The dashboard data is consistent with the decisions made by the CORE capabilities.
 
-## Dépendances
-- **TASK-002** : l'infrastructure stub/souscription doit être opérationnelle et ses tests validés
-- **TASK-003, TASK-004, TASK-005** : toutes les vues doivent être validées sur stub avant le raccordement
-- **CAP.BSP.001.SCO** — opérationnel et publiant `ScoreComportemental.Recalculé`
-- **CAP.BSP.001.PAL** — opérationnel et publiant `Palier.FranchiHausse`
-- **CAP.BSP.004.ENV** — opérationnel et publiant `Enveloppe.Consommée`
-- **CAP.BSP.004.AUT** — opérationnel et publiant `Transaction.Autorisée` / `Transaction.Refusée`
+## Dependencies
+- **TASK-002**: the stub/subscription infrastructure must be operational and its tests validated
+- **TASK-003, TASK-004, TASK-005**: all views must be validated on stub before connection
+- **CAP.BSP.001.SCO** — operational and publishing `BehavioralScore.Recalculated`
+- **CAP.BSP.001.PAL** — operational and publishing `Tier.UpwardCrossed`
+- **CAP.BSP.004.ENV** — operational and publishing `Envelope.Consumed`
+- **CAP.BSP.004.AUT** — operational and publishing `Transaction.Authorized` / `Transaction.Declined`
 
-## Questions ouvertes
-- En cas de divergence de schéma entre le contrat (TASK-001) et la production COEUR réelle, quel est le processus d'arbitrage (qui tranche, quel délai) ?
-- Y a-t-il une période de double-alimentation (stub + COEUR en parallèle) pour valider avant de couper le stub ?
+## Open Questions
+- In case of schema divergence between the contract (TASK-001) and the real CORE production, what is the arbitration process (who decides, what timeline)?
+- Is there a dual-feed period (stub + CORE in parallel) to validate before cutting the stub?

@@ -1,0 +1,150 @@
+{
+  "metadata": {
+    "skill_name": "implement-capability",
+    "skill_path": "/home/yoann/.claude/skills/implement-capability",
+    "executor_model": "claude-sonnet-4-6",
+    "timestamp": "2026-04-23T16:18:25Z",
+    "evals_run": [1, 2],
+    "runs_per_configuration": 1
+  },
+
+  "runs": [
+    {
+      "eval_id": 1,
+      "eval_name": "policy-management-two-commands",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "failed": 0,
+        "total": 10,
+        "time_seconds": 204.2,
+        "tokens": 39577,
+        "tool_calls": 38,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "sources-dir-created", "passed": true, "evidence": "sources/PolicyManagement/svc exists"},
+        {"text": "all-five-layers", "passed": true, "evidence": "All 5 Naive.PolicyManagement.* projects present"},
+        {"text": "no-unresolved-placeholders", "passed": true, "evidence": "grep returned no matches"},
+        {"text": "aggregate-ar-file", "passed": true, "evidence": "InsurancePolicyAR.cs found in Domain"},
+        {"text": "two-commands-exist", "passed": true, "evidence": "CreateInsurancePolicyCommand.cs + SuspendInsurancePolicyCommand.cs"},
+        {"text": "two-events-exist", "passed": true, "evidence": "InsurancePolicyCreated.cs + InsurancePolicySuspended.cs"},
+        {"text": "nuget-config", "passed": true, "evidence": "nuget.config with naive-unicorn GitHub Packages feed"},
+        {"text": "random-port-in-hot-json", "passed": true, "evidence": "Port: 47412 (in range 10000-59999)"},
+        {"text": "docker-compose-offset-ports", "passed": true, "evidence": "Ports 47512/47612/47613 derived from base 47412"},
+        {"text": "program-cs-wires-both-services", "passed": true, "evidence": "Both ICreateInsurancePolicyService and ISuspendInsurancePolicyService registered"}
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "policy-management-two-commands",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.7,
+        "passed": 7,
+        "failed": 3,
+        "total": 10,
+        "time_seconds": 323.1,
+        "tokens": 70513,
+        "tool_calls": 67,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "sources-dir-created", "passed": true, "evidence": "sources/PolicyManagement/svc exists"},
+        {"text": "all-five-layers", "passed": true, "evidence": "All 5 Naive.PolicyManagement.* projects present"},
+        {"text": "no-unresolved-placeholders", "passed": true, "evidence": "No template placeholders found"},
+        {"text": "aggregate-ar-file", "passed": true, "evidence": "InsurancePolicyAR.cs found"},
+        {"text": "two-commands-exist", "passed": true, "evidence": "CreatePolicyCommand.cs + SuspendPolicyCommand.cs"},
+        {"text": "two-events-exist", "passed": true, "evidence": "PolicyCreated.cs + PolicySuspended.cs"},
+        {"text": "nuget-config", "passed": false, "evidence": "No nuget.config with naive-unicorn feed — packages won't restore"},
+        {"text": "random-port-in-hot-json", "passed": false, "evidence": "hot.json Port is 5672 (RabbitMQ default), not a random local port in 10000-59999"},
+        {"text": "docker-compose-offset-ports", "passed": false, "evidence": "docker-compose uses hardcoded default ports, no offset from base port"},
+        {"text": "program-cs-wires-both-services", "passed": true, "evidence": "Both services registered in Program.cs"}
+      ],
+      "notes": ["Agent inferred NaiveUnicorn patterns by exploring existing repo on disk — but missed infrastructure specifics (nuget.config, port collision avoidance)"]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "claims-processing-single-command",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 193.4,
+        "tokens": 37554,
+        "tool_calls": 32,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "sources-dir-created", "passed": true, "evidence": "sources/ClaimsProcessing/svc exists"},
+        {"text": "namespace-correct", "passed": true, "evidence": "51 occurrences of FoodarooExperience.ClaimsProcessing"},
+        {"text": "claim-ar-exists", "passed": true, "evidence": "ClaimAR.cs in Domain/Model/AR/Claim/"},
+        {"text": "file-claim-command-exists", "passed": true, "evidence": "FileClaimCommand.cs in Contracts/Commands/"},
+        {"text": "claim-filed-event-exists", "passed": true, "evidence": "ClaimFiled.cs in Contracts/Events/"},
+        {"text": "no-unresolved-placeholders", "passed": true, "evidence": "No template placeholders found"},
+        {"text": "cold-json-has-claim-lower", "passed": true, "evidence": "MongoDB/RabbitMQ connections use 'claims-processing' identifier"}
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "claims-processing-single-command",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.71,
+        "passed": 5,
+        "failed": 2,
+        "total": 7,
+        "time_seconds": 276.4,
+        "tokens": 37754,
+        "tool_calls": 53,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "sources-dir-created", "passed": true, "evidence": "sources/ClaimsProcessing/svc exists"},
+        {"text": "namespace-correct", "passed": true, "evidence": "Files use FoodarooExperience.ClaimsProcessing namespace"},
+        {"text": "claim-ar-exists", "passed": false, "evidence": "No ClaimAR.cs — baseline uses Claim.cs (missing AR suffix convention)"},
+        {"text": "file-claim-command-exists", "passed": true, "evidence": "FileClaimCommand.cs exists (in Application, not Contracts)"},
+        {"text": "claim-filed-event-exists", "passed": true, "evidence": "ClaimFiled.cs exists as domain event"},
+        {"text": "no-unresolved-placeholders", "passed": true, "evidence": "No template placeholders"},
+        {"text": "cold-json-has-claim-lower", "passed": false, "evidence": "Baseline chose EF Core + SQL Server — no MongoDB cold.json"}
+      ],
+      "notes": ["Without skill, chose EF Core + SQL Server + MediatR — wrong stack. Namespace was correct because explicit in prompt."]
+    }
+  ],
+
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0},
+      "time_seconds": {"mean": 198.8, "stddev": 7.7, "min": 193.4, "max": 204.2},
+      "tokens": {"mean": 38566, "stddev": 1512, "min": 37554, "max": 39577}
+    },
+    "without_skill": {
+      "pass_rate": {"mean": 0.705, "stddev": 0.005, "min": 0.70, "max": 0.71},
+      "time_seconds": {"mean": 299.8, "stddev": 33.5, "min": 276.4, "max": 323.1},
+      "tokens": {"mean": 54134, "stddev": 16380, "min": 37754, "max": 70513}
+    },
+    "delta": {
+      "pass_rate": "+0.295",
+      "time_seconds": "-101.0",
+      "tokens": "-15568"
+    }
+  },
+
+  "notes": [
+    "3 assertions fail consistently without the skill: nuget-config, random-port-in-hot-json, docker-compose-offset-ports — all repo-specific infrastructure conventions",
+    "Without the skill, eval 1 baseline explored the filesystem and partially inferred NaiveUnicorn patterns — but still missed port and nuget config",
+    "Without the skill, eval 2 baseline chose an entirely wrong tech stack (EF Core + SQL Server + MediatR) instead of MongoDB + RabbitMQ + NaiveUnicorn",
+    "Skill runs are faster (199s vs 300s avg) because the templates are immediately available — no exploratory reads needed",
+    "Skill also uses fewer tokens (38k vs 54k avg) — exploration cost is paid by the skill author, not each run",
+    "AR suffix naming (ClaimAR vs Claim) only enforced by the skill"
+  ]
+}

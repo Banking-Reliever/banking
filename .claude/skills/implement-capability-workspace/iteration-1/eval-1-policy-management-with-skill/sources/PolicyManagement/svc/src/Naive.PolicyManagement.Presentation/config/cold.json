@@ -1,0 +1,18 @@
+{
+  "MongoDbConnection": "mongodb://admin:password@localhost:47512/policy-management?authSource=admin",
+  "AzureServiceBusEnabled": false,
+  "RabbitMQEnabled": true,
+  "RabbitMQConnection": "amqp://admin:password@localhost:47612/policy-management",
+  "BusSerializationOptions": {
+    "PropertyNamingPolicy": "CamelCase",
+    "IncludeFields": false,
+    "IgnoreNullValues": true
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "MongoDB.Driver.Core": "Warning"
+    }
+  }
+}

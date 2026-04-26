@@ -1,77 +1,77 @@
 ---
 task_id: TASK-005
 capability_id: CAP.CAN.001.TAB
-capability_name: Tableau de Bord Bénéficiaire
-epic: Épic 4 — Vue mobile — consultation nomade
+capability_name: Beneficiary Dashboard
+epic: Epic 4 — Mobile View — Nomadic Consultation
 status: todo
 priority: medium
 depends_on: [TASK-003]
 ---
 
-# TASK-005 — Vue mobile — consultation nomade du tableau de bord
+# TASK-005 — Mobile view — nomadic dashboard consultation
 
-## Contexte
-Le bénéficiaire doit pouvoir consulter sa situation financière en situation nomade, depuis un appareil mobile. L'interface mobile n'est pas une réduction de l'interface web : c'est un mode de lecture optimisé pour la rapidité, conçu pour les micro-instants de vérification avant un achat. Elle partage le même read model que TASK-003 (pas de nouvelles souscriptions événementielles) mais expose un sous-ensemble de données simplifié : palier courant et soldes des enveloppes principales, sans filtres, sans tri, sans colonnes secondaires. La règle de dignité s'applique identiquement. `TableauDeBord.Consulté` est produit avec le tag `canal=mobile` pour distinguer les usages analytiquement.
+## Context
+The beneficiary must be able to view their financial situation while on the go, from a mobile device. The mobile interface is not a reduced version of the web interface: it is a reading mode optimized for speed, designed for the micro-moments of checking before a purchase. It shares the same read model as TASK-003 (no new event subscriptions) but exposes a simplified subset of data: current tier and main envelope balances, without filters, without sorting, without secondary columns. The dignity rule applies identically. `Dashboard.Viewed` is produced with the tag `channel=mobile` to analytically distinguish usage.
 
-## Référence capacité
-- Capacité : Tableau de Bord Bénéficiaire (CAP.CAN.001.TAB)
-- Zone : CANAL
-- ADR gouvernants : ADR-BCM-FUNC-0009, ADR-BCM-URBA-0009
+## Capability Reference
+- Capability: Beneficiary Dashboard (CAP.CAN.001.TAB)
+- Zone: CHANNEL
+- Governing ADRs: ADR-BCM-FUNC-0009, ADR-BCM-URBA-0009
 
-## Ce qu'il faut produire
+## What needs to be produced
 
-### Interface mobile — vue situation courante allégée
-L'interface mobile affiche pour le bénéficiaire authentifié :
+### Mobile interface — lightweight current situation view
+The mobile interface displays for the authenticated beneficiary:
 
-1. **Section progression** (affichée en premier — règle de dignité) :
-   - Palier courant (nom et niveau uniquement, pas la description complète)
-   - Indication visuelle simple du prochain palier
+1. **Progression section** (displayed first — dignity rule):
+   - Current tier (name and level only, not the full description)
+   - Simple visual indication of the next tier
 
-2. **Section enveloppes** :
-   - Soldes des enveloppes principales (les catégories les plus fréquentes, déterminées par la définition du palier dans CAP.REF.001.PAL)
-   - Pour chaque enveloppe : catégorie et solde disponible uniquement (pas le montant total de période, pas de graphique)
-   - Pas de filtres, pas de tri, pas de colonnes secondaires
+2. **Envelopes section**:
+   - Balances of the main envelopes (the most frequent categories, determined by the tier definition in CAP.REF.001.PAL)
+   - For each envelope: category and available balance only (not the total period amount, no chart)
+   - No filters, no sorting, no secondary columns
 
-**Ce que la vue mobile n'expose pas** (réservé au web) :
-- Historique transactionnel
-- Filtres et tri
-- Détail complet de toutes les enveloppes secondaires
-- Description complète du palier
+**What the mobile view does not expose** (reserved for web):
+- Transaction history
+- Filters and sorting
+- Full detail of all secondary envelopes
+- Complete tier description
 
-### Gate de consentement
-La gate `Consentement.Accordé` de TASK-003 s'applique identiquement sur le canal mobile.
+### Consent gate
+The `Consent.Granted` gate from TASK-003 applies identically on the mobile channel.
 
-### Production de l'événement métier
-`TableauDeBord.Consulté` est émis à chaque consultation de la vue mobile, avec le tag `canal=mobile`, pour permettre une distinction analytique des usages web et mobile.
+### Business event production
+`Dashboard.Viewed` is emitted on each consultation of the mobile view, with the tag `channel=mobile`, to enable analytical distinction between web and mobile usage.
 
-## Événements métier à produire
-- `TableauDeBord.Consulté` — émis à chaque consultation de la vue mobile (attributs : bénéficiaire, palier, canal=mobile, horodatage)
+## Business Events to Produce
+- `Dashboard.Viewed` — emitted on each consultation of the mobile view (attributes: beneficiary, tier, channel=mobile, timestamp)
 
-## Objets métier impliqués
-- **Bénéficiaire** — sujet de la consultation
-- **Palier** — affiché de manière simplifiée (nom + niveau)
-- **Enveloppe** — soldes des enveloppes principales uniquement
+## Business Objects Involved
+- **Beneficiary** — subject of the consultation
+- **Tier** — displayed in simplified form (name + level)
+- **Envelope** — main envelope balances only
 
-## Souscriptions événementielles requises
-Aucune souscription nouvelle — la vue mobile consomme le même read model que TASK-003, alimenté par les souscriptions de TASK-002.
+## Required Event Subscriptions
+No new subscriptions — the mobile view consumes the same read model as TASK-003, fed by the TASK-002 subscriptions.
 
-## Définition de Done
-- [ ] L'interface mobile affiche le palier courant (nom et niveau) en premier
-- [ ] L'interface mobile affiche les soldes des enveloppes principales (catégorie + solde disponible uniquement)
-- [ ] Aucun filtre, aucun tri, aucune colonne secondaire n'est présent dans l'interface mobile
-- [ ] La gate `Consentement.Accordé` bloque l'accès si le consentement est absent
-- [ ] `TableauDeBord.Consulté` est émis avec `canal=mobile` à chaque consultation
-- [ ] La règle de dignité est respectée (progression avant restrictions)
-- [ ] La vue fonctionne avec le bénéficiaire de test alimenté par le stub de TASK-002
-- [ ] validate_repo.py passe sans erreur
-- [ ] validate_events.py passe sans erreur
+## Definition of Done
+- [ ] The mobile interface displays the current tier (name and level) first
+- [ ] The mobile interface displays the main envelope balances (category + available balance only)
+- [ ] No filters, no sorting, no secondary columns are present in the mobile interface
+- [ ] The `Consent.Granted` gate blocks access if consent is absent
+- [ ] `Dashboard.Viewed` is emitted with `channel=mobile` on each consultation
+- [ ] The dignity rule is respected (progression before restrictions)
+- [ ] The view works with the test beneficiary fed by the TASK-002 stub
+- [ ] validate_repo.py passes without error
+- [ ] validate_events.py passes without error
 
-## Critères d'acceptation (métier)
-Un bénéficiaire qui ouvre l'interface mobile voit immédiatement son palier et ses soldes principaux en deux ou trois éléments visuels. L'expérience est lisible en moins de cinq secondes sans défilement. Chaque ouverture trace un `TableauDeBord.Consulté` tagué `canal=mobile`.
+## Acceptance Criteria (business)
+A beneficiary who opens the mobile interface immediately sees their tier and main balances in two or three visual elements. The experience is readable in under five seconds without scrolling. Each opening traces a `Dashboard.Viewed` tagged `channel=mobile`.
 
-## Dépendances
-- **TASK-003** : le read model et la gate de consentement doivent exister — la vue mobile les réutilise sans modification
+## Dependencies
+- **TASK-003**: the read model and the consent gate must exist — the mobile view reuses them without modification
 
-## Questions ouvertes
-- Quelles enveloppes sont considérées "principales" sur mobile ? Sont-elles déterminées par le palier courant (CAP.REF.001.PAL) ou par la fréquence d'utilisation du bénéficiaire ?
-- L'interface mobile est-elle une application native (iOS/Android) ou une webapp responsive ? Ce choix ne bloque pas la tâche mais peut impacter les sprints d'interface.
+## Open Questions
+- Which envelopes are considered "main" on mobile? Are they determined by the current tier (CAP.REF.001.PAL) or by the beneficiary's usage frequency?
+- Is the mobile interface a native application (iOS/Android) or a responsive webapp? This choice does not block the task but may impact interface sprints.

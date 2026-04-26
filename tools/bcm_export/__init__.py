@@ -1,20 +1,20 @@
 """
-BCM Export - Export BCM vers EventCatalog.
+BCM Export - Exports BCM to EventCatalog.
 
-Ce package contient tous les outils nécessaires pour exporter
-un Business Capability Map (BCM) vers un EventCatalog.
+This package contains all the tools needed to export
+a Business Capability Map (BCM) to an EventCatalog.
 
-Usage principal:
+Main usage:
     from bcm_export import BCMParser, BCMNormalizer, EventCatalogGenerator
-    
-    # Ou utiliser le script CLI:
+
+    # Or use the CLI script:
     python bcm_export_metier.py --input ./bcm --output ./eventcatalog
 """
 
 __version__ = "1.0.0"
-__author__ = "FOODAROO - Équipe Architecture"
+__author__ = "FOODAROO - Architecture Team"
 
-# Imports principaux pour usage en tant que module
+# Main imports for use as a module
 from .domain_model import (
     BCMModel, CapabilityL1, CapabilityL2, BusinessEvent, BusinessObject,
     DataField, EventScope, BCMType, SourceTraceability
@@ -25,22 +25,22 @@ from .normalizer import BCMNormalizer, NormalizationError
 from .eventcatalog_generator import EventCatalogGenerator
 
 __all__ = [
-    # Classes de modèle
-    "BCMModel", 
-    "CapabilityL1", 
-    "CapabilityL2", 
-    "BusinessEvent", 
+    # Model classes
+    "BCMModel",
+    "CapabilityL1",
+    "CapabilityL2",
+    "BusinessEvent",
     "BusinessObject",
     "DataField",
     "EventScope",
-    "BCMType", 
+    "BCMType",
     "SourceTraceability",
-    
-    # Parseurs et générateurs  
+
+    # Parsers and generators
     "BCMParser",
-    "BCMNormalizer", 
+    "BCMNormalizer",
     "EventCatalogGenerator",
-    
+
     # Exceptions
     "BCMParseError",
     "NormalizationError"

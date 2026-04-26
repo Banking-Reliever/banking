@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-FUNC-0014
-title: "L2 Breakdown de CAP.DAT.001 — Analytique Comportementale"
+title: "L2 Breakdown of CAP.DAT.001 — Behavioral Analytics"
 status: Proposed
 date: 2026-04-24
 
@@ -43,93 +43,117 @@ tags:
   - L2
   - DATA_ANALYTIQUE
   - scoring
-  - analytique
+  - analytics
   - BI
 
 stability_impact: Moderate
+
+domain_classification:
+  type: supporting
+  coordinates:
+    x: 0.55
+    y: 0.55
+  rationale: "Analytique comportementale nécessaire pour améliorer le scoring dans le temps ; pattern analytique connu mais les données et modèles sont propriétaires"
 ---
 
-# ADR-BCM-FUNC-0014 — L2 Breakdown de CAP.DAT.001 — Analytique Comportementale
+# ADR-BCM-FUNC-0014 — L2 Breakdown of CAP.DAT.001 — Behavioral Analytics
 
-## Contexte
+## Domain Classification
 
-CAP.DAT.001 est la capacité d'amélioration continue du dispositif Reliever. Elle se distingue de CAP.BSP.001 (Remédiation Comportementale) sur un point clé : BSP.001 calcule le score opérationnel en temps réel pour chaque transaction ; DAT.001 analyse les patterns comportementaux agrégés pour améliorer le modèle de score dans le temps.
+> **Mandatory for FUNC ADRs.** Derived from the product vision and strategic vision — not from technical complexity alone.
 
-Per ADR-BCM-URBA-0001, les flux analytiques (décorrélés, batch/stream) sont DATA_ANALYTIQUE ; les flux transactionnels opérationnels sont SERVICES_COEUR. Cette séparation est fondamentale pour éviter de coupler le moteur de décision temps réel avec les processus d'apprentissage et de reporting.
+| Axis | Score | Interpretation |
+|------|-------|----------------|
+| x — Business Differentiation | 0.55 | 0.0 = commodity (could be bought off-shelf) → 1.0 = uniquely differentiating |
+| y — Model Complexity | 0.55 | 0.0 = trivial / well-understood → 1.0 = proprietary / high cognitive load |
 
-## Décision
+**Classification:** `supporting`
 
-CAP.DAT.001 est décomposé en **3 capacités L2** :
+**Rationale:**
 
-| ID | Nom | Responsabilité |
-|----|-----|----------------|
-| CAP.DAT.001.ING | Ingestion des Événements | Collecter et consolider les événements comportementaux produits par l'ensemble du dispositif pour alimenter les pipelines analytiques |
-| CAP.DAT.001.MOD | Modèle Analytique du Score | Analyser les patterns comportementaux agrégés, améliorer le modèle de score et proposer des évolutions des seuils de palier |
-| CAP.DAT.001.REP | Reporting Programme | Produire les tableaux de bord et rapports de suivi de l'efficacité globale du programme de remédiation |
+> Analytique comportementale nécessaire pour améliorer le scoring dans le temps ; pattern analytique connu mais les données et modèles sont propriétaires
 
-### Événements métier par L2
+---
 
-| L2 | Événements produits | Événements consommés |
-|----|---------------------|----------------------|
-| CAP.DAT.001.ING | `DonnéesComportementales.Ingérées` | Tous les événements métier du dispositif (BSP.001, BSP.002, BSP.003, BSP.004) en mode analytique décorrélé |
+## Context
+
+CAP.DAT.001 is the continuous improvement capability of the Reliever program. It differs from CAP.BSP.001 (Behavioral Remediation) on one key point: BSP.001 calculates the operational score in real time for each transaction; DAT.001 analyzes aggregated behavioral patterns to improve the score model over time.
+
+Per ADR-BCM-URBA-0001, analytical flows (decoupled, batch/stream) are DATA_ANALYTIQUE; operational transactional flows are SERVICES_COEUR. This separation is fundamental to avoid coupling the real-time decision engine with learning and reporting processes.
+
+## Decision
+
+CAP.DAT.001 is decomposed into **3 L2 capabilities**:
+
+| ID | Name | Responsibility |
+|----|------|----------------|
+| CAP.DAT.001.ING | Event Ingestion | Collect and consolidate behavioral events produced by the entire program to feed the analytical pipelines |
+| CAP.DAT.001.MOD | Analytical Score Model | Analyze aggregated behavioral patterns, improve the score model, and propose evolutions of tier thresholds |
+| CAP.DAT.001.REP | Program Reporting | Produce dashboards and follow-up reports on the overall effectiveness of the remediation program |
+
+### Business Events per L2
+
+| L2 | Events Produced | Events Consumed |
+|----|-----------------|-----------------|
+| CAP.DAT.001.ING | `DonnéesComportementales.Ingérées` | All business events from the program (BSP.001, BSP.002, BSP.003, BSP.004) in decoupled analytical mode |
 | CAP.DAT.001.MOD | `ModèleScore.MisÀJour` | `DonnéesComportementales.Ingérées` (DAT.001.ING) |
 | CAP.DAT.001.REP | `RapportProgramme.Généré` | `DonnéesComportementales.Ingérées` (DAT.001.ING), `ModèleScore.MisÀJour` (DAT.001.MOD) |
 
-### Règle de séparation analytique/opérationnel
+### Analytics/Operational Separation Rule
 
-`ModèleScore.MisÀJour` produit par DAT.001.MOD est consommé par CAP.PIL.001 (décision de gouvernance programme) mais **pas directement par BSP.001.SCO**. Le modèle opérationnel de scoring est mis à jour de façon contrôlée, après validation — jamais en flux direct depuis l'analytique. Cette règle prévient la rétroaction incontrôlée entre analytique et opérationnel.
+`ModèleScore.MisÀJour` produced by DAT.001.MOD is consumed by CAP.PIL.001 (program governance decision) but **not directly by BSP.001.SCO**. The operational scoring model is updated in a controlled manner, after validation — never in a direct flow from analytics. This rule prevents uncontrolled feedback between analytics and operations.
 
-### Critères vérifiables
+### Verifiable Criteria
 
-- Chaque L2 produit au moins un événement métier (ADR-BCM-URBA-0009)
-- DAT.001 ne produit pas d'événements consommés en temps réel par BSP.004.AUT (séparation analytique/transactionnel)
+- Each L2 produces at least one business event (ADR-BCM-URBA-0009)
+- DAT.001 does not produce events consumed in real time by BSP.004.AUT (analytics/transactional separation)
 
-## Justification
+## Rationale
 
-La séparation ING / MOD / REP reflète trois étapes du pipeline analytique avec des rhythmes et des responsabilités distincts. L'ingestion est continue (near real-time). L'amélioration du modèle est périodique (mensuelle, trimestrielle). Le reporting est à la demande ou planifié.
+The ING / MOD / REP separation reflects three stages of the analytical pipeline with distinct rhythms and responsibilities. Ingestion is continuous (near real-time). Model improvement is periodic (monthly, quarterly). Reporting is on-demand or scheduled.
 
-### Alternatives considérées
+### Alternatives Considered
 
-- **MOD dans BSP.001.SCO** — rejeté car l'amélioration du modèle est un processus analytique offline avec validation humaine ; le scoring opérationnel est temps réel sans intervention humaine ; les confondre créerait un risque de dérive incontrôlée du modèle
-- **REP dans CAP.PIL.001** — rejeté car la production des données de reporting est DATA_ANALYTIQUE (ingestion, transformation, agrégation) ; la consommation de ces données pour les décisions de gouvernance est PILOTAGE
+- **MOD in BSP.001.SCO** — rejected because model improvement is an offline analytical process with human validation; operational scoring is real-time without human intervention; conflating them would create a risk of uncontrolled model drift
+- **REP in CAP.PIL.001** — rejected because producing reporting data is DATA_ANALYTIQUE (ingestion, transformation, aggregation); consuming that data for governance decisions is PILOTAGE
 
-## Impacts sur la BCM
+## BCM Impacts
 
 ### Structure
 
-- 3 L2 créés sous CAP.DAT.001
-- Consomme les événements de tout le dispositif en mode décorrélé
+- 3 L2s created under CAP.DAT.001
+- Consumes events from the entire program in decoupled mode
 
-### Mapping SI / Data / Org
+### SI / Data / Org Mapping
 
-- **DATA** : pipeline analytique séparé du pipeline transactionnel
-- **ORG** : owner recommandé : équipe "Data Science & BI"
+- **DATA**: analytical pipeline separate from the transactional pipeline
+- **ORG**: recommended owner: "Data Science & BI" team
 
-## Conséquences
+## Consequences
 
-### Positives
+### Positive
 
-- Amélioration continue du modèle de score sans risque de rétroaction sur l'opérationnel
-- Reporting programme disponible pour les décisions de gouvernance
+- Continuous improvement of the score model without risk of feedback on the operational system
+- Program reporting available for governance decisions
 
-### Négatives / Risques
+### Negative / Risks
 
-- La frontière entre le modèle opérationnel (BSP.001.SCO) et le modèle analytique (DAT.001.MOD) nécessite une procédure de mise en production contrôlée
+- The boundary between the operational model (BSP.001.SCO) and the analytical model (DAT.001.MOD) requires a controlled deployment procedure
 
-### Dette acceptée
+### Accepted Debt
 
-- Le pipeline d'ingestion et les technologies analytiques ne sont pas modélisés ici
+- The ingestion pipeline and analytical technologies are not modeled here
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : Modéré
-- Date de revue recommandée : 2028-04-24
-- Indicateur de stabilité attendu : modèle de score versionné avec historique des évolutions documenté
+- Criticality level: Moderate
+- Recommended review date: 2028-04-24
+- Expected stability indicator: score model versioned with documented history of evolutions
 
-## Traçabilité
+## Traceability
 
-- Atelier : Session BCM Reliever — 2026-04-24
-- Participants : yremy
-- Références :
-  - ADR-BCM-URBA-0001 — Séparation DATA_ANALYTIQUE / SERVICES_COEUR
+- Workshop: BCM Reliever Session — 2026-04-24
+- Participants: yremy
+- References:
+  - ADR-BCM-URBA-0001 — DATA_ANALYTIQUE / SERVICES_COEUR separation
   - ADR-BCM-FUNC-0004, ADR-BCM-FUNC-0005

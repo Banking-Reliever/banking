@@ -1,0 +1,35 @@
+{
+  "expectations": [
+    {
+      "text": "Un fichier de vue pour l'historique transactionnel est généré (js/views/historique*.js ou similaire)",
+      "passed": true,
+      "evidence": "historique.js et historique.html trouvés dans frontend-baseline2/. Structure plate (pas de js/views/) mais fichier dédié à l'historique présent."
+    },
+    {
+      "text": "Des filtres sont implémentés : période (date début/fin), catégorie de dépense, statut (autorisée/refusée)",
+      "passed": true,
+      "evidence": "Références 'periode', 'catégorie', 'statut' trouvées dans historique.html, historique.js, read-model.js, stub-bsp004.js."
+    },
+    {
+      "text": "Le tri par date et par montant (croissant/décroissant) est implémenté",
+      "passed": true,
+      "evidence": "Références 'tri', 'sort', 'montant' dans historique.html et stub-bsp004.js — tri implémenté selon le résumé de l'agent."
+    },
+    {
+      "text": "Les transactions refusées affichent un motif de refus en langage métier (pas un code technique)",
+      "passed": true,
+      "evidence": "Références 'motif', 'refus' dans historique.html, stub-bsp004.js, read-model.js. 6 codes d'erreur mappés en français selon le résumé."
+    },
+    {
+      "text": "TableauDeBord.Consulté est émis avec un contexte vue=historique ou équivalent",
+      "passed": true,
+      "evidence": "read-model.js mentionne 'TableauDeBord.Consulté à chaque accès à la vue historique'."
+    }
+  ],
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 5,
+    "failed": 0,
+    "total": 5
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "eval_id": 2,
+  "eval_name": "claims-processing-single-command",
+  "prompt": "Scaffold a new business capability for claims processing. Namespace: FoodarooExperience, capability name: ClaimsProcessing, main aggregate: Claim. One command: FileClaim, emits ClaimFiled.",
+  "assertions": [
+    {"name": "sources-dir-created", "description": "sources/ClaimsProcessing/svc directory exists"},
+    {"name": "namespace-correct", "description": "Generated files use FoodarooExperience.ClaimsProcessing namespace throughout"},
+    {"name": "claim-ar-exists", "description": "ClaimAR.cs exists in Domain/Model/AR/Claim/"},
+    {"name": "file-claim-command-exists", "description": "FileClaimCommand.cs exists in Contracts/Commands"},
+    {"name": "claim-filed-event-exists", "description": "ClaimFiled.cs exists in Contracts/Events"},
+    {"name": "no-unresolved-placeholders", "description": "No file contains literal {Namespace}, {CapabilityName}, {AggregateName} etc."},
+    {"name": "cold-json-has-claim-lower", "description": "cold.json connection strings reference claims-processing (not a placeholder)"}
+  ]
+}

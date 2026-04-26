@@ -1,0 +1,1 @@
+{"eval_id":2,"eval_name":"no-push-flag","prompt":"/commit --no-push","assertions":[{"text":"Commits the changes with a conventional message"},{"text":"Does NOT run git push"},{"text":"Final output mentions local-only commit"}]}

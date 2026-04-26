@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-FUNC-0010
-title: "L2 Breakdown de CAP.CAN.002 — Portail Prescripteur"
+title: "L2 Breakdown of CAP.CAN.002 — Prescriber Portal"
 status: Proposed
 date: 2026-04-24
 
@@ -41,96 +41,120 @@ tags:
   - BCM
   - L2
   - CANAL
-  - prescripteurs
-  - portail
+  - prescribers
+  - portal
   - UX
 
 stability_impact: Moderate
+
+domain_classification:
+  type: supporting
+  coordinates:
+    x: 0.4
+    y: 0.35
+  rationale: "Portail web standard avec contenu Reliever-spécifique ; la différenciation est dans le modèle de droits (BSP.003), non dans la capacité de canal"
 ---
 
-# ADR-BCM-FUNC-0010 — L2 Breakdown de CAP.CAN.002 — Portail Prescripteur
+# ADR-BCM-FUNC-0010 — L2 Breakdown of CAP.CAN.002 — Prescriber Portal
 
-## Contexte
+## Domain Classification
 
-CAP.CAN.002 est l'exposition CANAL du dispositif vers les prescripteurs (banque, psychiatre, assistant social). Elle complète CAP.BSP.003 (Coordination des Prescripteurs) qui porte la logique métier ; CAP.CAN.002 porte l'interface par laquelle les prescripteurs exercent leurs droits.
+> **Mandatory for FUNC ADRs.** Derived from the product vision and strategic vision — not from technical complexity alone.
 
-Per ADR-BCM-URBA-0001, la logique de coordination (règles, droits, co-décision) reste dans SERVICES_COEUR (BSP.003) ; l'UX est ici dans CANAL.
+| Axis | Score | Interpretation |
+|------|-------|----------------|
+| x — Business Differentiation | 0.4 | 0.0 = commodity (could be bought off-shelf) → 1.0 = uniquely differentiating |
+| y — Model Complexity | 0.35 | 0.0 = trivial / well-understood → 1.0 = proprietary / high cognitive load |
 
-Chaque type de prescripteur voit une interface adaptée à son rôle, filtrée par les droits définis dans CAP.BSP.003.ROL. Le portail est la surface de contact entre le monde médico-social et le dispositif financier.
+**Classification:** `supporting`
 
-## Décision
+**Rationale:**
 
-CAP.CAN.002 est décomposé en **3 capacités L2** :
+> Portail web standard avec contenu Reliever-spécifique ; la différenciation est dans le modèle de droits (BSP.003), non dans la capacité de canal
 
-| ID | Nom | Responsabilité |
-|----|-----|----------------|
-| CAP.CAN.002.VUE | Vue Bénéficiaire | Exposer à chaque prescripteur une vue adaptée à son rôle sur la situation et la trajectoire du bénéficiaire |
-| CAP.CAN.002.ACT | Actions Prescripteur | Fournir l'UX permettant de déclencher un override, valider une co-décision, ou annoter une situation bénéficiaire |
-| CAP.CAN.002.RAP | Rapports & Exports | Permettre aux prescripteurs de générer des rapports de suivi adaptés à leur contexte (rapport clinique, rapport social, rapport bancaire) |
+---
 
-### Événements métier par L2
+## Context
 
-| L2 | Événements produits | Événements consommés |
-|----|---------------------|----------------------|
+CAP.CAN.002 is the CANAL exposure of the program toward prescribers (bank, psychiatrist, social worker). It complements CAP.BSP.003 (Prescriber Coordination), which holds the business logic; CAP.CAN.002 holds the interface through which prescribers exercise their rights.
+
+Per ADR-BCM-URBA-0001, the coordination logic (rules, rights, co-decision) remains in SERVICES_COEUR (BSP.003); the UX is here in CANAL.
+
+Each type of prescriber sees an interface adapted to their role, filtered by the rights defined in CAP.BSP.003.ROL. The portal is the contact surface between the medico-social world and the financial program.
+
+## Decision
+
+CAP.CAN.002 is decomposed into **3 L2 capabilities**:
+
+| ID | Name | Responsibility |
+|----|------|----------------|
+| CAP.CAN.002.VUE | Beneficiary View | Expose to each prescriber a role-adapted view of the beneficiary's situation and trajectory |
+| CAP.CAN.002.ACT | Prescriber Actions | Provide the UX enabling a prescriber to trigger an override, validate a co-decision, or annotate a beneficiary situation |
+| CAP.CAN.002.RAP | Reports & Exports | Allow prescribers to generate follow-up reports adapted to their context (clinical report, social report, banking report) |
+
+### Business Events per L2
+
+| L2 | Events Produced | Events Consumed |
+|----|-----------------|-----------------|
 | CAP.CAN.002.VUE | `DossierBénéficiaire.Consulté` | `ScoreComportemental.Recalculé` (BSP.001.SCO), `Palier.FranchiHausse` (BSP.001.PAL), `Signal.Rechute.Détecté` (BSP.001.SIG), `PrescripteurRole.Attribué` (BSP.003.ROL) |
 | CAP.CAN.002.ACT | `OverrideUX.Déclenché` | `Override.CoValidé` (BSP.003.COD), `Override.Refusé` (BSP.003.COD) |
 | CAP.CAN.002.RAP | `Rapport.Généré` | `DossierBénéficiaire.Consulté` (CAN.002.VUE) |
 
-### Règle de visibilité filtrée
+### Filtered Visibility Rule
 
-CAP.CAN.002.VUE applique les filtres de droits définis par CAP.BSP.003.ROL : un psychiatre ne voit pas les détails de transaction bancaire ; une banque ne voit pas les annotations cliniques. Cette règle est enforced au niveau CANAL (affichage) ET au niveau COEUR (données transmises).
+CAP.CAN.002.VUE applies the rights filters defined by CAP.BSP.003.ROL: a psychiatrist does not see banking transaction details; a bank does not see clinical annotations. This rule is enforced at the CANAL level (display) AND at the CORE level (data transmitted).
 
-### Critères vérifiables
+### Verifiable Criteria
 
-- Chaque L2 produit au moins un événement métier (ADR-BCM-URBA-0009)
-- `OverrideUX.Déclenché` est produit exclusivement par CAN.002.ACT et consommé exclusivement par BSP.003.COD
+- Each L2 produces at least one business event (ADR-BCM-URBA-0009)
+- `OverrideUX.Déclenché` is produced exclusively by CAN.002.ACT and consumed exclusively by BSP.003.COD
 
-## Justification
+## Rationale
 
-La séparation VUE / ACT / RAP reflète trois modes d'interaction prescripteur distincts : la consultation (lecture), l'action (écriture/décision), et le reporting (export). Ces trois modes ont des droits, des fréquences et des contraintes différents.
+The VUE / ACT / RAP separation reflects three distinct prescriber interaction modes: consultation (read), action (write/decide), and reporting (export). These three modes have different rights, frequencies, and constraints.
 
-### Alternatives considérées
+### Alternatives Considered
 
-- **VUE + ACT fusionnés** — rejeté car certains prescripteurs ont un droit de lecture sans droit d'action (ex : un assistant social peut consulter sans pouvoir déclencher un override) ; la séparation permet une gouvernance fine des droits
-- **RAP dans CAP.DAT.001** — rejeté car les rapports prescripteurs sont des exports opérationnels adaptés à chaque rôle métier ; les rapports programme globaux appartiennent à DATA_ANALYTIQUE, mais les rapports individuels sont une responsabilité CANAL
+- **VUE + ACT merged** — rejected because some prescribers have read rights without action rights (e.g., a social worker can consult without being able to trigger an override); the separation enables fine-grained rights governance
+- **RAP in CAP.DAT.001** — rejected because prescriber reports are operational exports adapted to each business role; global program reports belong to DATA_ANALYTIQUE, but individual reports are a CANAL responsibility
 
-## Impacts sur la BCM
+## BCM Impacts
 
 ### Structure
 
-- 3 L2 créés sous CAP.CAN.002
-- Dépendance forte vers CAP.BSP.003 (logique) et CAP.REF.001.PRE (identité prescripteurs)
+- 3 L2s created under CAP.CAN.002
+- Strong dependency toward CAP.BSP.003 (logic) and CAP.REF.001.PRE (prescriber identity)
 
-### Mapping SI / Data / Org
+### SI / Data / Org Mapping
 
-- **SI** : portail web ou application desktop pour les prescripteurs professionnels
-- **ORG** : owner recommandé : équipe "Expérience Prescripteurs"
+- **SI**: web portal or desktop application for professional prescribers
+- **ORG**: recommended owner: "Prescriber Experience" team
 
-## Conséquences
+## Consequences
 
-### Positives
+### Positive
 
-- L'UX prescripteur est une responsabilité explicite, pas une fonction cachée dans le COEUR
-- La visibilité filtrée par rôle est tracée à deux niveaux (COEUR + CANAL)
+- Prescriber UX is an explicit responsibility, not a function hidden in the CORE
+- Role-filtered visibility is traced at two levels (CORE + CANAL)
 
-### Négatives / Risques
+### Negative / Risks
 
-- La multiplicité des types de prescripteurs (banque, psychiatre, assistant social) peut complexifier le développement de CAP.CAN.002.VUE — surveiller le scope creep UX
+- The multiplicity of prescriber types (bank, psychiatrist, social worker) may complicate the development of CAP.CAN.002.VUE — monitor for UX scope creep
 
-### Dette acceptée
+### Accepted Debt
 
-- Les maquettes et règles UX spécifiques à chaque type de prescripteur ne sont pas modélisées ici
+- The mockups and UX rules specific to each prescriber type are not modeled here
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : Modéré
-- Date de revue recommandée : 2028-04-24
-- Indicateur de stabilité attendu : 3 profils prescripteurs (banque, psychiatre, assistant social) avec vues distinctes documentées
+- Criticality level: Moderate
+- Recommended review date: 2028-04-24
+- Expected stability indicator: 3 prescriber profiles (bank, psychiatrist, social worker) with distinct documented views
 
-## Traçabilité
+## Traceability
 
-- Atelier : Session BCM Reliever — 2026-04-24
-- Participants : yremy
-- Références :
+- Workshop: BCM Reliever Session — 2026-04-24
+- Participants: yremy
+- References:
   - `/strategic-vision/strategic-vision.md` — SC.003
   - ADR-BCM-FUNC-0007

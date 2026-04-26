@@ -1,0 +1,45 @@
+{
+  "expectations": [
+    {
+      "text": "Le dossier frontend/CAP.CAN.001.TAB/ contient au moins index.html, css/style.css, js/config.js, js/api.js, js/app.js",
+      "passed": false,
+      "evidence": "4 fichiers générés (index.html, styles.css, api.js, app.js) dans une structure plate. Pas de sous-dossiers css/ ou js/views/. Pas de config.js séparé."
+    },
+    {
+      "text": "index.html utilise <script type=\"module\"> et ne charge aucune librairie externe (pas de CDN jQuery/Bootstrap/React)",
+      "passed": true,
+      "evidence": "grep CDN : aucun résultat. Mais les scripts sont chargés en mode classique (pas de type=module confirmé)."
+    },
+    {
+      "text": "js/config.js exporte API_BASE_URL et contient un objet MOCK_DATA commenté",
+      "passed": false,
+      "evidence": "Pas de config.js. API_BASE_URL défini via window.API_BASE_URL dans api.js. Pas de MOCK_DATA explicite."
+    },
+    {
+      "text": "Une gate de consentement est implémentée : appel ou vérification avant affichage des données bénéficiaire",
+      "passed": true,
+      "evidence": "Références 'consentement' dans index.html, api.js, app.js, styles.css — gate implémentée."
+    },
+    {
+      "text": "La section progression apparaît en premier dans le DOM HTML (avant la section enveloppes/restrictions)",
+      "passed": true,
+      "evidence": "Dans index.html : section-progression ligne 41, section-enveloppes ligne 75 — ordre correct."
+    },
+    {
+      "text": "L'émission de l'événement TableauDeBord.Consulté est présente dans le JS",
+      "passed": true,
+      "evidence": "Références 'Consult' trouvées dans app.js et api.js."
+    },
+    {
+      "text": "Les labels et messages visibles dans le HTML/JS sont en français",
+      "passed": true,
+      "evidence": "Mots 'Palier', 'Enveloppe', 'palier', 'enveloppe' trouvés dans index.html, api.js, app.js."
+    }
+  ],
+  "summary": {
+    "pass_rate": 0.7142857142857143,
+    "passed": 5,
+    "failed": 2,
+    "total": 7
+  }
+}

@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 """
-semantic_review.py — Agent de cohérence sémantique pour Pull Request.
+semantic_review.py — Semantic consistency agent for Pull Requests.
 
-Objectif :
-  1) Vérifier la cohérence ADR (phase ADR)
-  2) Vérifier la cohérence ADR + BCM (phase ADR+BCM)
-  3) Produire un rapport Markdown destiné à la description de PR
-  4) Retourner un code non-nul en cas de défauts majeurs
+Goals:
+  1) Verify ADR consistency (ADR phase)
+  2) Verify ADR + BCM consistency (ADR+BCM phase)
+  3) Produce a Markdown report for the PR description
+  4) Return a non-zero exit code in case of major defects
 
-Défauts majeurs :
-  - toute erreur de validation ADR
-  - tout échec de validate_repo.py
-  - tout échec de validate_events.py
+Major defects:
+  - any ADR validation error
+  - any failure of validate_repo.py
+  - any failure of validate_events.py
 
-Usage :
+Usage:
   python tools/semantic_review.py \
-    --base-ref <sha_base> \
-    --head-ref <sha_head> \
+    --base-ref <base_sha> \
+    --head-ref <head_sha> \
         --scope pr|full \
     --report-file semantic-review.md \
     --json-file semantic-review.json
@@ -157,7 +157,7 @@ def _parse_llm_json(content: str) -> dict:
     try:
         return json.loads(cleaned)
     except json.JSONDecodeError:
-        # Tentative de récupération d'un objet JSON inclus dans du texte
+        # Attempt to recover a JSON object embedded in plain text
         start = cleaned.find("{")
         end = cleaned.rfind("}")
         if start != -1 and end != -1 and end > start:
@@ -202,7 +202,7 @@ def _build_adr_corpus() -> tuple[str, int]:
 
 
 def _normalize_llm_result(parsed: dict) -> tuple[str, int | None, list[str], list[str], list[dict], list[dict]]:
-    summary = str(parsed.get("summary", "")).strip() or "Synthèse indisponible"
+    summary = str(parsed.get("summary", "")).strip() or "Summary unavailable"
 
     score_raw = parsed.get("score")
     try:
@@ -225,7 +225,7 @@ def _normalize_llm_result(parsed: dict) -> tuple[str, int | None, list[str], lis
 
             finding = {
                 "id": fid,
-                "title": str(item.get("title", "Issue non titrée")).strip() or "Issue non titrée",
+                "title": str(item.get("title", "Untitled issue")).strip() or "Untitled issue",
                 "severity": severity,
                 "category": str(item.get("category", "governance")).strip() or "governance",
                 "adr_refs": [str(x).strip() for x in (item.get("adr_refs") or []) if str(x).strip()],
@@ -256,7 +256,7 @@ def _normalize_llm_result(parsed: dict) -> tuple[str, int | None, list[str], lis
                 }
             )
 
-    # Backward compatibility: si le modèle ne renvoie pas findings structurés.
+    # Backward compatibility: if the model does not return structured findings.
     if not findings:
         major_defects = [str(x).strip() for x in (parsed.get("major_defects") or []) if str(x).strip()]
         minor_defects = [str(x).strip() for x in (parsed.get("minor_defects") or []) if str(x).strip()]
@@ -274,7 +274,7 @@ def run_llm_urbanist_review(llm_mode: str) -> LLMReviewResult:
         return LLMReviewResult(
             status="ok",
             score=None,
-            summary="Revue LLM désactivée (mode off).",
+            summary="LLM review disabled (off mode).",
             major_defects=[],
             minor_defects=[],
             details=["LLM review: mode off"],
@@ -304,7 +304,7 @@ def run_llm_urbanist_review(llm_mode: str) -> LLMReviewResult:
 
     if not api_key:
         message = (
-            "SEMANTIC_LLM_API_KEY manquant: impossible de lancer l'agent LLM urbaniste SI."
+            "SEMANTIC_LLM_API_KEY missing: cannot launch the SI urbanist LLM agent."
         )
         if llm_mode == "required":
             return LLMReviewResult(
@@ -329,34 +329,34 @@ def run_llm_urbanist_review(llm_mode: str) -> LLMReviewResult:
         )
 
     adr_corpus, adr_count = _build_adr_corpus()
-    details.append(f"LLM review: {adr_count} ADR envoyées au modèle")
+    details.append(f"LLM review: {adr_count} ADRs sent to the model")
 
     system_prompt = (
-        "Tu es un urbaniste SI senior spécialisé en gouvernance BCM/ADR. "
-        "Tu dois évaluer UNIQUEMENT la cohérence sémantique inter-ADR. "
-        "Tu classes les défauts en 'major' (contradictions bloquantes, incompatibilités de pivot, incohérences structurelles) "
-        "et 'minor' (ambiguïtés, formulations faibles, imprécisions, redondances). "
-        "Tu dois produire des sorties exploitables pour plan d'action. "
-        "Réponds STRICTEMENT en JSON valide, sans markdown, sans texte hors JSON."
+        "You are a senior SI urbanist specialised in BCM/ADR governance. "
+        "You must evaluate ONLY the semantic consistency between ADRs. "
+        "You classify defects as 'major' (blocking contradictions, pivot incompatibilities, structural inconsistencies) "
+        "or 'minor' (ambiguities, weak formulations, imprecisions, redundancies). "
+        "You must produce actionable outputs for an action plan. "
+        "Respond STRICTLY in valid JSON, without markdown, without any text outside JSON."
     )
 
     user_prompt = (
-        "Analyse l'ensemble des ADR ci-dessous et retourne un JSON avec le schéma exact:\n"
+        "Analyse all the ADRs below and return a JSON with the exact schema:\n"
         "{\n"
-        '  "score": <entier 0..100>,\n'
-        '  "summary": "<synthèse courte>",\n'
+        '  "score": <integer 0..100>,\n'
+        '  "summary": "<short summary>",\n'
         '  "findings": [\n'
         "    {\n"
         '      "id": "F-001",\n'
-        '      "title": "<titre court>",\n'
+        '      "title": "<short title>",\n'
         '      "severity": "major|minor",\n'
-        '      "category": "doctrine|gouvernance|traçabilité|niveaux|naming|other",\n'
+        '      "category": "doctrine|governance|traceability|levels|naming|other",\n'
         '      "adr_refs": ["ADR-..."],\n'
-        '      "evidence": "<citation précise ou extrait>",\n'
-        '      "rationale": "<pourquoi c\'est incohérent>",\n'
-        '      "impact": "<impact SI/métier/gouvernance>",\n'
-        '      "proposed_fix": "<action corrective concrète>",\n'
-        '      "owner_hint": "<profil owner>",\n'
+        '      "evidence": "<precise quote or extract>",\n'
+        '      "rationale": "<why it is inconsistent>",\n'
+        '      "impact": "<SI/business/governance impact>",\n'
+        '      "proposed_fix": "<concrete corrective action>",\n'
+        '      "owner_hint": "<owner profile>",\n'
         '      "priority": "P1|P2|P3",\n'
         '      "effort": "S|M|L"\n'
         "    }\n"
@@ -364,21 +364,21 @@ def run_llm_urbanist_review(llm_mode: str) -> LLMReviewResult:
         '  "action_plan": [\n'
         "    {\n"
         '      "id": "A-001",\n'
-        '      "action": "<action à exécuter>",\n'
+        '      "action": "<action to execute>",\n'
         '      "targets": ["ADR-..."],\n'
         '      "severity": "major|minor",\n'
         '      "priority": "P1|P2|P3",\n'
-        '      "owner_hint": "<profil owner>",\n'
-        '      "due_hint": "<horizon>"\n'
+        '      "owner_hint": "<owner profile>",\n'
+        '      "due_hint": "<time horizon>"\n'
         "    }\n"
         "  ]\n"
         "}\n"
-        "Règles: \n"
-        "- score bas si contradictions majeures, \n"
-        "- chaque finding doit être actionnable, spécifique et relié à des ADR,\n"
-        "- proposer des corrections concrètes (pas de généralités),\n"
-        "- limiter à 12 findings max, triés par sévérité puis priorité,\n"
-        "- si aucun défaut: findings=[] et action_plan=[]\n"
+        "Rules:\n"
+        "- low score if major contradictions,\n"
+        "- each finding must be actionable, specific and linked to ADRs,\n"
+        "- propose concrete corrections (no generalities),\n"
+        "- limit to 12 findings max, sorted by severity then priority,\n"
+        "- if no defect: findings=[] and action_plan=[]\n"
         "ADR corpus:\n"
         f"{adr_corpus}"
     )
@@ -422,7 +422,7 @@ def run_llm_urbanist_review(llm_mode: str) -> LLMReviewResult:
             parsed = _parse_llm_json(content)
             break
         except urlerror.HTTPError as exc:
-            # 429 = quota/rate limit ; on retente avec backoff exponentiel.
+            # 429 = quota/rate limit; retry with exponential backoff.
             body = ""
             try:
                 body = exc.read().decode("utf-8", errors="replace")
@@ -436,7 +436,7 @@ def run_llm_urbanist_review(llm_mode: str) -> LLMReviewResult:
             if exc.code == 429 and attempt < max_retries:
                 sleep_s = retry_delay_s * (2 ** attempt)
                 details.append(
-                    f"LLM review: rate-limit (429), retry {attempt + 1}/{max_retries} in {sleep_s:.1f}s"
+                    f"LLM review: rate-limit (429), retrying {attempt + 1}/{max_retries} in {sleep_s:.1f}s"
                 )
                 time.sleep(sleep_s)
                 continue
@@ -446,7 +446,7 @@ def run_llm_urbanist_review(llm_mode: str) -> LLMReviewResult:
             if attempt < max_retries:
                 sleep_s = retry_delay_s * (2 ** attempt)
                 details.append(
-                    f"LLM review: JSON invalide reçu, retry {attempt + 1}/{max_retries} in {sleep_s:.1f}s"
+                    f"LLM review: invalid JSON received, retrying {attempt + 1}/{max_retries} in {sleep_s:.1f}s"
                 )
                 time.sleep(sleep_s)
                 continue
@@ -456,8 +456,8 @@ def run_llm_urbanist_review(llm_mode: str) -> LLMReviewResult:
             break
 
     if parsed is None:
-        exc = last_error or RuntimeError("échec inconnu lors de l'appel LLM")
-        message = f"Erreur lors de l'évaluation LLM urbaniste SI: {exc}"
+        exc = last_error or RuntimeError("unknown failure during LLM call")
+        message = f"Error during SI urbanist LLM evaluation: {exc}"
         if llm_mode == "required":
             return LLMReviewResult(
                 status="failed",
@@ -540,13 +540,13 @@ def issue_matches_changed_files(issue: str, changed_files: list[str]) -> bool:
 
 
 def check_adr_structure(changed_files: list[str], full_scope: bool) -> tuple[list[str], list[str]]:
-    """Retourne (major_defects, details)."""
+    """Returns (major_defects, details)."""
     major: list[str] = []
     details: list[str] = []
 
     adr_files = collect_adr_files()
     if not adr_files:
-        major.append("Aucun fichier ADR-*.md trouvé dans adr/.")
+        major.append("No ADR-*.md file found in adr/.")
         return major, details
 
     changed_adr_rel = [
@@ -561,12 +561,12 @@ def check_adr_structure(changed_files: list[str], full_scope: bool) -> tuple[lis
         changed_adr_names = {p.name for p in adr_files}
 
     if not changed_adr_rel and not full_scope:
-        details.append("Aucun fichier ADR modifié dans cette PR (phase ADR en mode informatif).")
-        details.append("Les contrôles ADR bloquants sont limités aux ADR modifiées par la PR.")
+        details.append("No ADR file modified in this PR (ADR phase in informational mode).")
+        details.append("Blocking ADR checks are limited to ADRs modified by the PR.")
 
     if changed_adr_rel:
         if not ADR_INDEX.exists():
-            major.append("Fichier index ADR manquant: adr/0000-adr-index.md")
+            major.append("ADR index file missing: adr/0000-adr-index.md")
         else:
             idx = ADR_INDEX.read_text(encoding="utf-8")
             missing_in_index: list[str] = []
@@ -577,7 +577,7 @@ def check_adr_structure(changed_files: list[str], full_scope: bool) -> tuple[lis
                     missing_in_index.append(adr_file.name)
             if missing_in_index:
                 major.append(
-                    "ADR non référencées dans l'index: " + ", ".join(missing_in_index)
+                    "ADRs not referenced in the index: " + ", ".join(missing_in_index)
                 )
 
     for adr_file in adr_files:
@@ -589,14 +589,14 @@ def check_adr_structure(changed_files: list[str], full_scope: bool) -> tuple[lis
         text = adr_file.read_text(encoding="utf-8")
         has_h1 = any(line.startswith("# ") for line in text.splitlines())
         if not has_h1:
-            major.append(f"{adr_file.as_posix()}: titre H1 (# ...) manquant")
+            major.append(f"{adr_file.as_posix()}: H1 title (# ...) missing")
 
         has_status = bool(re.search(r"(?im)^#{2,6}\s+statut\b|^status\s*:\s*", text))
         if not has_status:
-            details.append(f"{adr_file.as_posix()}: section/statut explicite non détecté")
+            details.append(f"{adr_file.as_posix()}: explicit status section not detected")
 
     analyzed_count = len(changed_adr_rel) if changed_adr_rel else 0
-    details.append(f"ADR analysées (scope bloquant): {analyzed_count}")
+    details.append(f"ADRs analyzed (blocking scope): {analyzed_count}")
     return major, details
 
 
@@ -609,13 +609,13 @@ def run_phase_adr(changed_files: list[str], full_scope: bool) -> PhaseResult:
 
     llm_review = run_llm_urbanist_review(llm_mode)
     details.extend(llm_review.details)
-    details.append(f"LLM urbaniste SI: {llm_review.summary}")
+    details.append(f"LLM SI urbanist: {llm_review.summary}")
     if llm_review.score is not None:
-        details.append(f"LLM score de cohérence: {llm_review.score}/100")
+        details.append(f"LLM consistency score: {llm_review.score}/100")
     if llm_review.findings:
-        details.append(f"LLM findings structurés: {len(llm_review.findings)}")
+        details.append(f"LLM structured findings: {len(llm_review.findings)}")
     if llm_review.action_plan:
-        details.append(f"LLM actions proposées: {len(llm_review.action_plan)}")
+        details.append(f"LLM proposed actions: {len(llm_review.action_plan)}")
 
     for action in llm_review.action_plan[:10]:
         aid = action.get("id", "A-???")
@@ -629,7 +629,7 @@ def run_phase_adr(changed_files: list[str], full_scope: bool) -> PhaseResult:
         major.append(f"[LLM-major] {defect}")
 
     if llm_review.minor_defects:
-        details.append(f"LLM défauts mineurs: {len(llm_review.minor_defects)}")
+        details.append(f"LLM minor defects: {len(llm_review.minor_defects)}")
         for defect in llm_review.minor_defects[:20]:
             details.append(f"[LLM-minor] {defect}")
 
@@ -659,11 +659,11 @@ def run_phase_adr(changed_files: list[str], full_scope: bool) -> PhaseResult:
         adr_fail_lines = []
 
     if links.returncode != 0 and adr_fail_lines:
-        major.extend([f"Liens ADR incohérents: {line}" for line in adr_fail_lines[:50]])
+        major.extend([f"Inconsistent ADR links: {line}" for line in adr_fail_lines[:50]])
 
     if links.returncode != 0 and not adr_fail_lines:
         details.append(
-            "Des incohérences de liens Markdown existent hors ADR (déjà couvertes par le job de liens)."
+            "Markdown link inconsistencies exist outside ADR (already covered by the links job)."
         )
 
     status = "failed" if major else "ok"
@@ -692,7 +692,7 @@ def run_phase_adr_bcm(changed_files: list[str], full_scope: bool) -> PhaseResult
     if repo_check.returncode != 0:
         lines = extract_fail_lines(repo_check.stdout + "\n" + repo_check.stderr)
         if not lines:
-            lines = ["validate_repo.py a échoué sans détail exploitable."]
+            lines = ["validate_repo.py failed with no exploitable detail."]
         if full_scope:
             major.extend([f"validate_repo: {line}" for line in lines[:80]])
         else:
@@ -701,7 +701,7 @@ def run_phase_adr_bcm(changed_files: list[str], full_scope: bool) -> PhaseResult
             ignored = len(lines) - len(scoped)
             if ignored > 0:
                 details.append(
-                    f"validate_repo.py: {ignored} défaut(s) hors fichiers impactés PR ignoré(s)"
+                    f"validate_repo.py: {ignored} defect(s) outside PR-impacted files ignored"
                 )
     else:
         details.append("validate_repo.py: OK")
@@ -709,7 +709,7 @@ def run_phase_adr_bcm(changed_files: list[str], full_scope: bool) -> PhaseResult
     if events_check.returncode != 0:
         lines = extract_fail_lines(events_check.stdout + "\n" + events_check.stderr)
         if not lines:
-            lines = ["validate_events.py a échoué sans détail exploitable."]
+            lines = ["validate_events.py failed with no exploitable detail."]
         if full_scope:
             major.extend([f"validate_events: {line}" for line in lines[:80]])
         else:
@@ -718,7 +718,7 @@ def run_phase_adr_bcm(changed_files: list[str], full_scope: bool) -> PhaseResult
             ignored = len(lines) - len(scoped)
             if ignored > 0:
                 details.append(
-                    f"validate_events.py: {ignored} défaut(s) hors fichiers impactés PR ignoré(s)"
+                    f"validate_events.py: {ignored} defect(s) outside PR-impacted files ignored"
                 )
     else:
         details.append("validate_events.py: OK")
@@ -906,7 +906,7 @@ def extract_new_decision_ids_from_adr(adr_file: Path) -> set[str]:
         lower = line.lower()
 
         if line.startswith("##"):
-            in_new_section = any(keyword in lower for keyword in ("nouveau", "nouveaux", "introduire"))
+            in_new_section = any(keyword in lower for keyword in ("new", "introduce"))
 
         if not line:
             continue
@@ -914,12 +914,11 @@ def extract_new_decision_ids_from_adr(adr_file: Path) -> set[str]:
         contextual = in_new_section or any(
             keyword in lower
             for keyword in (
-                "recommandé d'introduire",
-                "recommande d'introduire",
-                "à introduire",
-                "a introduire",
-                "nouveau",
-                "nouveaux",
+                "recommended to introduce",
+                "recommends introducing",
+                "to introduce",
+                "introduce",
+                "new",
             )
         )
 
@@ -937,30 +936,30 @@ def run_phase_adr_yaml(changed_files: list[str], full_scope: bool) -> PhaseResul
     yaml_files_to_check = collect_all_repo_yaml_files() if full_scope else collect_changed_yaml_files(changed_files)
 
     if not full_scope and not adr_files_to_check and not yaml_files_to_check:
-        details.append("Aucun ADR ni YAML (bcm/externals) modifié dans la PR pour le contrôle ADR↔YAML.")
+        details.append("No ADR or YAML (bcm/externals) modified in the PR for the ADR↔YAML check.")
         return PhaseResult(name="ADR ↔ YAML", status="ok", major_defects=major, details=details, llm=None)
 
     if not full_scope and yaml_files_to_check and not adr_files_to_check:
         major.append(
-            "Des YAML sous bcm/ ou externals/ sont modifiés sans ADR modifié dans la PR. "
-            "Ajoutez/ajustez un ADR pour tracer la décision."
+            "YAML files under bcm/ or externals/ are modified without any ADR modified in the PR. "
+            "Add/adjust an ADR to trace the decision."
         )
 
     adr_caps, adr_evts, parse_details = extract_adr_impacted_ids(adr_files_to_check)
     details.extend(parse_details)
 
     if full_scope:
-        details.append(f"ADR analysés (scope full): {len(adr_files_to_check)}")
-        details.append(f"YAML bcm/externals analysés (scope full): {len(yaml_files_to_check)}")
+        details.append(f"ADRs analyzed (full scope): {len(adr_files_to_check)}")
+        details.append(f"bcm/externals YAML analyzed (full scope): {len(yaml_files_to_check)}")
     else:
-        details.append(f"ADR modifiés analysés: {len(adr_files_to_check)}")
-        details.append(f"YAML bcm/externals modifiés analysés: {len(yaml_files_to_check)}")
-    details.append(f"IDs capabilities déclarés par ADR: {len(adr_caps)}")
-    details.append(f"IDs événements déclarés par ADR: {len(adr_evts)}")
+        details.append(f"Modified ADRs analyzed: {len(adr_files_to_check)}")
+        details.append(f"Modified bcm/externals YAML analyzed: {len(yaml_files_to_check)}")
+    details.append(f"Capability IDs declared by ADR: {len(adr_caps)}")
+    details.append(f"Event IDs declared by ADR: {len(adr_evts)}")
 
     if not full_scope and yaml_files_to_check and adr_files_to_check and not adr_caps and not adr_evts:
         major.append(
-            "Les ADR modifiés n'exposent aucun impacted_capabilities/impacted_events alors que des YAML bcm/externals sont modifiés."
+            "Modified ADRs expose no impacted_capabilities/impacted_events while bcm/externals YAML files are modified."
         )
 
     linked_yaml_files = 0
@@ -977,14 +976,14 @@ def run_phase_adr_yaml(changed_files: list[str], full_scope: bool) -> PhaseResul
         if is_concept_metier_yaml(yaml_file):
             if not full_scope:
                 details.append(
-                    f"{rel}: contrôle CAP/EVT ignoré (concept métier canonique, références CAP/EVT non obligatoires)."
+                    f"{rel}: CAP/EVT check skipped (canonical business concept, CAP/EVT references not required)."
                 )
             continue
 
         if is_processus_ressource_yaml(yaml_file):
             if not full_scope:
                 details.append(
-                    f"{rel}: contrôle CAP/EVT ignoré (processus ressource hors périmètre de traçabilité ADR)."
+                    f"{rel}: CAP/EVT check skipped (resource process outside ADR traceability scope)."
                 )
             continue
 
@@ -998,15 +997,15 @@ def run_phase_adr_yaml(changed_files: list[str], full_scope: bool) -> PhaseResul
             linked_yaml_files += 1
             if not full_scope:
                 details.append(
-                    f"{rel}: cohérent avec ADR (CAP match={len(overlap_caps)}, EVT match={len(overlap_evts)})"
+                    f"{rel}: consistent with ADR (CAP match={len(overlap_caps)}, EVT match={len(overlap_evts)})"
                 )
         elif adr_files_to_check and not full_scope:
             major.append(
-                f"{rel}: aucune référence CAP/EVT ne recoupe les impacted_* des ADR modifiés."
+                f"{rel}: no CAP/EVT reference overlaps the impacted_* of the modified ADRs."
             )
         elif not full_scope:
-            # Cas déjà couvert par la règle "YAML sans ADR".
-            details.append(f"{rel}: aucun ADR modifié pour vérifier la cohérence sémantique.")
+            # Case already covered by the "YAML without ADR" rule.
+            details.append(f"{rel}: no modified ADR to verify semantic consistency.")
 
     if (
         not full_scope
@@ -1014,10 +1013,10 @@ def run_phase_adr_yaml(changed_files: list[str], full_scope: bool) -> PhaseResul
         and adr_files_to_check
         and linked_yaml_files == 0
     ):
-        major.append("Aucun YAML modifié (bcm/externals) n'est relié aux impacted_* des ADR modifiés.")
+        major.append("No modified YAML (bcm/externals) is linked to the impacted_* of the modified ADRs.")
 
-    # Vérification complémentaire non bloquante : décisions "à introduire" non implémentées.
-    # On remonte au minimum des warnings en détails, sans casser le build.
+    # Non-blocking supplementary check: "to be introduced" decisions not yet implemented.
+    # Surface at minimum as warnings in details, without breaking the build.
     global_yaml_ids: set[str] = set()
     yaml_parse_errors = 0
     for yaml_file in collect_all_repo_yaml_files():
@@ -1039,16 +1038,16 @@ def run_phase_adr_yaml(changed_files: list[str], full_scope: bool) -> PhaseResul
             warning_count += 1
             rel_adr = adr_file.relative_to(ROOT).as_posix()
             details.append(
-                f"[WARN] {rel_adr}: décisions/éléments potentiellement non implémentés dans bcm|externals YAML: "
+                f"[WARN] {rel_adr}: decisions/elements potentially not implemented in bcm|externals YAML: "
                 + ", ".join(missing[:12])
                 + (" …" if len(missing) > 12 else "")
             )
 
     if warning_count:
-        details.append(f"[WARN] ADR↔YAML: {warning_count} ADR avec éléments de décision non retrouvés dans les YAML.")
+        details.append(f"[WARN] ADR↔YAML: {warning_count} ADR(s) with decision elements not found in YAML files.")
     if yaml_parse_errors:
         details.append(
-            f"[WARN] ADR↔YAML: {yaml_parse_errors} fichier(s) YAML ignoré(s) pendant le contrôle complémentaire (parse invalide)."
+            f"[WARN] ADR↔YAML: {yaml_parse_errors} YAML file(s) skipped during supplementary check (invalid parse)."
         )
 
     status = "failed" if major else "ok"
@@ -1066,22 +1065,22 @@ def build_markdown_report(
         all_major.extend(phase.major_defects)
     major_count = len(all_major)
 
-    global_status = "✅ Cohérence sémantique globalement positive" if major_count == 0 else "❌ Défauts majeurs détectés"
+    global_status = "✅ Semantic consistency globally positive" if major_count == 0 else "❌ Major defects detected"
 
     lines: list[str] = []
-    lines.append("## 🧠 Rapport agent — Cohérence sémantique")
+    lines.append("## 🧠 Agent report — Semantic consistency")
     lines.append("")
-    lines.append(f"- **Statut global** : {global_status}")
-    lines.append(f"- **Date (UTC)** : `{now_utc_iso()}`")
-    lines.append(f"- **Défauts majeurs** : `{major_count}`")
+    lines.append(f"- **Global status**: {global_status}")
+    lines.append(f"- **Date (UTC)**: `{now_utc_iso()}`")
+    lines.append(f"- **Major defects**: `{major_count}`")
     lines.append("")
 
     if changed_files:
-        lines.append("### Fichiers impactés par la PR")
+        lines.append("### Files impacted by the PR")
         for path in changed_files[:100]:
             lines.append(f"- `{path}`")
         if len(changed_files) > 100:
-            lines.append(f"- … {len(changed_files) - 100} autre(s) fichier(s)")
+            lines.append(f"- … {len(changed_files) - 100} more file(s)")
         lines.append("")
 
     def append_phase(phase: PhaseResult) -> None:
@@ -1089,18 +1088,18 @@ def build_markdown_report(
         lines.append(f"### {icon} Phase {phase.name}")
 
         if phase.details:
-            lines.append("- Détails:")
+            lines.append("- Details:")
             for detail in phase.details[:20]:
                 lines.append(f"  - {detail}")
 
         if phase.major_defects:
-            lines.append(f"- Défauts majeurs ({len(phase.major_defects)}):")
+            lines.append(f"- Major defects ({len(phase.major_defects)}):")
             for issue in phase.major_defects[:max_issues]:
                 lines.append(f"  - {issue}")
             if len(phase.major_defects) > max_issues:
-                lines.append(f"  - … {len(phase.major_defects) - max_issues} autre(s)")
+                lines.append(f"  - … {len(phase.major_defects) - max_issues} more")
         else:
-            lines.append("- Aucun défaut majeur détecté.")
+            lines.append("- No major defect detected.")
 
         lines.append("")
 
@@ -1109,10 +1108,10 @@ def build_markdown_report(
         append_phase(phase)
 
     if major_count == 0:
-        lines.append("✅ Conclusion : la PR est cohérente sémantiquement au regard des règles ADR et BCM.")
+        lines.append("✅ Conclusion: the PR is semantically consistent with ADR and BCM rules.")
     else:
         lines.append(
-            "⛔ Conclusion : des défauts majeurs subsistent. Le build doit rester en échec tant qu'ils ne sont pas corrigés."
+            "⛔ Conclusion: major defects remain. The build must stay failed until they are fixed."
         )
 
     report = "\n".join(lines).strip() + "\n"
@@ -1122,35 +1121,35 @@ def build_markdown_report(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Agent de cohérence sémantique PR (ADR puis ADR+BCM)."
+        description="PR semantic consistency agent (ADR then ADR+BCM)."
     )
-    parser.add_argument("--base-ref", help="SHA de base de la PR", default=None)
-    parser.add_argument("--head-ref", help="SHA head de la PR", default=None)
+    parser.add_argument("--base-ref", help="PR base SHA", default=None)
+    parser.add_argument("--head-ref", help="PR head SHA", default=None)
     parser.add_argument(
         "--scope",
         choices=["pr", "full"],
         default="pr",
-        help="pr: ne remonte que les défauts des fichiers impactés par la PR ; full: analyse tout le repository",
+        help="pr: only surfaces defects from PR-impacted files; full: analyzes the whole repository",
     )
     parser.add_argument(
         "--llm-mode",
         choices=["required", "optional", "off"],
         default=None,
-        help="required: LLM obligatoire, optional: LLM best-effort, off: désactivé",
+        help="required: LLM mandatory, optional: LLM best-effort, off: disabled",
     )
     parser.add_argument(
         "--review-mode",
         choices=["all", "inter-adr-only", "adr-yaml-only"],
         default=os.getenv("SEMANTIC_REVIEW_MODE", "all"),
         help=(
-            "all: ADR + ADR+BCM + contrôle ADR↔YAML; "
-            "inter-adr-only: uniquement revue inter-ADR; "
-            "adr-yaml-only: uniquement cohérence ADR↔YAML"
+            "all: ADR + ADR+BCM + ADR↔YAML check; "
+            "inter-adr-only: inter-ADR review only; "
+            "adr-yaml-only: ADR↔YAML consistency only"
         ),
     )
-    parser.add_argument("--report-file", default="semantic-review.md", help="Fichier rapport Markdown")
-    parser.add_argument("--json-file", default="semantic-review.json", help="Fichier sortie JSON")
-    parser.add_argument("--max-issues", type=int, default=30, help="Nombre max d'issues listées par phase")
+    parser.add_argument("--report-file", default="semantic-review.md", help="Markdown report file")
+    parser.add_argument("--json-file", default="semantic-review.json", help="JSON output file")
+    parser.add_argument("--max-issues", type=int, default=30, help="Max number of issues listed per phase")
     return parser.parse_args()
 
 
@@ -1179,7 +1178,7 @@ def main() -> int:
             name="ADR",
             status="ok",
             major_defects=[],
-            details=["Phase ADR ignorée (--review-mode adr-yaml-only)."],
+            details=["ADR phase skipped (--review-mode adr-yaml-only)."],
             llm=None,
         )
         extra_phases.append(run_phase_adr_yaml(changed_files, full_scope=full_scope))
@@ -1234,8 +1233,8 @@ def main() -> int:
     json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
     print(report_md)
-    print(f"[INFO] Rapport écrit dans: {report_path}")
-    print(f"[INFO] Synthèse JSON écrite dans: {json_path}")
+    print(f"[INFO] Report written to: {report_path}")
+    print(f"[INFO] JSON summary written to: {json_path}")
 
     return 0 if major_count == 0 else 1
 

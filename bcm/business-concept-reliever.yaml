@@ -1,99 +1,99 @@
 meta:
-  bcm_name: BCM Reliever — Concepts métier
+  bcm_name: BCM Reliever — Business Concepts
   version: 0.1.0
   template_version: 1.0.0
   last_updated: '2026-04-24'
   owners:
-    - Direction Programme Reliever
+    - Reliever Programme Directorate
 
 concepts:
 
   - id: CPT.BCM.000.BENEFICIAIRE
-    name: Bénéficiaire
+    name: Beneficiary
     definition: >-
-      Un individu en situation de fragilité financière engagé ou candidat
-      à un processus de remédiation comportementale structuré.
+      An individual in a situation of financial vulnerability engaged or candidate
+      for a structured behavioural remediation process.
     scope:
-      - Candidature et vérification d'éligibilité
-      - Enrôlement dans le dispositif
-      - Suivi du programme et progression par paliers
-      - Sortie du dispositif (succès, abandon, transfert)
+      - Application and eligibility verification
+      - Programme enrolment
+      - Programme follow-up and tier progression
+      - Programme exit (success, dropout, transfer)
     business_rules:
-      - "Un bénéficiaire ne peut être inscrit qu'après vérification de son éligibilité"
-      - "L'identité canonique d'un bénéficiaire est détenue exclusivement par CAP.REF.001.BEN"
-      - "Un bénéficiaire peut être prescrit par plusieurs prescripteurs simultanément"
+      - "A beneficiary may only be enrolled after verification of their eligibility"
+      - "The canonical identity of a beneficiary is held exclusively by CAP.REF.001.BEN"
+      - "A beneficiary may be prescribed by several prescribers simultaneously"
     tags:
       - canonical
       - core-domain
 
   - id: CPT.BCM.000.PRESCRIPTEUR
-    name: Prescripteur
+    name: Prescriber
     definition: >-
-      Un acteur habilité à prescrire, accompagner et co-décider dans le cadre
-      d'une remédiation financière. Peut être d'ordre bancaire, médical ou social.
+      An authorised actor who prescribes, accompanies and co-decides within the
+      framework of a financial remediation. May be banking, medical or social.
     scope:
-      - Prescription et orientation d'un bénéficiaire vers le dispositif
-      - Suivi et consultation du dossier selon les droits de son rôle
-      - Participation aux co-décisions inter-prescripteurs
-      - Surcharge manuelle de décisions algorithmiques
+      - Prescribing and referring a beneficiary to the programme
+      - Case follow-up and consultation according to their role rights
+      - Participation in inter-prescriber co-decisions
+      - Manual override of algorithmic decisions
     business_rules:
-      - "La visibilité d'un prescripteur sur un dossier est strictement filtrée par son rôle et son type (bancaire, médical, social)"
-      - "Un prescripteur médical et un prescripteur bancaire ne voient pas les mêmes données"
+      - "A prescriber's visibility on a case is strictly filtered by their role and type (banking, medical, social)"
+      - "A medical prescriber and a banking prescriber do not see the same data"
     tags:
       - canonical
       - multi-actor
 
   - id: CPT.BCM.000.DOSSIER
-    name: Dossier de remédiation
+    name: Remediation case
     definition: >-
-      Un suivi structuré de la participation d'un bénéficiaire au programme
-      Reliever, de son entrée jusqu'à sa sortie.
+      A structured record of a beneficiary's participation in the Reliever
+      programme, from entry to exit.
     scope:
-      - Ouverture à l'enrôlement
-      - Évolution du palier au fil du programme
-      - Coordination des prescripteurs assignés
-      - Clôture à la sortie du dispositif
+      - Opening at enrolment
+      - Tier evolution throughout the programme
+      - Coordination of assigned prescribers
+      - Closure at programme exit
     business_rules:
-      - "Un dossier est associé à exactement un bénéficiaire"
-      - "Un dossier porte exactement un palier courant à tout instant"
-      - "La sortie d'un dossier par succès déclenche le transfert vers une application bancaire standard"
+      - "A case is associated with exactly one beneficiary"
+      - "A case holds exactly one active tier at any given time"
+      - "A successful case exit triggers transfer to a standard banking application"
     tags:
       - canonical
       - core-domain
       - stateful
 
   - id: CPT.BCM.000.SCORE
-    name: Score comportemental
+    name: Behavioural score
     definition: >-
-      Une évaluation quantifiée et automatisée de la progression comportementale
-      financière d'un bénéficiaire, calculée à partir de ses transactions et signaux.
+      A quantified and automated assessment of a beneficiary's financial behavioural
+      progress, computed from their transactions and signals.
     scope:
-      - Calcul initial à l'enrôlement (baseline)
-      - Recalcul après chaque transaction ou signal significatif
-      - Contribution aux décisions de changement de palier
-      - Historisation pour l'analytique programme
+      - Initial computation at enrolment (baseline)
+      - Recomputation after each transaction or significant signal
+      - Contribution to tier change decisions
+      - Historisation for programme analytics
     business_rules:
-      - "Le score est la source de vérité pour les changements de palier, sauf surcharge prescripteur explicite"
-      - "Le modèle de calcul du score ne peut évoluer qu'après validation par PIL.001.GOV"
+      - "The score is the source of truth for tier changes, except for explicit prescriber overrides"
+      - "The score computation model can only evolve after validation by PIL.001.GOV"
     tags:
       - canonical
       - algorithmic
       - core-domain
 
   - id: CPT.BCM.000.PALIER
-    name: Palier d'autonomie
+    name: Autonomy tier
     definition: >-
-      Un niveau d'autonomie financière défini par ses règles d'usage,
-      ses seuils de transition et les droits associés au bénéficiaire.
+      A level of financial autonomy defined by its usage rules,
+      transition thresholds and the rights associated with the beneficiary.
     scope:
-      - Définition normative des règles et seuils (REF)
-      - Application opérationnelle aux autorisations de paiement (BSP.004)
-      - Paramétrage des règles de la carte dédiée (B2B.001)
-      - Transitions entre paliers (BSP.001)
+      - Normative definition of rules and thresholds (REF)
+      - Operational application to payment authorisations (BSP.004)
+      - Configuration of dedicated card rules (B2B.001)
+      - Tier transitions (BSP.001)
     business_rules:
-      - "La définition canonique d'un palier est détenue exclusivement par CAP.REF.001.PAL"
-      - "Toute modification d'un palier déclenche une mise à jour en cascade sur BSP.001, BSP.004 et B2B.001"
-      - "Le dernier palier convertit l'outil en application bancaire standard"
+      - "The canonical definition of a tier is held exclusively by CAP.REF.001.PAL"
+      - "Any modification of a tier triggers a cascading update on BSP.001, BSP.004 and B2B.001"
+      - "The final tier converts the tool into a standard banking application"
     tags:
       - canonical
       - referential
@@ -101,106 +101,106 @@ concepts:
   - id: CPT.BCM.000.TRANSACTION
     name: Transaction
     definition: >-
-      Un acte financier — réalisé ou tenté — via l'instrument de paiement
-      dédié au dispositif Reliever.
+      A financial act — completed or attempted — via the payment instrument
+      dedicated to the Reliever programme.
     scope:
-      - Tentative d'achat avec la carte dédiée
-      - Décision d'autorisation ou de refus en temps réel
-      - Contribution au score comportemental
-      - Alimentation des enveloppes budgétaires
+      - Purchase attempt with the dedicated card
+      - Real-time authorisation or decline decision
+      - Contribution to the behavioural score
+      - Budget envelope consumption
     business_rules:
-      - "Toute transaction est soumise aux règles du palier courant du bénéficiaire"
-      - "Une transaction refusée pour dépassement d'enveloppe est un signal comportemental exploitable"
+      - "Every transaction is subject to the beneficiary's current tier rules"
+      - "A transaction declined for envelope overspend is an actionable behavioural signal"
     tags:
       - canonical
       - real-time
       - core-domain
 
   - id: CPT.BCM.000.ENVELOPPE
-    name: Enveloppe budgétaire
+    name: Budget envelope
     definition: >-
-      Une allocation financière catégorisée et temporelle attribuée à un
-      bénéficiaire selon son palier courant.
+      A categorised and time-bounded financial allocation assigned to a
+      beneficiary according to their current tier.
     scope:
-      - Allocation en début de période selon le palier
-      - Consommation au fil des transactions autorisées
-      - Détection d'épuisement et de non-consommation
-      - Alimentation depuis le compte principal via B2B.001
+      - Allocation at period start according to the tier
+      - Consumption through authorised transactions
+      - Depletion and non-consumption detection
+      - Funding from the main account via B2B.001
     business_rules:
-      - "Une enveloppe non consommée à la fin de la période est un signal de rechute potentielle"
-      - "Le plafond d'une enveloppe est déterminé par la définition du palier courant"
+      - "An unconsumed envelope at period end is a potential relapse signal"
+      - "An envelope's limit is determined by the current tier definition"
     tags:
       - canonical
       - budget
       - behavioral-signal
 
   - id: CPT.BCM.000.CONSENTEMENT
-    name: Consentement
+    name: Consent
     definition: >-
-      Une autorisation formelle et révocable d'un bénéficiaire pour le traitement
-      et le partage de ses données sensibles (financières, médicales, sociales).
+      A formal and revocable authorisation from a beneficiary for the processing
+      and sharing of their sensitive data (financial, medical, social).
     scope:
-      - Recueil au moment de l'enrôlement
-      - Gestion des révocations à tout moment
-      - Contrôle des accès à chaque consultation prescripteur
-      - Traitement des droits RGPD post-sortie
+      - Collection at enrolment
+      - Revocation management at any time
+      - Access control at each prescriber consultation
+      - GDPR rights processing post-exit
     business_rules:
-      - "Consentement.Accordé est une précondition obligatoire à l'enrôlement, à l'open banking et à toute consultation prescripteur"
-      - "La révocation du consentement suspend immédiatement tous les accès aux données du bénéficiaire"
+      - "Consent.Granted is a mandatory precondition to enrolment, open banking and any prescriber consultation"
+      - "Consent revocation immediately suspends all access to the beneficiary's data"
     tags:
       - canonical
       - RGPD
       - compliance
 
   - id: CPT.BCM.000.INSTRUMENT
-    name: Instrument de paiement
+    name: Payment instrument
     definition: >-
-      Un moyen de paiement dédié permettant le contrôle et la traçabilité
-      complète des dépenses du bénéficiaire dans le cadre du programme.
+      A dedicated payment means enabling complete control and traceability
+      of the beneficiary's spending within the programme.
     scope:
-      - Émission à l'enrôlement
-      - Paramétrage des règles selon le palier courant
-      - Suspension/résiliation selon les événements du dossier
-      - Support des flux financiers depuis le compte principal
+      - Issuance at enrolment
+      - Rule configuration according to the current tier
+      - Suspension/termination according to case events
+      - Financial flow support from the main account
     business_rules:
-      - "La carte dédiée est le seul point de contrôle universel des dépenses du bénéficiaire"
-      - "Les règles d'usage de la carte sont mises à jour à chaque changement de palier"
-      - "La résiliation de la carte est déclenchée par la sortie du bénéficiaire du dispositif"
+      - "The dedicated card is the sole universal spending control point for the beneficiary"
+      - "Card usage rules are updated at each tier change"
+      - "Card termination is triggered by the beneficiary's exit from the programme"
     tags:
       - canonical
       - financial-instrument
 
   - id: CPT.BCM.000.SIGNAL
-    name: Signal comportemental
+    name: Behavioural signal
     definition: >-
-      Un indicateur d'anomalie ou de progression détecté dans le comportement
-      financier d'un bénéficiaire, notamment l'absence de consommation d'enveloppe.
+      An anomaly or progression indicator detected in a beneficiary's financial
+      behaviour, notably the absence of envelope consumption.
     scope:
-      - Détection dans le flux transactionnel (BSP.004)
-      - Interprétation et qualification par le scoring (BSP.001)
-      - Contribution au recalcul du score
-      - Déclenchement d'alertes prescripteurs
+      - Detection in the transactional stream (BSP.004)
+      - Interpretation and qualification by scoring (BSP.001)
+      - Contribution to score recomputation
+      - Triggering of prescriber alerts
     business_rules:
-      - "Un budget non consommé est un signal de rechute, non un signal de succès"
-      - "Les signaux alimentent le scoring en mode analytique décorrélé — ils ne modifient pas directement l'opérationnel"
+      - "An unconsumed budget is a relapse signal, not a success signal"
+      - "Signals feed the scoring in decoupled analytics mode — they do not directly modify operations"
     tags:
       - canonical
       - behavioral
       - counterintuitive
 
   - id: CPT.BCM.000.MODELE
-    name: Modèle de scoring
+    name: Scoring model
     definition: >-
-      Un modèle algorithmique d'évaluation comportementale, versionné
-      et soumis à gouvernance avant tout déploiement en production.
+      An algorithmic behavioural assessment model, versioned
+      and subject to governance before any production deployment.
     scope:
-      - Entraînement et amélioration sur données analytiques agrégées (DAT.001)
-      - Validation de gouvernance avant déploiement (PIL.001.GOV)
-      - Application au calcul du score opérationnel (BSP.001.SCO)
-      - Historisation des versions pour audit
+      - Training and improvement on aggregated analytics data (DAT.001)
+      - Governance validation before deployment (PIL.001.GOV)
+      - Application to operational score computation (BSP.001.SCO)
+      - Version historisation for audit
     business_rules:
-      - "Aucun modèle ne peut être déployé en production sans PolitiqueGouvernance.MisÀJour de PIL.001.GOV"
-      - "Le modèle analytique (DAT.001.MOD) n'est jamais directement connecté au scoring opérationnel (BSP.001.SCO)"
+      - "No model may be deployed to production without GovernancePolicy.Updated from PIL.001.GOV"
+      - "The analytics model (DAT.001.MOD) is never directly connected to the operational scoring (BSP.001.SCO)"
     tags:
       - canonical
       - algorithmic

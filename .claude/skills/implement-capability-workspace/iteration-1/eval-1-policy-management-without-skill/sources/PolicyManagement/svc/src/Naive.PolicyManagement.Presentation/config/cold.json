@@ -1,0 +1,5 @@
+{
+  "ServiceName": "Naive-PolicyManagement",
+  "SerilogMinimumLevelDefault": "Debug",
+  "SerilogMinimumLevelOverrideMicrosoft": "Warning"
+}

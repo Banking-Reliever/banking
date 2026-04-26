@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-check_docs_links.py — Contrôle de cohérence des liens Markdown.
+check_docs_links.py — Markdown link consistency checker.
 
-Vérifie :
-  1) Liens internes vers fichiers (cibles existantes)
-  2) Liens d'ancre Markdown (fichier.md#ancre ou #ancre locale)
+Checks:
+  1) Internal links to files (existing targets)
+  2) Markdown anchor links (file.md#anchor or local #anchor)
 
-Usage :
+Usage:
   python tools/check_docs_links.py
   python tools/check_docs_links.py --root .
 
-Code retour :
-  0 -> aucun problème
-  1 -> au moins une incohérence détectée
+Return codes:
+  0 -> no issue
+  1 -> at least one inconsistency detected
 """
 
 from __future__ import annotations
@@ -126,44 +126,44 @@ def check_links(root: Path) -> tuple[list[str], list[str]]:
                 rel_src = src.relative_to(root)
                 rel_target = target_path.relative_to(root)
                 broken_anchors.append(
-                    f"{rel_src}:{line_number} -> {raw_target} (résolu vers {rel_target})"
+                    f"{rel_src}:{line_number} -> {raw_target} (resolved to {rel_target})"
                 )
 
     return missing_files, broken_anchors
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Vérifie la cohérence des liens Markdown internes.")
+    parser = argparse.ArgumentParser(description="Checks the consistency of internal Markdown links.")
     parser.add_argument(
         "--root",
         default=".",
-        help="Racine du repository à analyser (défaut: .)",
+        help="Repository root to analyse (default: .)",
     )
     args = parser.parse_args()
 
     root = Path(args.root).resolve()
     if not root.exists():
-        print(f"[FATAL] Répertoire introuvable: {root}")
+        print(f"[FATAL] Directory not found: {root}")
         return 1
 
     missing_files, broken_anchors = check_links(root)
 
     if missing_files:
-        print(f"[FAIL] {len(missing_files)} lien(s) vers fichier(s) inexistant(s):")
+        print(f"[FAIL] {len(missing_files)} link(s) to missing file(s):")
         for issue in missing_files:
-            print(f"  ✗ {issue}")
+            print(f"  x {issue}")
 
     if broken_anchors:
-        print(f"[FAIL] {len(broken_anchors)} ancre(s) inexistante(s):")
+        print(f"[FAIL] {len(broken_anchors)} missing anchor(s):")
         for issue in broken_anchors:
-            print(f"  ✗ {issue}")
+            print(f"  x {issue}")
 
     total = len(missing_files) + len(broken_anchors)
     if total:
-        print(f"\n[FAIL] {total} incohérence(s) détectée(s)")
+        print(f"\n[FAIL] {total} inconsistency(ies) detected")
         return 1
 
-    print("[OK] Aucun lien Markdown cassé (fichiers + ancres).")
+    print("[OK] No broken Markdown link (files + anchors).")
     return 0
 
 

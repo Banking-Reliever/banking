@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script d'export BCM SI (ressources) vers EventCatalog.
+BCM SI (resources) export script to EventCatalog.
 
 Usage:
     python bcm_export_si.py --input /path/to/bcm --output /path/to/views/FOODAROO-SI
@@ -60,7 +60,7 @@ def load_yaml(file_path: Path) -> Dict[str, Any]:
     with open(file_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
     if data is None:
-        raise ValueError(f"YAML vide: {file_path}")
+        raise ValueError(f"Empty YAML: {file_path}")
     return data
 
 
@@ -82,12 +82,12 @@ def slug_from_id(bcm_id: str) -> str:
             cleaned.append(value)
 
     if not cleaned:
-        raise ValueError(f"Slug invalide pour ID: {bcm_id}")
+        raise ValueError(f"Invalid slug for ID: {bcm_id}")
     return "-".join(cleaned)
 
 
 def process_slug_from_id(process_id: str) -> str:
-    """Génère un slug de flow depuis un identifiant de processus ressource."""
+    """Generates a flow slug from a resource process identifier."""
     parts = process_id.split(".")
     if len(parts) >= 5 and parts[0] == "PRC":
         base = "-".join(parts[2:])
@@ -125,7 +125,7 @@ def normalize_scope(scope: str) -> str:
 
 
 def first_relation_id(item: Dict[str, Any], plural_key: str, singular_key: str) -> str:
-    """Retourne le premier ID d'une relation (format liste ou legacy)."""
+    """Returns the first ID of a relation (list format or legacy)."""
     plural_value = item.get(plural_key)
     if isinstance(plural_value, list):
         for relation_id in plural_value:
@@ -142,7 +142,7 @@ def first_relation_id(item: Dict[str, Any], plural_key: str, singular_key: str) 
 def parse_capabilities(bcm_dir: Path) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     l1_file = bcm_dir / "capabilities-L1.yaml"
     if not l1_file.exists():
-        raise ValueError(f"Fichier manquant: {l1_file}")
+        raise ValueError(f"Missing file: {l1_file}")
 
     l1_data = []
     for capability in load_yaml(l1_file).get("capabilities", []):
@@ -154,7 +154,7 @@ def parse_capabilities(bcm_dir: Path) -> Tuple[List[Dict[str, Any]], List[Dict[s
 
     l2_files = list(bcm_dir.glob("capabilities-*-L2.yaml"))
     if not l2_files:
-        raise ValueError(f"Aucun fichier capabilities-*-L2.yaml dans {bcm_dir}")
+        raise ValueError(f"No capabilities-*-L2.yaml file found in {bcm_dir}")
 
     for file_path in l2_files:
         for capability in load_yaml(file_path).get("capabilities", []):
@@ -188,7 +188,7 @@ def parse_capabilities(bcm_dir: Path) -> Tuple[List[Dict[str, Any]], List[Dict[s
 def parse_resources(bcm_dir: Path) -> List[Dict[str, Any]]:
     res_dir = bcm_dir / "resource"
     if not res_dir.exists():
-        raise ValueError(f"Répertoire manquant: {res_dir}")
+        raise ValueError(f"Missing directory: {res_dir}")
 
     resources: List[Dict[str, Any]] = []
     for file_path in res_dir.glob("resource-*.yaml"):
@@ -203,7 +203,7 @@ def parse_resources(bcm_dir: Path) -> List[Dict[str, Any]]:
 def parse_resource_events(bcm_dir: Path) -> List[Dict[str, Any]]:
     event_dir = bcm_dir / "resource-event"
     if not event_dir.exists():
-        raise ValueError(f"Répertoire manquant: {event_dir}")
+        raise ValueError(f"Missing directory: {event_dir}")
 
     events: List[Dict[str, Any]] = []
     for file_path in event_dir.glob("resource-event-*.yaml"):
@@ -218,7 +218,7 @@ def parse_resource_events(bcm_dir: Path) -> List[Dict[str, Any]]:
 def parse_resource_subscriptions(bcm_dir: Path) -> List[Dict[str, Any]]:
     event_dir = bcm_dir / "resource-event"
     if not event_dir.exists():
-        raise ValueError(f"Répertoire manquant: {event_dir}")
+        raise ValueError(f"Missing directory: {event_dir}")
 
     subscriptions: List[Dict[str, Any]] = []
     for file_path in event_dir.glob("resource-subscription-*.yaml"):
@@ -234,7 +234,7 @@ def build_resource_flow_steps(
     process: Dict[str, Any],
     event_versions_by_id: Dict[str, str],
 ) -> List[Dict[str, Any]]:
-    """Construit les steps EventCatalog à partir du event_subscription_chain ressource."""
+    """Builds EventCatalog steps from the resource event_subscription_chain."""
     steps: List[Dict[str, Any]] = []
     edges: Dict[str, List[str]] = {}
 
@@ -247,15 +247,15 @@ def build_resource_flow_steps(
 
     start = process.get("start") or {}
     if start.get("type") == "interaction":
-        interaction_text = start.get("interaction") or "Interaction opérationnelle"
+        interaction_text = start.get("interaction") or "Operational interaction"
         steps.append(
             {
                 "id": "START",
                 "type": "actor",
-                "title": "Déclenchement du processus",
+                "title": "Process trigger",
                 "summary": interaction_text,
                 "actor": {
-                    "name": "Acteur opérationnel",
+                    "name": "Operational actor",
                     "summary": interaction_text,
                 },
             }
@@ -277,7 +277,7 @@ def build_resource_flow_steps(
             "id": step_id,
             "type": "message",
             "title": step_id,
-            "summary": step.get("note") or "Étape du processus ressource",
+            "summary": step.get("note") or "Resource process step",
         }
 
         if emitted_event_id:
@@ -327,7 +327,7 @@ def load_processus_ressource_as_flows(
     resource_events: List[Dict[str, Any]],
     strict: bool = False,
 ) -> List[Dict[str, Any]]:
-    """Charge les processus ressource externes et les transforme en flows EventCatalog."""
+    """Loads external resource processes and transforms them into EventCatalog flows."""
     repo_root = bcm_input_dir.parent
     process_dir = repo_root / "externals" / "processus-ressource"
 
@@ -383,7 +383,7 @@ def load_processus_ressource_as_flows(
                     "id": process_slug_from_id(process_id),
                     "name": process_name,
                     "version": str(meta.get("version") or "1.0.0"),
-                    "summary": f"Export automatique du processus ressource `{process_id}` vers un flow EventCatalog.",
+                    "summary": f"Automatic export of resource process `{process_id}` to an EventCatalog flow.",
                     "owners": owners,
                     "steps": flow_steps,
                     "documentation": process.get("documentation") or {},
@@ -426,11 +426,11 @@ def validate_relations(
         if cap.get("level") == "L2":
             parent = cap.get("parent")
             if parent not in l1_ids:
-                errors.append(f"L2 {cap.get('id')} parent L1 introuvable: {parent}")
+                errors.append(f"L2 {cap.get('id')} parent L1 not found: {parent}")
         elif cap.get("level") == "L3":
             parent_l2 = cap.get("parent")
             if parent_l2 not in l2_ids:
-                errors.append(f"L3 {cap.get('id')} parent L2 introuvable: {parent_l2}")
+                errors.append(f"L3 {cap.get('id')} parent L2 not found: {parent_l2}")
 
     for resource in resources:
         effective_resource_capability = resource.get("emitting_capability")
@@ -440,30 +440,30 @@ def validate_relations(
 
         if effective_resource_capability not in service_ids:
             errors.append(
-                f"Ressource {resource.get('id')} capacité émettrice introuvable: {effective_resource_capability}"
+                f"Resource {resource.get('id')} emitting capability not found: {effective_resource_capability}"
             )
 
     for event in events:
         if event.get("emitting_capability") not in service_ids:
             errors.append(
-                f"Event ressource {event.get('id')} capacité émettrice introuvable: {event.get('emitting_capability')}"
+                f"Resource event {event.get('id')} emitting capability not found: {event.get('emitting_capability')}"
             )
         # carried_resource is optional if data is provided (mutually exclusive)
         carried_resource = event.get("carried_resource")
         if carried_resource and carried_resource not in res_ids:
             errors.append(
-                f"Event ressource {event.get('id')} ressource portée introuvable: {carried_resource}"
+                f"Resource event {event.get('id')} carried resource not found: {carried_resource}"
             )
 
     for sub in subscriptions:
         if sub.get("consumer_capability") not in service_ids:
             errors.append(
-                f"Abonnement ressource {sub.get('id')} consumer_capability introuvable: {sub.get('consumer_capability')}"
+                f"Resource subscription {sub.get('id')} consumer_capability not found: {sub.get('consumer_capability')}"
             )
         sub_evt = (sub.get("subscribed_resource_event") or {}).get("id")
         if sub_evt not in evt_ids:
             errors.append(
-                f"Abonnement ressource {sub.get('id')} événement souscrit introuvable: {sub_evt}"
+                f"Resource subscription {sub.get('id')} subscribed event not found: {sub_evt}"
             )
 
     return errors
@@ -602,15 +602,15 @@ def normalize_to_eventcatalog(
                         "emitting_capability_id": effective_resource_capability,
                         "emitting_capability_l2_id": resource.get("emitting_capability"),
                         "emitting_capability_l3_ids": resource.get("emitting_capability_L3", []),
-                        # Clé canonique SI
+                        # Canonical SI key
                         "emitting_resource_event_id": emitting_resource_event_id,
-                        # Alias de compatibilité (affichage actuel du générateur)
+                        # Compatibility alias (used by current generator display)
                         "emitting_business_event_id": emitting_resource_event_id,
-                        # Clé canonique SI
+                        # Canonical SI key
                         "resource_id": resource.get("id"),
-                        # Lien transversal SI -> Métier
+                        # Cross-reference SI -> Business
                         "linked_business_object_id": resource.get("business_object"),
-                        # Alias de compatibilité (champ utilisé par l'affichage actuel)
+                        # Compatibility alias (field used by current display)
                         "business_object_id": resource.get("business_object"),
                         "exported_at": datetime.now().isoformat(),
                     }
@@ -657,11 +657,11 @@ def normalize_to_eventcatalog(
                         "bcm_type": "resource_event",
                         "emitting_capability_id": effective_event_capability,
                         "emitting_capability_l2_id": event.get("emitting_capability"),
-                        # Clé canonique SI
+                        # Canonical SI key
                         "resource_id": ressource_id,
-                        # Lien transversal SI -> Métier
+                        # Cross-reference SI -> Business
                         "linked_business_object_id": linked_business_object_id,
-                        # utilisé par le générateur actuel pour section "Entité associée"
+                        # used by the current generator for the "Associated entity" section
                         "business_object_id": ressource_id,
                         "linked_business_event_id": first_relation_id(
                             event,
@@ -703,7 +703,7 @@ def normalize_to_eventcatalog(
                         "subscribed_event_id": subscribed_event.get("id"),
                         "emitting_capability_id": subscribed_event.get("emitting_capability"),
                         "linked_business_subscription_id": sub.get("linked_business_subscription"),
-                        # Alias de compatibilité
+                        # Compatibility alias
                         "linked_business_subscription": sub.get("linked_business_subscription"),
                         "exported_at": datetime.now().isoformat(),
                     }
@@ -745,44 +745,44 @@ def print_summary(normalized_data: Dict[str, Any], generation_report: Dict[str, 
     src = normalized_data["metadata"]["source_counts"]
 
     print("\n" + "=" * 80)
-    print("📊 RÉSUMÉ D'EXPORT BCM SI (Ressources) → EventCatalog")
+    print("BCM SI (Resources) -> EventCatalog EXPORT SUMMARY")
     print("=" * 80)
 
-    print("\n✅ Statut: SUCCÈS")
+    print("\n[OK] Status: SUCCESS")
 
-    print("\n📥 Sources BCM analysées:")
-    print(f"   • Capacités L1: {src['capabilities_l1']}")
-    print(f"   • Capacités L2: {src['capabilities_l2']}")
+    print("\nBCM sources analysed:")
+    print(f"   * L1 capabilities: {src['capabilities_l1']}")
+    print(f"   * L2 capabilities: {src['capabilities_l2']}")
     if "capabilities_l3" in src:
-        print(f"   • Capacités L3: {src['capabilities_l3']}")
-    print(f"   • Ressources: {src['resources']}")
-    print(f"   • Événements ressource: {src['resource_events']}")
-    print(f"   • Abonnements ressource: {src['resource_subscriptions']}")
+        print(f"   * L3 capabilities: {src['capabilities_l3']}")
+    print(f"   * Resources: {src['resources']}")
+    print(f"   * Resource events: {src['resource_events']}")
+    print(f"   * Resource subscriptions: {src['resource_subscriptions']}")
     if "resource_processes" in src:
-        print(f"   • Processus ressource: {src['resource_processes']}")
+        print(f"   * Resource processes: {src['resource_processes']}")
 
-    print("\n📤 Artefacts EventCatalog générés:")
-    print(f"   • Domains: {counts['domains']}")
-    print(f"   • Services: {counts['services']}")
-    print(f"   • Events: {counts['events']}")
-    print(f"   • Entities: {counts['entities']}")
-    print(f"   • Subscriptions: {counts['subscriptions']}")
+    print("\nEventCatalog artefacts generated:")
+    print(f"   * Domains: {counts['domains']}")
+    print(f"   * Services: {counts['services']}")
+    print(f"   * Events: {counts['events']}")
+    print(f"   * Entities: {counts['entities']}")
+    print(f"   * Subscriptions: {counts['subscriptions']}")
     if "flows" in counts:
-        print(f"   • Flows: {counts['flows']}")
+        print(f"   * Flows: {counts['flows']}")
 
     if generation_report:
-        print(f"\n📁 Fichiers créés: {len(generation_report.get('files_generated', []))}")
-        print(f"⏱️  Durée de génération: {generation_report.get('duration_seconds', 0):.2f}s")
+        print(f"\nFiles created: {len(generation_report.get('files_generated', []))}")
+        print(f"Generation time: {generation_report.get('duration_seconds', 0):.2f}s")
 
     print("\n" + "=" * 80)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Export BCM SI (ressources) vers EventCatalog",
+        description="Export BCM SI (resources) to EventCatalog",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Exemples d'usage:
+Examples:
   %(prog)s --input ./bcm --output ./views/FOODAROO-SI
   %(prog)s --input ./bcm --output ./views/FOODAROO-SI --dry-run
   %(prog)s --input ./bcm --validate-only --verbose
@@ -797,7 +797,7 @@ Exemples d'usage:
     parser.add_argument(
         "--strict",
         action="store_true",
-        help="Mode strict: tout avertissement est traité comme une erreur bloquante",
+        help="Strict mode: every warning is treated as a blocking error",
     )
     parser.add_argument("--report-json", metavar="FILE")
 
@@ -807,12 +807,12 @@ Exemples d'usage:
     try:
         input_dir = Path(args.input_dir)
         if not input_dir.exists() or not input_dir.is_dir():
-            raise ValueError(f"Input directory invalide: {input_dir}")
+            raise ValueError(f"Invalid input directory: {input_dir}")
 
         if not args.validate_only and not args.output_dir:
-            raise ValueError("--output est requis sauf avec --validate-only")
+            raise ValueError("--output is required unless --validate-only is set")
 
-        logger.info("📖 Parsing BCM SI (ressources)...")
+        logger.info("Parsing BCM SI (resources)...")
         l1, l2 = parse_capabilities(input_dir)
         resources = parse_resources(input_dir)
         events = parse_resource_events(input_dir)
@@ -820,15 +820,15 @@ Exemples d'usage:
 
         relation_errors = validate_relations(l1, l2, resources, events, subscriptions)
         if relation_errors:
-            logger.error("❌ Erreurs de cohérence détectées:")
+            logger.error("Consistency errors detected:")
             for err in relation_errors:
                 logger.error(f"  - {err}")
             return 1
 
-        logger.info("🔄 Normalisation des données SI...")
+        logger.info("Normalizing SI data...")
         normalized_data = normalize_to_eventcatalog(l1, l2, resources, events, subscriptions)
 
-        logger.info("🧭 Chargement des processus ressource externes pour export des flows...")
+        logger.info("Loading external resource processes for flow export...")
         flow_data = load_processus_ressource_as_flows(input_dir, events, strict=args.strict)
         normalized_data["flows"] = flow_data
         normalized_data["metadata"]["normalized_counts"]["flows"] = len(flow_data)
@@ -840,7 +840,7 @@ Exemples d'usage:
 
         generation_report = None
         if not args.dry_run:
-            logger.info("🏗️  Génération EventCatalog FOODAROO-SI...")
+            logger.info("Generating EventCatalog FOODAROO-SI...")
             generator = EventCatalogGenerator(Path(args.output_dir))
             generation_report = generator.generate_catalog(normalized_data)
             if generation_report.get("errors"):
@@ -852,7 +852,7 @@ Exemples d'usage:
                     logger.error(f"[strict] {warning}")
                 return 1
         else:
-            logger.info("🔍 Dry-run activé: aucune écriture de fichiers")
+            logger.info("Dry-run enabled: no files written")
 
         if args.strict and normalized_data.get("metadata", {}).get("warnings"):
             for warning in normalized_data["metadata"].get("warnings", []):
@@ -866,13 +866,13 @@ Exemples d'usage:
             }
             with open(args.report_json, "w", encoding="utf-8") as f:
                 json.dump(report, f, indent=2, ensure_ascii=False)
-            logger.info(f"📄 Rapport JSON sauvé: {args.report_json}")
+            logger.info(f"JSON report saved: {args.report_json}")
 
         print_summary(normalized_data, generation_report)
         return 0
 
     except Exception as e:
-        logger.error(f"❌ Erreur fatale: {e}")
+        logger.error(f"Fatal error: {e}")
         if args.verbose:
             import traceback
 

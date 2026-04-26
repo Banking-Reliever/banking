@@ -25,8 +25,8 @@ resolve_python() {
   fi
 
   echo "" >&2
-  echo "❌ Aucun interpréteur Python trouvé." >&2
-  echo "   Astuce: créez un venv (.venv) ou exportez PYTHON_BIN=/chemin/vers/python" >&2
+  echo "❌ No Python interpreter found." >&2
+  echo "   Tip: create a venv (.venv) or export PYTHON_BIN=/path/to/python" >&2
   exit 1
 }
 
@@ -56,7 +56,7 @@ echo "2) 🔗 Event assets checks"
 "$PYTHON_BIN" "$ROOT_DIR/tools/validate_events.py" --bcm-dir "$ROOT_DIR/bcm" --events-dir "$ROOT_DIR/bcm"
 
 echo ""
-echo "3) 📤 Export BCM Métier -> views/FOODAROO-Metier"
+echo "3) 📤 Export BCM Business -> views/FOODAROO-Metier"
 "$PYTHON_BIN" "$ROOT_DIR/tools/bcm_export/bcm_export_metier.py" --input "$ROOT_DIR/bcm" --output "$ROOT_DIR/views/FOODAROO-Metier" "${STRICT_ARGS[@]}"
 
 echo ""

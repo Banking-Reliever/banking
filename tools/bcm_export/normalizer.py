@@ -1,8 +1,8 @@
 """
-Normalisation des données BCM pour l'export EventCatalog.
+Normalisation of BCM data for EventCatalog export.
 
-Ce module transforme les données BCM brutes en données propres, homogènes 
-et compatibles avec EventCatalog.
+This module transforms raw BCM data into clean, homogeneous data
+compatible with EventCatalog.
 """
 
 import re
@@ -19,168 +19,168 @@ logger = logging.getLogger(__name__)
 
 
 class NormalizationError(Exception):
-    """Erreur de normalisation des données."""
+    """Error raised during data normalisation."""
     pass
 
 
 class SlugGenerator:
-    """Générateur de slugs EventCatalog à partir d'identifiants BCM."""
-    
+    """Generates EventCatalog slugs from BCM identifiers."""
+
     @staticmethod
     def from_bcm_id(bcm_id: str) -> str:
         """
-        Génère un slug EventCatalog à partir d'un ID BCM.
-        
-        Exemples:
+        Generates an EventCatalog slug from a BCM ID.
+
+        Examples:
         - CAP.COEUR.005 -> coeur-005
         - CAP.COEUR.005.DSP -> dsp
         - EVT.COEUR.005.DECLARATION_SINISTRE_RECUE -> declaration-sinistre-recue
         """
         if not bcm_id:
             raise NormalizationError("BCM ID cannot be empty")
-        
+
         parts = bcm_id.split('.')
-        
-        # Pour les L1: prendre les 2 derniers segments (COEUR.005)
+
+        # For L1: take the last 2 segments (COEUR.005)
         if len(parts) >= 3 and parts[-1].isdigit():
             slug_parts = parts[-2:]
-        # Pour les L2, événements, objets: prendre le dernier segment
+        # For L2, events, objects: take the last segment
         elif len(parts) >= 4:
             slug_parts = [parts[-1]]
         else:
-            # Fallback: tout l'ID sans préfixes
+            # Fallback: full ID without prefixes
             slug_parts = [p for p in parts if p not in ['CAP', 'EVT', 'OBJ', 'RES']]
-        
-        # Normaliser chaque partie
+
+        # Normalize each part
         normalized_parts = []
         for part in slug_parts:
-            # Lowercase et remplacement underscore par tirets
+            # Lowercase and replace underscores with hyphens
             normalized = part.lower().replace('_', '-')
-            # Suppression caractères spéciaux (garde lettres, chiffres, tirets)
+            # Remove special characters (keep letters, digits, hyphens)
             normalized = re.sub(r'[^a-z0-9-]', '', normalized)
-            # Suppression tirets multiples
+            # Remove duplicate hyphens
             normalized = re.sub(r'-+', '-', normalized)
-            # Suppression tirets en début/fin
+            # Remove leading/trailing hyphens
             normalized = normalized.strip('-')
             if normalized:
                 normalized_parts.append(normalized)
-        
+
         if not normalized_parts:
             raise NormalizationError(f"Cannot generate valid slug from BCM ID: {bcm_id}")
-        
+
         return '-'.join(normalized_parts)
-    
+
     @staticmethod
     def validate_slug(slug: str) -> bool:
-        """Valide qu'un slug respecte les conventions EventCatalog."""
+        """Validates that a slug follows EventCatalog conventions."""
         if not slug:
             return False
-        # Slug doit être uniquement lettres minuscules, chiffres et tirets
-        # Pas de tiret en début/fin, pas de tirets multiples
+        # Slug must contain only lowercase letters, digits and hyphens
+        # No leading/trailing hyphens, no duplicate hyphens
         pattern = r'^[a-z0-9]+(-[a-z0-9]+)*$'
         return bool(re.match(pattern, slug))
 
 
 class TitleGenerator:
-    """Générateur de titres lisibles pour EventCatalog."""
-    
+    """Generates human-readable titles for EventCatalog."""
+
     @staticmethod
     def from_name_or_id(name: str, bcm_id: str) -> str:
         """
-        Génère un titre lisible à partir du name BCM ou de l'ID en fallback.
-        
-        Règles:
-        - Utilise le name si présent et non vide
-        - Sinon, humanise l'ID
-        - Préserve les accents et caractères spéciaux métier
+        Generates a readable title from the BCM name, or falls back to the ID.
+
+        Rules:
+        - Uses the name if present and non-empty
+        - Otherwise, humanizes the ID
+        - Preserves accents and domain-specific special characters
         """
         if name and name.strip():
             return name.strip()
-        
+
         return TitleGenerator.humanize_id(bcm_id)
-    
+
     @staticmethod
     def humanize_id(bcm_id: str) -> str:
         """
-        Humanise un ID BCM en titre lisible.
-        
-        Exemple: EVT.COEUR.005.DECLARATION_SINISTRE_RECUE -> "Déclaration Sinistre Reçue"
+        Converts a BCM ID into a readable title.
+
+        Example: EVT.COEUR.005.DECLARATION_SINISTRE_RECUE -> "Declaration Sinistre Recue"
         """
         if not bcm_id:
             return "Unnamed"
-        
-        # Prendre la dernière partie de l'ID
+
+        # Take the last part of the ID
         parts = bcm_id.split('.')
         last_part = parts[-1] if parts else bcm_id
-        
-        # Remplacer underscores par espaces
+
+        # Replace underscores with spaces
         humanized = last_part.replace('_', ' ')
-        
-        # Capitaliser chaque mot
+
+        # Capitalize each word
         words = humanized.split()
         capitalized_words = []
         for word in words:
-            # Capitaliser première lettre, garder le reste tel quel (pour les accents)
+            # Capitalize first letter, keep the rest as-is (to preserve accents)
             if word:
                 capitalized = word[0].upper() + word[1:].lower()
                 capitalized_words.append(capitalized)
-        
+
         return ' '.join(capitalized_words)
 
 
 class OwnerNormalizer:
-    """Normaliseur d'owners pour EventCatalog."""
-    
+    """Normalizes owner values for EventCatalog."""
+
     @staticmethod
     def normalize_owner(raw_owner: str) -> str:
         """
-        Normalise un owner BCM en format EventCatalog.
-        
-        Règles:
+        Normalizes a BCM owner to EventCatalog format.
+
+        Rules:
         - Lowercase
-        - Espaces -> tirets
-        - Caractères spéciaux supprimés
-        - Ampersands & -> et
+        - Spaces -> hyphens
+        - Special characters removed
+        - Ampersands & -> and
         """
         if not raw_owner:
             return "unknown-owner"
-        
-        # Normalisation de base
+
+        # Basic normalization
         normalized = raw_owner.lower()
-        
-        # Remplacements spécifiques
-        normalized = normalized.replace(' & ', ' et ')
-        normalized = normalized.replace('&', 'et')
+
+        # Specific replacements
+        normalized = normalized.replace(' & ', ' and ')
+        normalized = normalized.replace('&', 'and')
         normalized = normalized.replace('/', '-')
         normalized = normalized.replace(' ', '-')
-        
-        # Suppression caractères spéciaux (garde lettres, chiffres, tirets)
+
+        # Remove special characters (keep letters, digits, hyphens)
         normalized = re.sub(r'[^a-z0-9-]', '', normalized)
-        
-        # Nettoyage tirets multiples/début/fin
+
+        # Clean up duplicate/leading/trailing hyphens
         normalized = re.sub(r'-+', '-', normalized)
         normalized = normalized.strip('-')
-        
+
         return normalized if normalized else "unknown-owner"
-    
+
     @staticmethod
     def normalize_owners_list(raw_owners: List[str]) -> List[str]:
-        """Normalise une liste d'owners."""
+        """Normalizes a list of owners."""
         normalized = []
         for owner in raw_owners:
             norm_owner = OwnerNormalizer.normalize_owner(owner)
-            if norm_owner not in normalized:  # Évite les doublons
+            if norm_owner not in normalized:  # Avoid duplicates
                 normalized.append(norm_owner)
         return normalized
 
 
 class RelationshipResolver:
-    """Résolveur de relations entre éléments BCM."""
-    
+    """Resolves relations between BCM elements."""
+
     def __init__(self, model: BCMModel):
         self.model = model
-        
-        # Index pour accès rapide
+
+        # Index for fast access
         self.l1_by_id = {cap.id: cap for cap in model.capabilities_l1}
         self.l2_by_id = {cap.id: cap for cap in model.capabilities_l2}
         self.l3_children_by_l2_id = {}
@@ -193,7 +193,7 @@ class RelationshipResolver:
         self.concepts_by_id = {concept.id: concept for concept in model.business_concepts}
 
     def resolve_emitting_capability(self, capability_id: str, preferred_l3_ids: List[str] = None) -> str:
-        """Résout la capacité à utiliser pour l'export (priorité L3 si explicitée)."""
+        """Resolves the capability to use for export (L3 priority if specified)."""
         if not capability_id:
             return capability_id
 
@@ -213,10 +213,10 @@ class RelationshipResolver:
         return capability_id
 
     def should_export_as_service(self, capability: CapabilityL2) -> bool:
-        """Indique si une capacité doit être exportée comme service EventCatalog.
+        """Indicates whether a capability should be exported as an EventCatalog service.
 
-        Règle métier: une capacité L2 qui possède des capacités enfants L3
-        ne doit pas être exportée en tant que service.
+        Business rule: an L2 capability that has L3 child capabilities
+        must not be exported as a service.
         """
         if capability.level != "L2":
             return True
@@ -224,7 +224,7 @@ class RelationshipResolver:
         return len(self.l3_children_by_l2_id.get(capability.id, [])) == 0
     
     def resolve_l2_to_l1_domain(self, l2_capability: CapabilityL2) -> str:
-        """Résout le domain slug d'une capacité L2."""
+        """Resolves the domain slug of an L2 capability."""
         parent_l1 = self.l1_by_id.get(l2_capability.parent_l1_id)
         if parent_l1:
             return SlugGenerator.from_bcm_id(parent_l1.id)
@@ -233,7 +233,7 @@ class RelationshipResolver:
         return "unknown-domain"
     
     def resolve_event_to_service(self, event: BusinessEvent) -> str:
-        """Résout le service slug d'un événement."""
+        """Resolves the service slug of an event."""
         effective_capability_id = self.resolve_emitting_capability(event.emitting_capability_l2_id)
         l2_capability = self.l2_by_id.get(effective_capability_id)
         if l2_capability:
@@ -243,7 +243,7 @@ class RelationshipResolver:
         return "unknown-service"
     
     def resolve_event_to_domain(self, event: BusinessEvent) -> str:
-        """Résout le domain slug d'un événement (via sa capacité L2)."""
+        """Resolves the domain slug of an event (via its L2 capability)."""
         effective_capability_id = self.resolve_emitting_capability(event.emitting_capability_l2_id)
         l2_capability = self.l2_by_id.get(effective_capability_id)
         if l2_capability:
@@ -253,7 +253,7 @@ class RelationshipResolver:
         return "unknown-domain"
     
     def resolve_object_to_domain(self, obj: BusinessObject) -> str:
-        """Résout le domain slug d'un objet métier (via sa capacité L2)."""
+        """Resolves the domain slug of a business object (via its L2 capability)."""
         effective_capability_id = self.resolve_emitting_capability(
             obj.emitting_capability_l2_id,
             preferred_l3_ids=obj.emitting_capability_l3_ids,
@@ -266,7 +266,7 @@ class RelationshipResolver:
         return "unknown-domain"
 
     def resolve_concept_to_domain(self, concept: BusinessConcept) -> str:
-        """Résout le domain slug d'un concept métier depuis son ID CPT.<ZONE>.<L1>.*."""
+        """Resolves the domain slug of a business concept from its CPT.<ZONE>.<L1>.* ID."""
         parts = (concept.id or "").split('.')
         if len(parts) >= 3:
             domain_id = f"CAP.{parts[1]}.{parts[2]}"
@@ -280,7 +280,7 @@ class RelationshipResolver:
 
     @staticmethod
     def _tokenize_for_matching(*texts: str) -> Set[str]:
-        """Tokenisation simple pour rapprochement heuristique objet/concept."""
+        """Simple tokenization for heuristic object/concept matching."""
         tokens = set()
         for text in texts:
             if not text:
@@ -291,7 +291,7 @@ class RelationshipResolver:
         return tokens
 
     def find_best_concept_for_object(self, obj: BusinessObject) -> Dict[str, Any]:
-        """Trouve le concept métier le plus pertinent pour un objet via heuristique."""
+        """Finds the most relevant business concept for an object via heuristics."""
         obj_domain = self.resolve_object_to_domain(obj)
         candidates = [
             concept for concept in self.model.business_concepts
@@ -320,7 +320,7 @@ class RelationshipResolver:
             concept_fields = {prop.name.lower() for prop in concept.properties if prop.name}
             field_overlap = object_fields.intersection(concept_fields)
 
-            # Pondération: recouvrement des champs > recouvrement lexical général
+            # Weighting: field overlap > general lexical overlap
             score = (2 * len(field_overlap)) + len(token_overlap)
 
             if score > best_score:
@@ -347,7 +347,7 @@ class RelationshipResolver:
         }
     
     def get_missing_relations(self) -> Dict[str, List[str]]:
-        """Identifie les relations manquantes dans le modèle."""
+        """Identifies missing relations in the model."""
         missing = {
             "l2_without_l1": [],
             "events_without_l2": [],
@@ -358,22 +358,22 @@ class RelationshipResolver:
             "subscriptions_without_emitter_l2": []
         }
         
-        # L2 sans L1 parent
+        # L2 without L1 parent
         for l2 in self.model.capabilities_l2:
             if l2.parent_l1_id not in self.l1_by_id:
                 missing["l2_without_l1"].append(l2.id)
-        
-        # Events sans L2 émettrice
+
+        # Events without emitting L2
         for event in self.model.business_events:
             if event.emitting_capability_l2_id not in self.l2_by_id:
                 missing["events_without_l2"].append(event.id)
-        
-        # Events sans objet métier
+
+        # Events without business object
         for event in self.model.business_events:
             if event.business_object_id not in self.objects_by_id:
                 missing["events_without_object"].append(event.id)
-        
-        # Objects sans L2 émettrice
+
+        # Objects without emitting L2
         for obj in self.model.business_objects:
             if obj.emitting_capability_l2_id not in self.l2_by_id:
                 missing["objects_without_l2"].append(obj.id)
@@ -392,31 +392,31 @@ class RelationshipResolver:
 
 
 class BCMNormalizer:
-    """Normaliseur principal pour les données BCM."""
-    
+    """Main normalizer for BCM data."""
+
     def __init__(self):
         self.slug_generator = SlugGenerator()
         self.title_generator = TitleGenerator()
         self.owner_normalizer = OwnerNormalizer()
-    
+
     def normalize_model(self, model: BCMModel) -> Dict[str, Any]:
         """
-        Normalise un modèle BCM complet.
-        
-        Retourne un dictionnaire avec les données normalisées et des métadonnées
-        de normalisation (warnings, statistiques, etc.).
+        Normalizes a complete BCM model.
+
+        Returns a dictionary with the normalized data and normalisation metadata
+        (warnings, statistics, etc.).
         """
         logger.info("Starting BCM model normalization")
-        
+
         start_time = datetime.now()
-        
-        # Résolveur de relations
+
+        # Relationship resolver
         relation_resolver = RelationshipResolver(model)
-        
-        # Collecte des warnings
+
+        # Warning collection
         warnings = []
-        
-        # Normalisation par type
+
+        # Normalization by type
         normalized_l1 = []
         for cap in model.capabilities_l1:
             try:
@@ -475,13 +475,13 @@ class BCMNormalizer:
             except Exception as e:
                 warnings.append(f"Failed to normalize subscription {sub.id}: {e}")
         
-        # Validation unicité des slugs
+        # Validate slug uniqueness
         slug_conflicts = self._check_slug_uniqueness(
             normalized_l1, normalized_l2, normalized_events, normalized_objects
         )
         warnings.extend(slug_conflicts)
-        
-        # Relations manquantes
+
+        # Missing relations
         missing_relations = relation_resolver.get_missing_relations()
         if missing_relations:
             warnings.append(f"Missing relations detected: {missing_relations}")
@@ -520,7 +520,7 @@ class BCMNormalizer:
         return result
     
     def _normalize_capability_l1(self, cap: CapabilityL1) -> Dict[str, Any]:
-        """Normalise une capacité L1 vers un domain EventCatalog."""
+        """Normalizes an L1 capability to an EventCatalog domain."""
         slug = self.slug_generator.from_bcm_id(cap.id)
         title = self.title_generator.from_name_or_id(cap.name, cap.id)
         
@@ -545,17 +545,17 @@ class BCMNormalizer:
         }
     
     def _normalize_capability_l2(self, cap: CapabilityL2, resolver: RelationshipResolver) -> Dict[str, Any]:
-        """Normalise une capacité L2 vers un service EventCatalog."""
+        """Normalizes an L2 capability to an EventCatalog service."""
         slug = self.slug_generator.from_bcm_id(cap.id)
         title = self.title_generator.from_name_or_id(cap.name, cap.id)
         domain_slug = resolver.resolve_l2_to_l1_domain(cap)
-        
+
         return {
             "id": slug,
             "name": title,
             "summary": cap.description[:200] + "..." if len(cap.description) > 200 else cap.description,
-            # Suppression du champ domain du frontmatter - utilisé pour placement fichier seulement
-            "_domain": domain_slug,  # Utilisé pour le chemin de fichier
+            # domain field removed from frontmatter - used for file placement only
+            "_domain": domain_slug,  # Used for file path
             "owners": [self.owner_normalizer.normalize_owner(cap.owner)],
             "metadata": {
                 "bcm": {
@@ -572,7 +572,7 @@ class BCMNormalizer:
         }
     
     def _normalize_business_event(self, event: BusinessEvent, resolver: RelationshipResolver) -> Dict[str, Any]:
-        """Normalise un événement métier vers un event EventCatalog."""
+        """Normalizes a business event to an EventCatalog event."""
         slug = self.slug_generator.from_bcm_id(event.id)
         title = self.title_generator.from_name_or_id(event.name, event.id)
         service_slug = resolver.resolve_event_to_service(event)
@@ -580,20 +580,20 @@ class BCMNormalizer:
         entity_slug = self.slug_generator.from_bcm_id(event.business_object_id)
         entity_obj = resolver.objects_by_id.get(event.business_object_id)
         entity_domain_slug = resolver.resolve_object_to_domain(entity_obj) if entity_obj else domain_slug
-        
+
         return {
             "id": slug,
             "name": title,
             "version": event.version,
             "summary": event.definition[:200] + "..." if len(event.definition) > 200 else event.definition,
-            # Suppression des champs service et domain du frontmatter - utilisés pour placement fichier seulement
-            "_service": service_slug,  # Utilisé pour le chemin de fichier
-            "_domain": domain_slug,   # Utilisé pour le chemin de fichier
-            # Suppression entities du frontmatter - référence dans le contenu markdown à la place
-            "_entity_slug": entity_slug,  # Utilisé pour le contenu markdown
-            "_entity_domain": entity_domain_slug,  # Utilisé pour générer le lien markdown vers l'entity
-            "_entity_version": "1.0.0",  # Version EventCatalog de l'entity cible
-            "owners": [self.owner_normalizer.normalize_owner("unknown")],  # Pas d'owner pour les events
+            # service and domain fields removed from frontmatter - used for file placement only
+            "_service": service_slug,  # Used for file path
+            "_domain": domain_slug,    # Used for file path
+            # entities removed from frontmatter - referenced in markdown content instead
+            "_entity_slug": entity_slug,          # Used for markdown content
+            "_entity_domain": entity_domain_slug,  # Used to generate markdown link to entity
+            "_entity_version": "1.0.0",            # EventCatalog version of the target entity
+            "owners": [self.owner_normalizer.normalize_owner("unknown")],  # No owner for events
             "metadata": {
                 "bcm": {
                     "source_id": event.id,
@@ -609,7 +609,7 @@ class BCMNormalizer:
         }
     
     def _normalize_business_object(self, obj: BusinessObject, resolver: RelationshipResolver) -> Dict[str, Any]:
-        """Normalise un objet métier vers une entity EventCatalog."""
+        """Normalizes a business object to an EventCatalog entity."""
         slug = self.slug_generator.from_bcm_id(obj.id)
         title = self.title_generator.from_name_or_id(obj.name, obj.id)
         effective_emitting_capability_id = resolver.resolve_emitting_capability(
@@ -618,7 +618,7 @@ class BCMNormalizer:
         )
         domain_slug = resolver.resolve_object_to_domain(obj)
         
-        # Propriétés EventCatalog depuis les data fields
+        # EventCatalog properties from data fields
         properties = []
         for field in obj.data_fields:
             properties.append(field.to_eventcatalog_property())
@@ -629,11 +629,11 @@ class BCMNormalizer:
             "id": slug,
             "name": title,
             "summary": obj.definition[:200] + "..." if len(obj.definition) > 200 else obj.definition,
-            # Suppression du champ domain du frontmatter - utilisé pour placement fichier seulement
-            "_domain": domain_slug,  # Utilisé pour le chemin de fichier
+            # domain field removed from frontmatter - used for file placement only
+            "_domain": domain_slug,  # Used for file path
             "properties": properties,
             "concept_context": concept_context,
-            "owners": [self.owner_normalizer.normalize_owner("unknown")],  # Pas d'owner pour les entities
+            "owners": [self.owner_normalizer.normalize_owner("unknown")],  # No owner for entities
             "metadata": {
                 "bcm": {
                     "source_id": obj.id,
@@ -648,7 +648,7 @@ class BCMNormalizer:
         }
 
     def _normalize_business_concept(self, concept: BusinessConcept, resolver: RelationshipResolver) -> Dict[str, Any]:
-        """Normalise un concept métier pour enrichissements documentaires."""
+        """Normalizes a business concept for documentation enrichment."""
         slug = self.slug_generator.from_bcm_id(concept.id)
         domain_slug = resolver.resolve_concept_to_domain(concept)
 
@@ -675,7 +675,7 @@ class BCMNormalizer:
         }
 
     def _normalize_business_subscription(self, sub: BusinessSubscription, resolver: RelationshipResolver) -> Dict[str, Any]:
-        """Normalise une abonnement métier pour usage EventCatalog (receives)."""
+        """Normalizes a business subscription for EventCatalog use (receives)."""
         effective_consumer_capability_id = resolver.resolve_emitting_capability(sub.consumer_capability_l2_id)
         effective_emitter_capability_id = resolver.resolve_emitting_capability(sub.emitting_capability_l2_id)
 
@@ -717,29 +717,29 @@ class BCMNormalizer:
             }
         }
     
-    def _check_slug_uniqueness(self, domains: List[Dict], services: List[Dict], 
+    def _check_slug_uniqueness(self, domains: List[Dict], services: List[Dict],
                               events: List[Dict], entities: List[Dict]) -> List[str]:
-        """Vérifie l'unicité des slugs générés."""
+        """Checks the uniqueness of generated slugs."""
         conflicts = []
-        
-        # Slugs par scope
+
+        # Slugs per scope
         domain_slugs = {d["id"] for d in domains}
         service_slugs_by_domain = {}
         event_slugs_by_service = {}
         entity_slugs_by_domain = {}
-        
-        # Group par domain/service
+
+        # Group by domain/service
         for service in services:
             domain = service.get("_domain", "unknown-domain")
             if domain not in service_slugs_by_domain:
                 service_slugs_by_domain[domain] = set()
-            
+
             if service["id"] in service_slugs_by_domain[domain]:
                 conflicts.append(f"Duplicate service slug '{service['id']}' in domain '{domain}'")
             service_slugs_by_domain[domain].add(service["id"])
-        
-        # Vérifier unicité dans chaque scope
+
+        # Check uniqueness within each scope
         if len(domain_slugs) != len(domains):
             conflicts.append("Duplicate domain slugs detected")
-        
+
         return conflicts

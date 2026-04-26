@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Charge la configuration locale (.env) si présente.
+# Load local configuration (.env) if present.
 if [[ -f "$ROOT_DIR/.env" ]]; then
   set -a
   # shellcheck disable=SC1091
@@ -33,8 +33,8 @@ resolve_python() {
   fi
 
   echo "" >&2
-  echo "❌ Aucun interpréteur Python trouvé." >&2
-  echo "   Astuce: créez un venv (.venv) ou exportez PYTHON_BIN=/chemin/vers/python" >&2
+  echo "❌ No Python interpreter found." >&2
+  echo "   Tip: create a venv (.venv) or export PYTHON_BIN=/path/to/python" >&2
   exit 1
 }
 
@@ -49,7 +49,7 @@ echo "🐍 Python: $PYTHON_BIN"
 echo "🧭 Mode:   $SEMANTIC_REVIEW_MODE"
 
 echo ""
-echo "1) 🧠 Cohérence sémantique (FULL REPO: ADR puis ADR+BCM)"
+echo "1) 🧠 Semantic coherence (FULL REPO: ADR then ADR+BCM)"
 "$PYTHON_BIN" "$ROOT_DIR/tools/semantic_review.py" \
   --scope full \
   --review-mode "$SEMANTIC_REVIEW_MODE" \

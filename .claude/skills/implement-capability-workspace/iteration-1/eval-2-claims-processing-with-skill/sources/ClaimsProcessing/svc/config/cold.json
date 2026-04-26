@@ -1,0 +1,18 @@
+{
+  "MongoDbConnection": "mongodb://admin:password@localhost:22718/claims-processing?authSource=admin",
+  "AzureServiceBusEnabled": false,
+  "RabbitMQEnabled": true,
+  "RabbitMQConnection": "amqp://admin:password@localhost:22818/claims-processing",
+  "BusSerializationOptions": {
+    "PropertyNamingPolicy": "CamelCase",
+    "IncludeFields": false,
+    "IgnoreNullValues": true
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "MongoDB.Driver.Core": "Warning"
+    }
+  }
+}

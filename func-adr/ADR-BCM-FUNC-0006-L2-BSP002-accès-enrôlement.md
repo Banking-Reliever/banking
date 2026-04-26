@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-FUNC-0006
-title: "L2 Breakdown de CAP.BSP.002 — Accès & Enrôlement"
+title: "L2 Breakdown of CAP.BSP.002 — Access & Enrollment"
 status: Proposed
 date: 2026-04-24
 
@@ -45,102 +45,126 @@ tags:
   - BCM
   - L2
   - BSP
-  - enrôlement
-  - cycle-de-vie
+  - enrollment
+  - lifecycle
 
 stability_impact: Moderate
+
+domain_classification:
+  type: supporting
+  coordinates:
+    x: 0.55
+    y: 0.5
+  rationale: "Enrôlement prescripteur-spécifique avec règles Reliever propres, mais le pattern lifecycle/onboarding est un problème IS connu et maîtrisé"
 ---
 
-# ADR-BCM-FUNC-0006 — L2 Breakdown de CAP.BSP.002 — Accès & Enrôlement
+# ADR-BCM-FUNC-0006 — L2 Breakdown of CAP.BSP.002 — Access & Enrollment
 
-## Contexte
+## Domain Classification
 
-CAP.BSP.002 gère l'entrée des individus dans le dispositif Reliever et leur cycle de vie jusqu'à la sortie. Sans cette capacité, aucun bénéficiaire ne peut être activé dans le programme, quel que soit le canal de prescription (banque, psychiatre, assistant social).
+> **Mandatory for FUNC ADRs.** Derived from the product vision and strategic vision — not from technical complexity alone.
 
-Ce L1 couvre trois phases temporellement distinctes : la qualification de l'éligibilité, l'enrôlement formel, et la gestion du cycle de vie jusqu'à la sortie du dispositif. La sortie au dernier palier est un événement clé : elle déclenche la bascule vers une application bancaire standard.
+| Axis | Score | Interpretation |
+|------|-------|----------------|
+| x — Business Differentiation | 0.55 | 0.0 = commodity (could be bought off-shelf) → 1.0 = uniquely differentiating |
+| y — Model Complexity | 0.5 | 0.0 = trivial / well-understood → 1.0 = proprietary / high cognitive load |
 
-## Décision
+**Classification:** `supporting`
 
-CAP.BSP.002 est décomposé en **4 capacités L2** :
+**Rationale:**
 
-| ID | Nom | Responsabilité |
-|----|-----|----------------|
-| CAP.BSP.002.ELI | Qualification de l'Éligibilité | Qualifier un individu comme éligible au dispositif sur prescription bancaire, médicale ou sociale |
-| CAP.BSP.002.ENR | Enrôlement | Formaliser l'entrée dans le dispositif, activer le palier initial, ouvrir les droits d'accès |
-| CAP.BSP.002.CYC | Cycle de Vie du Bénéficiaire | Gérer les états actif / suspendu / sorti et les transitions entre eux |
-| CAP.BSP.002.SOR | Sortie du Dispositif | Orchestrer la sortie du bénéficiaire — dernier palier atteint ou arrêt du programme |
+> Enrôlement prescripteur-spécifique avec règles Reliever propres, mais le pattern lifecycle/onboarding est un problème IS connu et maîtrisé
 
-### Événements métier par L2
+---
 
-| L2 | Événements produits | Événements consommés |
-|----|---------------------|----------------------|
-| CAP.BSP.002.ELI | `Bénéficiaire.IdentifiéÉligible`, `Bénéficiaire.EligibilitéRefusée` | `Override.DemandéParPrescripteur` (BSP.003.COD) pour forcer une éligibilité |
+## Context
+
+CAP.BSP.002 manages the entry of individuals into the Reliever program and their lifecycle through to exit. Without this capability, no beneficiary can be activated in the program, regardless of the prescription channel (bank, psychiatrist, social worker).
+
+This L1 covers three temporally distinct phases: eligibility qualification, formal enrollment, and lifecycle management through to program exit. Exit at the final tier is a key event: it triggers the switchover to a standard banking application.
+
+## Decision
+
+CAP.BSP.002 is decomposed into **4 L2 capabilities**:
+
+| ID | Name | Responsibility |
+|----|------|----------------|
+| CAP.BSP.002.ELI | Eligibility Qualification | Qualify an individual as eligible for the program on banking, medical, or social prescription |
+| CAP.BSP.002.ENR | Enrollment | Formalize entry into the program, activate the initial tier, open access rights |
+| CAP.BSP.002.CYC | Beneficiary Lifecycle | Manage the active / suspended / exited states and the transitions between them |
+| CAP.BSP.002.SOR | Program Exit | Orchestrate the beneficiary's exit — final tier reached or program termination |
+
+### Business Events per L2
+
+| L2 | Events Produced | Events Consumed |
+|----|-----------------|-----------------|
+| CAP.BSP.002.ELI | `Bénéficiaire.IdentifiéÉligible`, `Bénéficiaire.EligibilitéRefusée` | `Override.DemandéParPrescripteur` (BSP.003.COD) to force eligibility |
 | CAP.BSP.002.ENR | `Bénéficiaire.Enrôlé`, `Bénéficiaire.PalierInitialActivé` | `Bénéficiaire.IdentifiéÉligible` (BSP.002.ELI) |
 | CAP.BSP.002.CYC | `Bénéficiaire.Suspendu`, `Bénéficiaire.Réactivé` | `Bénéficiaire.Enrôlé` (BSP.002.ENR), `Signal.Rechute.Détecté` (BSP.001.SIG) |
-| CAP.BSP.002.SOR | `Bénéficiaire.SortiDuDispositif`, `Bénéficiaire.TransféréVersAppliStandard` | `Palier.FranchiHausse` (BSP.001.PAL) — dernier palier atteint |
+| CAP.BSP.002.SOR | `Bénéficiaire.SortiDuDispositif`, `Bénéficiaire.TransféréVersAppliStandard` | `Palier.FranchiHausse` (BSP.001.PAL) — final tier reached |
 
-### Points de transfert
+### Transfer Points
 
-- **ELI → ENR** : l'éligibilité validée déclenche l'enrôlement formel
-- **ENR → BSP.001.PAL** : l'enrôlement active le palier initial dans la remédiation comportementale
-- **BSP.001.PAL → SOR** : le franchissement du dernier palier déclenche la sortie du dispositif
+- **ELI → ENR**: validated eligibility triggers formal enrollment
+- **ENR → BSP.001.PAL**: enrollment activates the initial tier in behavioral remediation
+- **BSP.001.PAL → SOR**: reaching the final tier triggers program exit
 
-### Critères vérifiables
+### Verifiable Criteria
 
-- Chaque L2 produit au moins un événement métier (ADR-BCM-URBA-0009)
-- `Bénéficiaire.TransféréVersAppliStandard` est l'événement terminal du dispositif — aucune capacité ne produit d'événement après lui sauf CAP.REF.001 pour archivage
+- Each L2 produces at least one business event (ADR-BCM-URBA-0009)
+- `Bénéficiaire.TransféréVersAppliStandard` is the terminal event of the program — no capability produces an event after it except CAP.REF.001 for archiving
 
-## Justification
+## Rationale
 
-La séparation ELI / ENR / CYC / SOR reflète des phases métier distinctes avec des règles, des acteurs et des rythmes différents. L'éligibilité peut être réévaluée sans déclencher un nouvel enrôlement. La gestion du cycle de vie est continue ; la sortie est un événement ponctuel irréversible (dans Reliever).
+The ELI / ENR / CYC / SOR separation reflects distinct business phases with different rules, actors, and rhythms. Eligibility can be re-evaluated without triggering a new enrollment. Lifecycle management is continuous; exit is a one-time irreversible event (within Reliever).
 
-### Alternatives considérées
+### Alternatives Considered
 
-- **ELI + ENR fusionnés** — rejeté car l'éligibilité peut être validée par un prescripteur sans que l'enrôlement soit immédiat (délai de consentement, constitution du dossier)
-- **SOR absorbé dans CYC** — rejeté car la sortie du dispositif déclenche des actions spécifiques (bascule applicative, archivage) qui ont leur propre logique et ne sont pas une simple transition d'état
+- **ELI + ENR merged** — rejected because eligibility can be validated by a prescriber without enrollment being immediate (consent delay, file assembly)
+- **SOR absorbed into CYC** — rejected because program exit triggers specific actions (application switchover, archiving) that have their own logic and are not a simple state transition
 
-## Impacts sur la BCM
+## BCM Impacts
 
 ### Structure
 
-- 4 L2 créés sous CAP.BSP.002
-- Aucun L3 nécessaire
+- 4 L2s created under CAP.BSP.002
+- No L3 needed
 
-### Événements
+### Events
 
-- 8 événements métier définis
-- `Bénéficiaire.TransféréVersAppliStandard` est consommé par CAP.CAN.001 (bascule UX)
+- 8 business events defined
+- `Bénéficiaire.TransféréVersAppliStandard` is consumed by CAP.CAN.001 (UX switchover)
 
-### Mapping SI / Data / Org
+### SI / Data / Org Mapping
 
-- **SI** : dépendance vers CAP.REF.001.BEN (identité canonique du bénéficiaire)
-- **ORG** : owner recommandé : équipe "Accès & Relations Prescripteurs"
+- **SI**: dependency toward CAP.REF.001.BEN (canonical beneficiary identity)
+- **ORG**: recommended owner: "Access & Prescriber Relations" team
 
-## Conséquences
+## Consequences
 
-### Positives
+### Positive
 
-- Cycle de vie du bénéficiaire entièrement traçable via les événements
-- La sortie du dispositif est un événement de première classe, pas un état silencieux
+- Beneficiary lifecycle fully traceable via events
+- Program exit is a first-class event, not a silent state
 
-### Négatives / Risques
+### Negative / Risks
 
-- La gestion du consentement (RGPD) est en tension entre BSP.002.ENR et CAP.SUP.001.CON — la règle est : ENR déclenche la demande de consentement, SUP.001.CON en est propriétaire
+- Consent management (GDPR) is in tension between BSP.002.ENR and CAP.SUP.001.CON — the rule is: ENR triggers the consent request, SUP.001.CON owns it
 
-### Dette acceptée
+### Accepted Debt
 
-- Les règles précises d'éligibilité (critères de fragilité financière) ne sont pas modélisées ici — à formaliser dans les spécifications métier
+- The precise eligibility rules (financial vulnerability criteria) are not modeled here — to be formalized in business specifications
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : Élevé
-- Date de revue recommandée : 2028-04-24
-- Indicateur de stabilité attendu : chaîne événementielle ELI → ENR → SOR complète et traçable dans le repository
+- Criticality level: High
+- Recommended review date: 2028-04-24
+- Expected stability indicator: event chain ELI → ENR → SOR complete and traceable in the repository
 
-## Traçabilité
+## Traceability
 
-- Atelier : Session BCM Reliever — 2026-04-24
-- Participants : yremy
-- Références :
+- Workshop: BCM Reliever Session — 2026-04-24
+- Participants: yremy
+- References:
   - `/strategic-vision/strategic-vision.md` — SC.002
   - ADR-BCM-FUNC-0004, ADR-BCM-FUNC-0005

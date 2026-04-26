@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 """
-render_drawio.py — Génère un diagramme draw.io (.drawio) à partir d'un
-fichier capabilities YAML (ex. capabilities-L1.yaml).
+render_drawio.py — Generates a draw.io diagram (.drawio) from a
+capabilities YAML file (e.g. capabilities-L1.yaml).
 
-Usage :
+Usage:
     python tools/render_drawio.py
     python tools/render_drawio.py --input bcm/capabilities-L1.yaml --output views/BCM-L1-generated.drawio
     python tools/render_drawio.py --help
 
-Le script :
-  1. Lit le fichier YAML des capacités
-  2. Regroupe les capacités par zoning
-  3. Génère un fichier .drawio avec un diagramme de type Business Capability Map
-     (zones colorées, boîtes L1 disposées en grille)
+The script:
+  1. Reads the capabilities YAML file
+  2. Groups capabilities by zoning
+  3. Generates a .drawio file with a Business Capability Map diagram
+     (colored zones, L1 boxes arranged in a grid)
 
-Pré-requis :
+Prerequisites:
     pip install pyyaml
 """
 
@@ -75,27 +75,27 @@ ZONE_CONFIG = {
 }
 
 # ──────────────────────────────────────────────────────────────
-# Palette de couleurs pastels distinctives pour les boîtes L1
-# (fill, stroke) — cycle si plus de capacités que de couleurs
+# Distinctive pastel color palette for L1 boxes
+# (fill, stroke) — cycles if more capabilities than colors
 # ──────────────────────────────────────────────────────────────
 
 CAPABILITY_PALETTE = [
-    ("#fff2cc", "#d6b656"),   # jaune pâle
-    ("#dae8fc", "#6c8ebf"),   # bleu ciel
-    ("#ffe6cc", "#d79b00"),   # pêche
-    ("#e1d5e7", "#9673a6"),   # lavande
-    ("#f8cecc", "#b85450"),   # rose
-    ("#d5e8d4", "#82b366"),   # vert d'eau
-    ("#f5f5f5", "#666666"),   # gris clair
-    ("#d4e1f5", "#3a7bbf"),   # bleu pervenche
-    ("#fce5cd", "#c27b30"),   # abricot
-    ("#cfe2f3", "#6fa8dc"),   # bleu pastel
-    ("#d9ead3", "#6aa84f"),   # vert amande
-    ("#ead1dc", "#a64d79"),   # rose ancien
-    ("#d0e0e3", "#45818e"),   # turquoise pâle
-    ("#fce8b2", "#bf9000"),   # doré doux
-    ("#e6d8f0", "#7b57a0"),   # violet pastel
-    ("#c9daf8", "#3d78d8"),   # bleu layette
+    ("#fff2cc", "#d6b656"),   # pale yellow
+    ("#dae8fc", "#6c8ebf"),   # sky blue
+    ("#ffe6cc", "#d79b00"),   # peach
+    ("#e1d5e7", "#9673a6"),   # lavender
+    ("#f8cecc", "#b85450"),   # pink
+    ("#d5e8d4", "#82b366"),   # seafoam green
+    ("#f5f5f5", "#666666"),   # light gray
+    ("#d4e1f5", "#3a7bbf"),   # periwinkle blue
+    ("#fce5cd", "#c27b30"),   # apricot
+    ("#cfe2f3", "#6fa8dc"),   # pastel blue
+    ("#d9ead3", "#6aa84f"),   # almond green
+    ("#ead1dc", "#a64d79"),   # antique rose
+    ("#d0e0e3", "#45818e"),   # pale teal
+    ("#fce8b2", "#bf9000"),   # soft gold
+    ("#e6d8f0", "#7b57a0"),   # pastel violet
+    ("#c9daf8", "#3d78d8"),   # baby blue
 ]
 
 # Ordre d'affichage des zones dans la disposition BCM classique :
@@ -112,18 +112,18 @@ CAPABILITY_PALETTE = [
 #   │                 DATA_ANALYTIQUE                       │
 #   └──────────────────────────────────────────────────────┘
 
-# Zones empilées verticalement au centre
+# Zones stacked vertically in the center
 CENTER_ZONES = [
     "SERVICES_COEUR",
     "SUPPORT",
     "REFERENTIEL",
 ]
 
-# Zones latérales (occupent toute la hauteur du centre)
+# Lateral zones (span the full height of the center)
 LEFT_ZONE = "ECHANGE_B2B"
 RIGHT_ZONE = "CANAL"
 
-# Zones pleine largeur (haut et bas)
+# Full-width zones (top and bottom)
 TOP_ZONE = "PILOTAGE"
 BOTTOM_ZONE = "DATA_ANALYTIQUE"
 
@@ -131,15 +131,15 @@ BOTTOM_ZONE = "DATA_ANALYTIQUE"
 # Dimensions
 # ──────────────────────────────────────────────────────────────
 
-BOX_W = 130          # largeur d'une boîte capacité
-BOX_H = 60           # hauteur d'une boîte capacité
-GAP = 20             # espacement entre boîtes
-ZONE_PAD = 30        # padding interne d'une zone
-LABEL_H = 35         # hauteur réservée au label de zone
-ZONE_GAP = 15        # espacement entre zones
-SIDE_COLS = 1        # colonnes dans les zones latérales (B2B, Canal)
-CENTER_COLS = 4      # colonnes dans les zones centrales
-FULL_COLS = 6        # colonnes dans les zones pleine largeur
+BOX_W = 130          # width of a capability box
+BOX_H = 60           # height of a capability box
+GAP = 20             # spacing between boxes
+ZONE_PAD = 30        # internal padding of a zone
+LABEL_H = 35         # height reserved for the zone label
+ZONE_GAP = 15        # spacing between zones
+SIDE_COLS = 1        # columns in lateral zones (B2B, Channel)
+CENTER_COLS = 4      # columns in central zones
+FULL_COLS = 6        # columns in full-width zones
 
 
 # ──────────────────────────────────────────────────────────────
@@ -147,12 +147,12 @@ FULL_COLS = 6        # colonnes dans les zones pleine largeur
 # ──────────────────────────────────────────────────────────────
 
 def _uid() -> str:
-    """Génère un identifiant unique pour une cellule draw.io."""
+    """Generates a unique identifier for a draw.io cell."""
     return "cell-" + uuid.uuid4().hex[:12]
 
 
 def _zone_content_size(n_caps: int, cols: int) -> tuple[int, int]:
-    """Retourne (width, height) du contenu d'une zone (hors padding et label)."""
+    """Returns (width, height) of a zone's content (excluding padding and label)."""
     if n_caps == 0:
         return (cols * (BOX_W + GAP) - GAP, BOX_H)
     rows = math.ceil(n_caps / cols)
@@ -196,7 +196,7 @@ def group_by_zone(caps: list[dict]) -> dict[str, list[dict]]:
 def _add_cell(root_el: ET.Element, cell_id: str, value: str,
               style: str, x: int, y: int, w: int, h: int,
               parent: str = "1", vertex: bool = True) -> ET.Element:
-    """Ajoute un mxCell au root XML."""
+    """Adds an mxCell to the XML root."""
     cell = ET.SubElement(root_el, "mxCell")
     cell.set("id", cell_id)
     cell.set("value", value)
@@ -259,7 +259,7 @@ def build_drawio(caps_by_zone: dict[str, list[dict]]) -> str:
     center_w = max(s[0] for s in center_sizes.values()) if center_sizes else 400
     center_total_h = sum(s[1] for s in center_sizes.values()) + ZONE_GAP * (len(CENTER_ZONES) - 1)
 
-    # Tailles des zones latérales — hauteur = hauteur centre
+    # Lateral zone sizes — height = center height
     left_caps = _n(LEFT_ZONE)
     right_caps = _n(RIGHT_ZONE)
     left_w = _zone_outer_size(left_caps, SIDE_COLS)[0] if left_caps else 180
@@ -335,7 +335,7 @@ def build_drawio(caps_by_zone: dict[str, list[dict]]) -> str:
     def _render_zone(zone_key: str, zx: int, zy: int,
                      zw: int | None, zh: int | None,
                      cols: int):
-        """Rend une zone (fond + label + boîtes capacités)."""
+        """Renders a zone (background + label + capability boxes)."""
         cfg = ZONE_CONFIG.get(zone_key, {
             "label": zone_key,
             "zone_fill": "#f5f5f5",
@@ -344,7 +344,7 @@ def build_drawio(caps_by_zone: dict[str, list[dict]]) -> str:
         caps = caps_by_zone.get(zone_key, [])
         n = len(caps)
 
-        # Taille réelle
+        # Actual size
         computed_w, computed_h = _zone_outer_size(n, cols)
         final_w = zw if zw is not None else computed_w
         final_h = zh if zh is not None else computed_h
@@ -361,7 +361,7 @@ def build_drawio(caps_by_zone: dict[str, list[dict]]) -> str:
                   zx + final_w // 2 - 140, zy + ZONE_PAD // 2,
                   280, 30)
 
-        # Boîtes capacités — chaque L1 reçoit une couleur pastel distinctive
+        # Capability boxes — each L1 gets a distinctive pastel color
         content_x0 = zx + ZONE_PAD
         content_y0 = zy + ZONE_PAD + LABEL_H
         for i, cap in enumerate(caps):
@@ -396,7 +396,7 @@ def build_drawio(caps_by_zone: dict[str, list[dict]]) -> str:
     # BOTTOM — Data & Analytique
     _render_zone(BOTTOM_ZONE, bottom_x, bottom_y, bottom_w_actual, bottom_h, _cols(BOTTOM_ZONE))
 
-    # ── Sérialisation ──────────────────────────────────────
+    # ── Serialization ──────────────────────────────────────
 
     ET.indent(mxfile, space="  ")
     return '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(
@@ -410,13 +410,13 @@ def build_drawio(caps_by_zone: dict[str, list[dict]]) -> str:
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="Génère un diagramme draw.io à partir d'un fichier capabilities YAML.",
+        description="Generates a draw.io diagram from a capabilities YAML file.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Exemples :
+Examples:
   python tools/render_drawio.py
   python tools/render_drawio.py --input bcm/capabilities-L1.yaml
-  python tools/render_drawio.py --input bcm/capabilities-L1.yaml --output views/mon-bcm.drawio
+  python tools/render_drawio.py --input bcm/capabilities-L1.yaml --output views/my-bcm.drawio
   python tools/render_drawio.py --cols 3
         """,
     )
@@ -424,19 +424,19 @@ Exemples :
         "-i", "--input",
         type=Path,
         default=ROOT / "bcm" / "capabilities-L1.yaml",
-        help="Chemin vers le fichier YAML des capacités (défaut : bcm/capabilities-L1.yaml)",
+        help="Path to the capabilities YAML file (default: bcm/capabilities-L1.yaml)",
     )
     p.add_argument(
         "-o", "--output",
         type=Path,
         default=ROOT / "views" / "BCM-L1-generated.drawio",
-        help="Chemin de sortie du fichier .drawio (défaut : views/BCM-L1-generated.drawio)",
+        help="Output path for the .drawio file (default: views/BCM-L1-generated.drawio)",
     )
     p.add_argument(
         "--cols",
         type=int,
         default=CENTER_COLS,
-        help=f"Nombre de colonnes dans les zones centrales (défaut : {CENTER_COLS})",
+        help=f"Number of columns in central zones (default: {CENTER_COLS})",
     )
     return p.parse_args()
 
@@ -456,7 +456,7 @@ def main():
         output_path = ROOT / output_path
 
     if not input_path.exists():
-        print(f"[ERREUR] Fichier introuvable : {input_path}")
+        print(f"[ERROR] File not found: {input_path}")
         raise SystemExit(1)
 
     caps = load_capabilities(input_path)
@@ -466,14 +466,14 @@ def main():
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(xml_str, encoding="utf-8")
 
-    # Résumé
+    # Summary
     total = sum(len(v) for v in caps_by_zone.values())
     zones_used = [z for z in ZONE_CONFIG if caps_by_zone.get(z)]
-    print(f"[OK] {total} capacités dans {len(zones_used)} zone(s) → {output_path}")
+    print(f"[OK] {total} capabilities in {len(zones_used)} zone(s) → {output_path}")
     for z in ZONE_CONFIG:
         n = len(caps_by_zone.get(z, []))
         if n:
-            print(f"  • {ZONE_CONFIG[z]['label']}: {n} capacité(s)")
+            print(f"  • {ZONE_CONFIG[z]['label']}: {n} capability(ies)")
 
 
 if __name__ == "__main__":

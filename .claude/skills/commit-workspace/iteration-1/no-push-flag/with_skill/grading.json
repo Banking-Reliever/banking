@@ -1,0 +1,25 @@
+{
+  "expectations": [
+    {
+      "text": "Commits the changes with a conventional message",
+      "passed": true,
+      "evidence": "Committed 'chore(Messaging): add eval comment to BusExtensions' with Co-Authored-By footer"
+    },
+    {
+      "text": "Does NOT run git push",
+      "passed": true,
+      "evidence": "push_commands.txt: 'no push commands run'; transcript Step 7: 'Push — SKIPPED'"
+    },
+    {
+      "text": "Final output mentions local-only commit",
+      "passed": true,
+      "evidence": "Transcript result section: 'Committed (local only): chore(Messaging): add eval comment to BusExtensions'"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  }
+}

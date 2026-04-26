@@ -1,8 +1,8 @@
 """
-Générateur de fichiers EventCatalog à partir des données BCM normalisées.
+EventCatalog file generator from normalised BCM data.
 
-Ce module génère l'arborescence et les fichiers MDX EventCatalog
-à partir du modèle BCM normalisé.
+This module generates the EventCatalog directory tree and MDX files
+from the normalised BCM model.
 """
 
 import yaml
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class EventCatalogGenerator:
-    """Générateur principal pour l'arborescence EventCatalog."""
+    """Main generator for the EventCatalog directory tree."""
 
     def __init__(self, output_dir: Path):
         self.output_dir = Path(output_dir)
@@ -25,13 +25,13 @@ class EventCatalogGenerator:
 
     def generate_catalog(self, normalized_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Génère l'ensemble du catalogue EventCatalog.
+        Generates the complete EventCatalog.
 
         Args:
-            normalized_data: Données normalisées du BCMNormalizer
+            normalized_data: Normalised data from BCMNormalizer
 
         Returns:
-            Rapport de génération avec statistiques et erreurs
+            Generation report with statistics and errors
         """
         logger.info(f"Generating EventCatalog in {self.output_dir}")
 
@@ -95,7 +95,7 @@ class EventCatalogGenerator:
         return report
 
     def _create_base_structure(self):
-        """Crée la structure de répertoires de base."""
+        """Creates the base directory structure."""
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.domains_dir.mkdir(exist_ok=True)
         self.flows_dir.mkdir(exist_ok=True)
@@ -109,7 +109,7 @@ class EventCatalogGenerator:
             gitignore_path.write_text(gitignore_content, encoding='utf-8')
 
     def _clean_generated_tree(self):
-        """Supprime l'arborescence générée pour éviter les artefacts obsolètes."""
+        """Removes the generated tree to avoid stale artefacts."""
         if self.domains_dir.exists():
             shutil.rmtree(self.domains_dir)
         self.domains_dir.mkdir(parents=True, exist_ok=True)
@@ -119,7 +119,7 @@ class EventCatalogGenerator:
         self.flows_dir.mkdir(parents=True, exist_ok=True)
 
     def _generate_domains(self, domains: List[Dict], normalized_data: Dict) -> Dict[str, Any]:
-        """Génère les fichiers de domains."""
+        """Generates domain files."""
         report = {"files": [], "errors": [], "warnings": []}
 
         for domain in domains:
@@ -150,7 +150,7 @@ class EventCatalogGenerator:
         return report
 
     def _generate_services(self, services: List[Dict], normalized_data: Dict) -> Dict[str, Any]:
-        """Génère les fichiers de services."""
+        """Generates service files."""
         report = {"files": [], "errors": [], "warnings": []}
 
         for service in services:
@@ -177,7 +177,7 @@ class EventCatalogGenerator:
         return report
 
     def _generate_entities(self, entities: List[Dict], normalized_data: Dict) -> Dict[str, Any]:
-        """Génère les fichiers d'entités."""
+        """Generates entity files."""
         report = {"files": [], "errors": [], "warnings": []}
 
         for entity in entities:
@@ -202,7 +202,7 @@ class EventCatalogGenerator:
         return report
 
     def _generate_events(self, events: List[Dict], normalized_data: Dict) -> Dict[str, Any]:
-        """Génère les fichiers d'événements."""
+        """Generates event files."""
         report = {"files": [], "errors": [], "warnings": []}
 
         for event in events:
@@ -229,7 +229,7 @@ class EventCatalogGenerator:
         return report
 
     def _generate_flows(self, flows: List[Dict], normalized_data: Dict) -> Dict[str, Any]:
-        """Génère les fichiers de flows."""
+        """Generates flow files."""
         report = {"files": [], "errors": [], "warnings": []}
 
         for flow in flows:
@@ -252,7 +252,7 @@ class EventCatalogGenerator:
         return report
 
     def _enrich_domain_with_relations(self, domain: Dict, normalized_data: Dict) -> Dict:
-        """Enrichit un domain avec ses services, entités et langage ubiquitaire."""
+        """Enriches a domain with its services, entities and ubiquitous language."""
         enriched = domain.copy()
 
         domain_services = [
@@ -283,7 +283,7 @@ class EventCatalogGenerator:
         return enriched
 
     def _build_domain_ubiquitous_language(self, domain_id: str, concepts: List[Dict], entities: List[Dict]) -> Dict[str, Any]:
-        """Construit une vue de langage ubiquitaire à partir des concepts et objets métier du domaine."""
+        """Builds a ubiquitous language view from the domain's business concepts and objects."""
         domain_entities = [entity for entity in entities if entity.get("_domain") == domain_id]
 
         glossary_by_name = {}
@@ -329,7 +329,7 @@ class EventCatalogGenerator:
         }
 
     def _enrich_service_with_events(self, service: Dict, normalized_data: Dict) -> Dict:
-        """Enrichit un service avec ses événements émis/reçus."""
+        """Enriches a service with its emitted/received events."""
         enriched = service.copy()
         service_domain = service.get("_domain", "unknown-domain")
 
@@ -368,7 +368,7 @@ class EventCatalogGenerator:
         return enriched
 
     def _generate_domain_mdx(self, domain: Dict) -> str:
-        """Génère le contenu MDX d'un domain."""
+        """Generates the MDX content for a domain."""
         frontmatter = {
             "id": domain["id"],
             "name": domain["name"],
@@ -405,13 +405,13 @@ class EventCatalogGenerator:
 
 ## Services
 
-Ce domaine contient les services métier suivants :
+This domain contains the following business services:
 
 {self._format_services_list(domain.get('services', []))}
 
-## Entités
+## Entities
 
-Les entités métier gérées par ce domaine :
+Business entities managed by this domain:
 
 {self._format_entities_list(domain.get('entities', []))}
 
@@ -419,17 +419,17 @@ Les entités métier gérées par ce domaine :
 
 {self._format_ubiquitous_language(domain.get('ubiquitous_language', {}))}
 
-## Métadonnées BCM
+## BCM Metadata
 
-- **ID Source BCM**: {domain.get('metadata', {}).get('bcm', {}).get('source_id', 'N/A')}
+- **BCM Source ID**: {domain.get('metadata', {}).get('bcm', {}).get('source_id', 'N/A')}
 - **Type**: {domain.get('metadata', {}).get('bcm', {}).get('bcm_type', 'N/A')}
-- **Zone d'urbanisation**: {domain.get('metadata', {}).get('bcm', {}).get('zoning', 'N/A')}
+- **Urbanization zone**: {domain.get('metadata', {}).get('bcm', {}).get('zoning', 'N/A')}
 """
 
         return content
 
     def _generate_service_mdx(self, service: Dict) -> str:
-        """Génère le contenu MDX d'un service."""
+        """Generates the MDX content for a service."""
         frontmatter = {
             "id": service["id"],
             "name": service["name"],
@@ -456,29 +456,29 @@ Les entités métier gérées par ce domaine :
 
 {service['summary']}
 
-## Événements émis
+## Emitted Events
 
-Ce service émet les événements métier suivants :
+This service emits the following business events:
 
 {self._format_events_list(service.get('sends', []))}
 
-## Événements souscrits
+## Subscribed Events
 
-Ce service souscrit aux événements métier suivants :
+This service subscribes to the following business events:
 
 {self._format_events_list(service.get('receives', []))}
 
-## Métadonnées BCM
+## BCM Metadata
 
-- **ID Source BCM**: {service.get('metadata', {}).get('bcm', {}).get('source_id', 'N/A')}
-- **Parent L1**: {service.get('metadata', {}).get('bcm', {}).get('parent_l1_id', 'N/A')}
+- **BCM Source ID**: {service.get('metadata', {}).get('bcm', {}).get('source_id', 'N/A')}
+- **L1 Parent**: {service.get('metadata', {}).get('bcm', {}).get('parent_l1_id', 'N/A')}
 - **Type**: {service.get('metadata', {}).get('bcm', {}).get('bcm_type', 'N/A')}
 """
 
         return content
 
     def _generate_entity_mdx(self, entity: Dict) -> str:
-        """Génère le contenu MDX d'une entité."""
+        """Generates the MDX content for an entity."""
         frontmatter = {
             "id": entity["id"],
             "name": entity["name"],
@@ -505,25 +505,25 @@ Ce service souscrit aux événements métier suivants :
 
 {entity['summary']}
 
-## Propriétés
+## Properties
 
 {self._format_properties_table(entity.get('properties', []))}
 
-## Positionnement conceptuel
+## Conceptual Positioning
 
 {self._format_entity_concept_context(entity.get('concept_context', {}))}
 
-## Métadonnées BCM
+## BCM Metadata
 
-- **ID Source BCM**: {entity.get('metadata', {}).get('bcm', {}).get('source_id', 'N/A')}
-- **Capacité émettrice**: {entity.get('metadata', {}).get('bcm', {}).get('emitting_capability_id', 'N/A')}
+- **BCM Source ID**: {entity.get('metadata', {}).get('bcm', {}).get('source_id', 'N/A')}
+- **Emitting capability**: {entity.get('metadata', {}).get('bcm', {}).get('emitting_capability_id', 'N/A')}
 - **Type**: {entity.get('metadata', {}).get('bcm', {}).get('bcm_type', 'N/A')}
 """
 
         return content
 
     def _generate_event_mdx(self, event: Dict) -> str:
-        """Génère le contenu MDX d'un événement."""
+        """Generates the MDX content for an event."""
         frontmatter = {
             "id": event["id"],
             "name": event["name"],
@@ -560,14 +560,14 @@ Ce service souscrit aux événements métier suivants :
         if entity_slug:
             entity_link = f"/docs/entities/{entity_slug}/{entity_version}"
             entity_reference_line = (
-                f"Cet événement porte l'entité métier "
+                f"This event carries the business entity "
                 f"**[{entity_slug}]({entity_link})** "
-                f"(référence BCM: `{event.get('metadata', {}).get('bcm', {}).get('business_object_id', 'N/A')}`)."
+                f"(BCM reference: `{event.get('metadata', {}).get('bcm', {}).get('business_object_id', 'N/A')}`)."
             )
         else:
             entity_reference_line = (
-                "Cet événement porte une entité métier non résolue "
-                f"(référence BCM: `{event.get('metadata', {}).get('bcm', {}).get('business_object_id', 'N/A')}`)."
+                "This event carries an unresolved business entity "
+                f"(BCM reference: `{event.get('metadata', {}).get('bcm', {}).get('business_object_id', 'N/A')}`)."
             )
 
         content = f"""---
@@ -577,37 +577,37 @@ Ce service souscrit aux événements métier suivants :
 
 {event['summary']}
 
-## Entité associée
+## Associated Entity
 
 {entity_reference_line}
 
-## Métadonnées BCM
+## BCM Metadata
 
-- **ID Source BCM**: {event.get('metadata', {}).get('bcm', {}).get('source_id', 'N/A')}
-- **Capacité émettrice**: {event.get('metadata', {}).get('bcm', {}).get('emitting_capability_id', 'N/A')}
-- **Objet métier porté**: {event.get('metadata', {}).get('bcm', {}).get('business_object_id', 'N/A')}
-- **Portée**: {event.get('metadata', {}).get('bcm', {}).get('scope', 'N/A')}
+- **BCM Source ID**: {event.get('metadata', {}).get('bcm', {}).get('source_id', 'N/A')}
+- **Emitting capability**: {event.get('metadata', {}).get('bcm', {}).get('emitting_capability_id', 'N/A')}
+- **Carried business object**: {event.get('metadata', {}).get('bcm', {}).get('business_object_id', 'N/A')}
+- **Scope**: {event.get('metadata', {}).get('bcm', {}).get('scope', 'N/A')}
 - **Type**: {event.get('metadata', {}).get('bcm', {}).get('bcm_type', 'N/A')}
 """
 
         return content
 
     def _generate_flow_mdx(self, flow: Dict) -> str:
-        """Génère le contenu MDX d'un flow."""
+        """Generates the MDX content for a flow."""
         metadata = flow.get("metadata", {}).get("bcm", {})
         bcm_type = metadata.get("bcm_type", "processus_metier")
 
         if bcm_type == "processus_ressource":
-            source_badge = "Source: Processus Ressource BCM"
+            source_badge = "Source: BCM Resource Process"
             source_description = (
-                "Ce flow est généré automatiquement depuis un **processus ressource externe** "
-                "du référentiel BCM."
+                "This flow is automatically generated from an **external resource process** "
+                "in the BCM repository."
             )
         else:
-            source_badge = "Source: Processus Métier BCM"
+            source_badge = "Source: BCM Business Process"
             source_description = (
-                "Ce flow est généré automatiquement depuis un **processus métier externe** "
-                "du référentiel BCM."
+                "This flow is automatically generated from an **external business process** "
+                "in the BCM repository."
             )
 
         frontmatter = {
@@ -655,20 +655,20 @@ Ce service souscrit aux événements métier suivants :
 
 {source_description}
 
-## Documentation du processus
+## Process Documentation
 
 {documentation_block}
 
-## Traçabilité BCM
+## BCM Traceability
 
-- **ID source BCM**: `{source_id}`
-- **Fichier source**: `{source_file}`
+- **BCM source ID**: `{source_id}`
+- **Source file**: `{source_file}`
 """
 
         return content
 
     def _build_flow_frontmatter_documentation(self, documentation: Dict[str, Any], bcm_type: str) -> Dict[str, Any]:
-        """Prépare un bloc documentation compact pour le frontmatter."""
+        """Prepares a compact documentation block for the frontmatter."""
         if not isinstance(documentation, dict) or not documentation:
             return {}
 
@@ -724,9 +724,9 @@ Ce service souscrit aux événements métier suivants :
         return payload if has_content else {}
 
     def _format_process_documentation(self, documentation: Dict[str, Any], bcm_type: str) -> str:
-        """Formate la documentation des processus pour rendu markdown."""
+        """Formats process documentation for markdown rendering."""
         if not documentation:
-            return "_Aucune documentation détaillée n'a été fournie dans le fichier processus source._"
+            return "_No detailed documentation was provided in the source process file._"
 
         def _as_list(value: Any) -> List[str]:
             if not isinstance(value, list):
@@ -742,7 +742,7 @@ Ce service souscrit aux événements métier suivants :
                 return value.strip()
             return default
 
-        value_field_label = "Valeur métier" if bcm_type == "processus_metier" else "Valeur opérationnelle"
+        value_field_label = "Business value" if bcm_type == "processus_metier" else "Operational value"
         value_field_key = "valeur_metier" if bcm_type == "processus_metier" else "valeur_operationnelle"
 
         objectif = _as_text(documentation.get("objectif"))
@@ -766,7 +766,7 @@ Ce service souscrit aux événements métier suivants :
                 return f"- {empty_text}"
             return "\n".join(f"- {item}" for item in items)
 
-        return f"""### Objectif
+        return f"""### Objective
 
 {objectif}
 
@@ -774,19 +774,19 @@ Ce service souscrit aux événements métier suivants :
 
 {value_text}
 
-### Portée
+### Scope
 
-**Inclut :**
+**Includes:**
 {_bullets(inclut)}
 
-**Exclut :**
+**Excludes:**
 {_bullets(exclut)}
 
-### Parties prenantes
+### Stakeholders
 
 {_bullets(parties_prenantes)}
 
-### Préconditions
+### Preconditions
 
 {_bullets(preconditions)}
 
@@ -794,34 +794,34 @@ Ce service souscrit aux événements métier suivants :
 
 {_bullets(postconditions)}
 
-### Scénarios
+### Scenarios
 
-- **Nominal :** {scenario_nominal}
-- **Alternatif :** {scenario_alternatif}
+- **Nominal:** {scenario_nominal}
+- **Alternative:** {scenario_alternatif}
 
-### Indicateurs de suivi
+### Tracking indicators
 
 {_bullets(indicateurs)}
 """
 
     def _format_services_list(self, services: List[Dict]) -> str:
-        """Formate une liste de services en markdown."""
+        """Formats a list of services as markdown."""
         if not services:
-            return "_Aucun service défini._"
+            return "_No service defined._"
 
         return "\n".join(f"- **{service['id']}**" for service in services)
 
     def _format_entities_list(self, entities: List[Dict]) -> str:
-        """Formate une liste d'entités en markdown."""
+        """Formats a list of entities as markdown."""
         if not entities:
-            return "_Aucune entité définie._"
+            return "_No entity defined._"
 
         return "\n".join(f"- **{entity['id']}**" for entity in entities)
 
     def _format_events_list(self, events: List[Dict]) -> str:
-        """Formate une liste d'événements en markdown."""
+        """Formats a list of events as markdown."""
         if not events:
-            return "_Aucun événement défini._"
+            return "_No event defined._"
 
         lines = []
         for event in events:
@@ -831,12 +831,12 @@ Ce service souscrit aux événements métier suivants :
         return "\n".join(lines)
 
     def _format_properties_table(self, properties: List[Dict]) -> str:
-        """Formate les propriétés d'une entité en tableau markdown."""
+        """Formats entity properties as a markdown table."""
         if not properties:
-            return "_Aucune propriété définie._"
+            return "_No property defined._"
 
         lines = [
-            "| Nom | Type | Obligatoire | Description |",
+            "| Name | Type | Required | Description |",
             "|-----|------|-------------|-------------|"
         ]
 
@@ -849,29 +849,29 @@ Ce service souscrit aux événements métier suivants :
         return "\n".join(lines)
 
     def _format_entity_concept_context(self, context: Dict[str, Any]) -> str:
-        """Formate le bloc de positionnement d'un objet métier dans son concept."""
+        """Formats the conceptual positioning block of a business object within its concept."""
         if not context:
-            return "_Aucun concept métier rapproché automatiquement pour cet objet._"
+            return "_No business concept was automatically matched to this object._"
 
         matching = context.get("matching", {})
         overlap_fields = matching.get("overlap_fields", [])
-        overlap_fields_text = ", ".join(overlap_fields) if overlap_fields else "aucun champ commun identifié"
+        overlap_fields_text = ", ".join(overlap_fields) if overlap_fields else "no common field identified"
 
         scope = context.get("scope", [])
         scope_text = ", ".join(scope) if scope else "N/A"
 
         return (
-            f"- **Concept métier rattaché**: `{context.get('id', 'N/A')}` — **{context.get('name', 'N/A')}**\n"
-            f"- **Définition du concept**: {context.get('definition', 'N/A')}\n"
-            f"- **Périmètre (scope)**: {scope_text}\n"
-            f"- **Rapprochement automatique**: score `{matching.get('score', 0)}` ; champs communs: {overlap_fields_text}"
+            f"- **Linked business concept**: `{context.get('id', 'N/A')}` — **{context.get('name', 'N/A')}**\n"
+            f"- **Concept definition**: {context.get('definition', 'N/A')}\n"
+            f"- **Scope**: {scope_text}\n"
+            f"- **Automatic matching**: score `{matching.get('score', 0)}` ; common fields: {overlap_fields_text}"
         )
 
     def _format_ubiquitous_language(self, ubiquitous_language: Dict[str, Any]) -> str:
-        """Formate la section de langage ubiquitaire d'un domaine."""
+        """Formats the ubiquitous language section of a domain."""
         def _escape_table_cell(value: Any) -> str:
             text = "" if value is None else str(value)
-            # Éviter les erreurs MDX/HTML dans les cellules de tableau
+            # Avoid MDX/HTML errors in table cells
             text = text.replace("&", "&amp;")
             text = text.replace("<", "&lt;").replace(">", "&gt;")
             text = text.replace("|", "\\|")
@@ -881,7 +881,7 @@ Ce service souscrit aux événements métier suivants :
         concepts = ubiquitous_language.get("concepts", [])
         terms = ubiquitous_language.get("terms", [])
 
-        concept_lines = ["### Concepts métier canoniques", ""]
+        concept_lines = ["### Canonical business concepts", ""]
         if concepts:
             for concept in concepts:
                 scope = ", ".join(concept.get("scope", [])) if concept.get("scope") else "N/A"
@@ -891,11 +891,11 @@ Ce service souscrit aux événements métier suivants :
                 )
                 concept_lines.append(f"  - Scope: {scope}")
         else:
-            concept_lines.append("_Aucun concept métier canonique documenté pour ce domaine._")
+            concept_lines.append("_No canonical business concept documented for this domain._")
 
-        terms_lines = ["", "### Glossaire métier (objets & propriétés)", ""]
+        terms_lines = ["", "### Business glossary (objects & properties)", ""]
         if terms:
-            terms_lines.append("| Terme | Type | Description | Objets sources |")
+            terms_lines.append("| Term | Type | Description | Source objects |")
             terms_lines.append("|---|---|---|---|")
             for term in terms:
                 sources = ", ".join(f"`{source}`" for source in term.get("sources", [])) or "N/A"
@@ -903,12 +903,12 @@ Ce service souscrit aux événements métier suivants :
                     f"| {_escape_table_cell(term.get('name', 'N/A'))} | {_escape_table_cell(term.get('type', 'N/A'))} | {_escape_table_cell(term.get('description', ''))} | {_escape_table_cell(sources)} |"
                 )
         else:
-            terms_lines.append("_Aucun terme métier n'a été extrait des objets du domaine._")
+            terms_lines.append("_No business term was extracted from the domain objects._")
 
         return "\n".join(concept_lines + terms_lines)
 
     def _generate_domain_ubiquitous_language_mdx(self, domain: Dict[str, Any]) -> str:
-        """Génère le fichier `ubiquitous-language.mdx` attendu par EventCatalog."""
+        """Generates the `ubiquitous-language.mdx` file expected by EventCatalog."""
         ubiquitous_language = domain.get("ubiquitous_language", {})
         concepts = ubiquitous_language.get("concepts", [])
         terms = ubiquitous_language.get("terms", [])
@@ -918,15 +918,15 @@ Ce service souscrit aux événements métier suivants :
         for concept in concepts:
             concept_ref = concept.get("source_id") or concept.get("id") or "N/A"
             concept_scope = ", ".join(concept.get("scope", [])) if concept.get("scope") else "N/A"
-            concept_summary = concept.get("summary") or "Concept métier canonique"
-            concept_definition = concept.get("summary") or "Aucune description fournie."
+            concept_summary = concept.get("summary") or "Canonical business concept"
+            concept_definition = concept.get("summary") or "No description provided."
 
             dictionary.append({
                 "id": concept_ref,
                 "name": concept.get("name") or concept_ref,
                 "summary": concept_summary,
                 "description": (
-                    f"Concept BCM: `{concept_ref}`\n\n"
+                    f"BCM concept: `{concept_ref}`\n\n"
                     f"{concept_definition}\n\n"
                     f"Scope: {concept_scope}"
                 ),
@@ -936,7 +936,7 @@ Ce service souscrit aux événements métier suivants :
         for term in terms:
             term_name = term.get("name") or "N/A"
             term_type = term.get("type") or "N/A"
-            term_description = term.get("description") or "Aucune description fournie."
+            term_description = term.get("description") or "No description provided."
             sources = term.get("sources", [])
             sources_text = ", ".join(f"`{source}`" for source in sources) if sources else "N/A"
 
@@ -947,7 +947,7 @@ Ce service souscrit aux événements métier suivants :
                 "description": (
                     f"Type: `{term_type}`\n\n"
                     f"{term_description}\n\n"
-                    f"Objets sources: {sources_text}"
+                    f"Source objects: {sources_text}"
                 ),
                 "icon": "List"
             })
@@ -958,8 +958,8 @@ Ce service souscrit aux événements métier suivants :
 
         yaml_content = yaml.dump(frontmatter, default_flow_style=False, allow_unicode=True, sort_keys=False)
 
-        domain_name = domain.get("name", "domaine")
+        domain_name = domain.get("name", "domain")
         return f"""---
 {yaml_content}---
-Cette page est générée automatiquement à partir des concepts et objets métier du domaine **{domain_name}**.
+This page is automatically generated from the business concepts and objects of domain **{domain_name}**.
 """

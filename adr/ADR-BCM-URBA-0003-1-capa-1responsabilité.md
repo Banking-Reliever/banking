@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-URBA-0003
-title: "Une capacité = une responsabilité, pas une application"
+title: "One Capability = One Responsibility, Not an Application"
 status: Superseded
 date: 2026-02-26
 superseded_by: ADR-BCM-URBA-0009
@@ -25,81 +25,81 @@ impacted_mappings:
   - SI
 
 related_adr:
-  - ADR-BCM-GOV-0001  # hiérarchie GOV → URBA → FUNC
+  - ADR-BCM-GOV-0001  # GOV → URBA → FUNC hierarchy
 supersedes: []
 
 tags:
   - BCM
-  - Urbanisation
+  - Urbanization
   - Ownership
 
 stability_impact: Structural
 ---
 
-# ADR-BCM-URBA-0003 — Une capacité = une responsabilité, pas une application
+# ADR-BCM-URBA-0003 — One Capability = One Responsibility, Not an Application
 
-## Contexte
-Lors des cartographies et de la rationalisation, une dérive fréquente est d’assimiler une capacité à une application (ex : « CRM = Relation Client »).
-Cela crée :
-- des recouvrements (plusieurs applications couvrent une même capacité),
-- des débats stériles “outil vs métier”,
-- une incapacité à comparer objectivement des options (build/buy, produit vs plateforme, trajectoire).
+## Context
+During mappings and rationalization, a frequent drift is to equate a capability with an application (e.g., "CRM = Customer Relations").
+This creates:
+- overlaps (multiple applications covering the same capability),
+- sterile "tool vs. business" debates,
+- an inability to objectively compare options (build/buy, product vs. platform, trajectory).
 
-## Décision
-- Une capacité décrit une responsabilité métier stable (le “quoi”), indépendante de la solution.
-- Les applications, produits SI et composants techniques sont **mappés** sur les capabilities, mais ne les définissent pas.
-- Les libellés de capabilities ne contiennent **aucune** référence à un éditeur, un outil, ou une techno.
+## Decision
+- A capability describes a stable business responsibility (the "what"), independent of the solution.
+- Applications, IS products, and technical components are **mapped** onto capabilities, but do not define them.
+- Capability labels contain **no** reference to a vendor, tool, or technology.
 
 
 
 ## Justification
 
-Cette séparation permet :
-- d'éviter les biais technologiques,
-- de maintenir un langage commun métier/DSI,
-- de piloter une trajectoire (avant/après) sans renommer le métier,
-- de mesurer la couverture SI et d'identifier les doublons.
+This separation allows:
+- avoiding technological bias,
+- maintaining a common business/IS language,
+- steering a trajectory (before/after) without renaming the business,
+- measuring IS coverage and identifying duplicates.
 
-### Alternatives considérées
+### Alternatives Considered
 
-- Capability = Application — rejeté car trop dépendant du paysage SI, bloque la transformation.
-- Capability = Processus — rejeté car dérive en cartographie opérationnelle exhaustive.
+- Capability = Application — rejected because too dependent on the IS landscape, blocks transformation.
+- Capability = Process — rejected because it drifts into an exhaustive operational map.
 
-## Impacts sur la BCM
+## Impacts on the BCM
 
 ### Structure
 
-- Capacités impactées : toutes (règle de nommage et de périmètre).
+- Impacted capabilities: all (naming and scope rule).
 
-### Événements (si applicable)
+### Events (if applicable)
 
-- Aucun impact direct.
+- No direct impact.
 
 ### Mapping SI / Data / Org
 
-- Maintenir une vue séparée « Capability → Applications/Produits » (et non dans la BCM).
+- Maintain a separate "Capability → Applications/Products" view (not in the BCM).
 
-## Conséquences
-### Positives
-- Rationalisation applicative plus objective (couverture, redondances, “gaps”).
-- Lisibilité renforcée pour les arbitrages (build/buy, convergence, mutualisation).
+## Consequences
+### Positive
+- More objective application rationalization (coverage, redundancies, gaps).
+- Enhanced readability for arbitrations (build/buy, convergence, pooling).
 
-### Négatives / Risques
+### Negative / Risks
 
-- Discipline de gouvernance nécessaire (revues de libellés, contrôle qualité).
+- Governance discipline required (label reviews, quality control).
 
-### Dette acceptée
+### Accepted Debt
 
-- Les libellés existants hérités du legacy peuvent persister temporairement.
+- Existing labels inherited from legacy may persist temporarily.
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : Élevé (règle transverse).
-- Date de revue recommandée : 2028-01-21.
-- Indicateur de stabilité attendu : 0 capacité portant un nom d'éditeur ou de produit.
+- Criticality level: High (transverse rule).
+- Recommended review date: 2028-01-21.
+- Expected stability indicator: 0 capabilities carrying a vendor or product name.
 
-## Traçabilité
+## Traceability
 
-- Atelier : Revue Architecture — application de la règle sur les cartographies capability→SI
-- Participants : EA / Urbanisation, Business Architecture
-- Références : —
+- Workshop: Architecture Review — application of the rule on capability→IS mappings
+- Participants: EA / Urbanization, Business Architecture
+- References: —

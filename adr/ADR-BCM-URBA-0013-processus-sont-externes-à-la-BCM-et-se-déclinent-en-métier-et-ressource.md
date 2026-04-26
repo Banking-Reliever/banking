@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-URBA-0013
-title: "Les processus restent externes à la BCM et se déclinent en processus métier et processus ressource"
+title: "Processes Remain External to the BCM and Split into Business and Resource Processes"
 status: Proposed
 date: 2026-03-23
 
@@ -35,143 +35,143 @@ supersedes: []
 
 tags:
   - BCM
-  - processus
-  - orthogonalite
-  - objet-metier
-  - evenement-metier
-  - ressource
+  - process
+  - orthogonality
+  - business-object
+  - business-event
+  - resource
   - abstraction
   - orchestration
 
 stability_impact: Structural
 ---
 
-# ADR-BCM-URBA-0013 — Les processus restent externes à la BCM et se déclinent en processus métier et processus ressource
+# ADR-BCM-URBA-0013 — Processes Remain External to the BCM and Split into Business and Resource Processes
 
-## Contexte
+## Context
 
-La BCM décrit un modèle structurel de capacités, d'objets, d'événements, de ressources et de relations.
+The BCM describes a structural model of capabilities, objects, events, resources, and relations.
 
-Le référentiel introduit déjà deux niveaux d'abstraction :
-- un niveau **métier** fondé sur les objets métier, événements métier et abonnements métier ;
-- un niveau **ressource** fondé sur les ressources, événements ressource et abonnements ressource.
+The referential already introduces two levels of abstraction:
+- a **business** level based on business objects, business events, and business subscriptions;
+- a **resource** level based on resources, resource events, and resource subscriptions.
 
-En parallèle, les artefacts de processus servent à décrire des enchaînements d'orchestration.
-Ils consomment la BCM mais ne doivent pas devenir un axe de découpage de sa structure.
+In parallel, process artifacts serve to describe orchestration sequences.
+They consume the BCM but must not become a decomposition axis of its structure.
 
-Une clarification est nécessaire pour distinguer explicitement :
-- la **structure** du modèle BCM ;
-- les **vues processuelles** qui s'appuient sur ce modèle.
+A clarification is necessary to explicitly distinguish:
+- the **structure** of the BCM model;
+- the **processual views** that build on this model.
 
-## Décision
+## Decision
 
-Les processus **ne font pas partie de la structure de la BCM**.
+Processes **are not part of the BCM structure**.
 
-Ils constituent des **vues externes d'orchestration** s'appuyant sur les éléments du modèle BCM.
+They constitute **external orchestration views** built on BCM model elements.
 
-Deux familles de processus sont reconnues :
+Two families of processes are recognized:
 
-1. **Processus métier**
-   - Fondés sur les abstractions de niveau métier :
-     `objet métier`, `événement métier`, `abonnement métier`.
-   - Ils décrivent des orchestrations métier généralistes, stables et orientées valeur.
+1. **Business processes**
+   - Based on business-level abstractions:
+     `business object`, `business event`, `business subscription`.
+   - They describe generalist, stable, value-oriented business orchestrations.
 
-2. **Processus ressource**
-   - Fondés sur les abstractions de niveau ressource :
-     `ressource`, `événement ressource`, `abonnement ressource`.
-   - Ils décrivent des orchestrations appliquées, explicites et soumises à des contraintes opérationnelles fortes.
+2. **Resource processes**
+   - Based on resource-level abstractions:
+     `resource`, `resource event`, `resource subscription`.
+   - They describe applied, explicit orchestrations subject to strong operational constraints.
 
-### Règles structurantes
+### Structuring Rules
 
-1. La BCM reste structurée par les **capacités** et non par les processus.
-2. Les **capacités L2** demeurent le pivot d'urbanisation et le point d'ancrage principal des relations du modèle.
-3. Un processus ne crée pas, à lui seul, une capacité, une frontière de capacité ou un niveau L1/L2/L3.
-4. Un processus métier ne doit référencer que des éléments de type métier.
-5. Un processus ressource ne doit référencer que des éléments de type ressource.
-6. Le passage du niveau métier au niveau ressource relève d'une relation d'alignement ou de traçabilité, pas d'une fusion des deux niveaux.
-7. Les artefacts de processus restent documentaires et descriptifs ; ils ne remplacent ni les ADR URBA ni les ADR FUNC.
+1. The BCM remains structured by **capabilities** and not by processes.
+2. **L2 capabilities** remain the urbanization pivot and the main relationship anchor point of the model.
+3. A process does not, by itself, create a capability, a capability boundary, or an L1/L2/L3 level.
+4. A business process must only reference business-type elements.
+5. A resource process must only reference resource-type elements.
+6. The transition from the business level to the resource level belongs to an alignment or traceability relation, not a merging of the two levels.
+7. Process artifacts remain documentary and descriptive; they do not replace URBA ADRs nor FUNC ADRs.
 
-### Critères vérifiables
+### Verifiable Criteria
 
-- Aucun processus n'est utilisé comme critère de découpage principal d'une capacité BCM.
-- Tout processus publié est typé soit `processus métier`, soit `processus ressource`.
-- Tout processus métier référence exclusivement des objets/événements/abonnements métier.
-- Tout processus ressource référence exclusivement des ressources/événements/abonnements ressource.
-- Les relations structurantes du modèle restent ancrées sur les capacités, en priorité au niveau L2.
+- No process is used as the main decomposition criterion of a BCM capability.
+- Every published process is typed as either `business process` or `resource process`.
+- Every business process references exclusively business objects/events/subscriptions.
+- Every resource process references exclusively resources/events/subscriptions.
+- The structuring relations of the model remain anchored on capabilities, primarily at the L2 level.
 
 ## Justification
 
-Cette décision permet :
-- de préserver la stabilité de la BCM comme référentiel structurel ;
-- de distinguer clairement l'abstraction métier de la déclinaison opérationnelle ;
-- d'éviter qu'un flux processuel conjoncturel déforme les frontières capacitaires ;
-- de conserver les processus comme vues de lecture, d'explication et d'orchestration.
+This decision allows:
+- preserving the stability of the BCM as a structural referential;
+- clearly distinguishing business abstraction from operational breakdown;
+- preventing a conjunctural process flow from deforming capability boundaries;
+- keeping processes as reading, explanation, and orchestration views.
 
-Elle rend également compatible :
-- une lecture métier généraliste, utile pour la compréhension transverse ;
-- une lecture ressource, utile pour l'explicitation des contraintes d'exécution.
+It also makes compatible:
+- a generalist business reading, useful for transverse understanding;
+- a resource reading, useful for expliciting execution constraints.
 
-### Alternatives considérées
+### Alternatives Considered
 
-- **Intégrer les processus dans la structure de la BCM** — rejeté : mélange entre vue processuelle et structure du référentiel.
-- **Ne conserver qu'un seul type de processus** — rejeté : perte de distinction entre abstraction métier et contraintes opérationnelles.
-- **Rattacher directement les processus aux niveaux L1/L2/L3 comme axe de structuration** — rejeté : contradiction avec le rôle pivot des capacités.
+- **Integrating processes into the BCM structure** — rejected: mixes processual view with referential structure.
+- **Keeping only one type of process** — rejected: loses the distinction between business abstraction and operational constraints.
+- **Directly attaching processes to L1/L2/L3 levels as a structuring axis** — rejected: contradiction with the pivot role of capabilities.
 
-## Impacts sur la BCM
+## Impacts on the BCM
 
 ### Structure
 
-- Aucun changement du découpage L1/L2/L3.
-- Aucune capacité nouvelle n'est créée du seul fait d'un processus.
-- Confirmation du rôle structurel des capacités et du rôle externe des processus.
+- No change to the L1/L2/L3 breakdown.
+- No new capability is created solely by a process.
+- Confirmation of the structural role of capabilities and the external role of processes.
 
-### Événements (si applicable)
+### Events (if applicable)
 
-- Aucun changement du méta-modèle événementiel.
-- Clarification du fait que les événements métier alimentent les processus métier, et les événements ressource les processus ressource.
+- No change to the event meta-model.
+- Clarification that business events feed business processes, and resource events feed resource processes.
 
 ### Mapping SI / Data / Org
 
-- **SI** : les processus ressource peuvent expliciter les contraintes d'orchestration appliquée sans modifier les frontières capacitaires.
-- **DATA** : la distinction métier / ressource améliore la lisibilité des objets manipulés.
-- **ORG** : les processus restent des vues d'explication et de coordination, non des unités structurelles de responsabilité.
+- **SI**: resource processes can explicit applied orchestration constraints without modifying capability boundaries.
+- **DATA**: the business / resource distinction improves the readability of manipulated objects.
+- **ORG**: processes remain explanation and coordination views, not structural units of responsibility.
 
-## Conséquences
+## Consequences
 
-### Positives
+### Positive
 
-- Clarification nette entre structure BCM et orchestration.
-- Cohérence renforcée avec le méta-modèle à deux niveaux.
-- Réduction du risque de dérive process-centric de la BCM.
-- Meilleure lisibilité des artefacts de processus.
+- Clear distinction between BCM structure and orchestration.
+- Reinforced coherence with the two-level meta-model.
+- Reduction of the risk of process-centric drift of the BCM.
+- Better readability of process artifacts.
 
-### Négatives / Risques
+### Negative / Risks
 
-- Nécessite une discipline documentaire explicite entre vues structurelles et vues processuelles.
-- Peut demander des règles complémentaires de traçabilité entre processus métier et processus ressource.
+- Requires explicit documentary discipline between structural views and processual views.
+- May require complementary traceability rules between business processes and resource processes.
 
-### Dette acceptée
+### Accepted Debt
 
-- Le formalisme détaillé des liens de traçabilité entre processus métier et processus ressource reste à préciser dans un guide ou un template complémentaire.
-- Les conventions de nommage et de publication des artefacts de processus pourront être affinées ultérieurement.
+- The detailed formalism of traceability links between business processes and resource processes remains to be specified in a complementary guide or template.
+- Naming and publication conventions for process artifacts may be refined later.
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : Élevé.
-- Date de revue recommandée : 2027-03-23.
-- Indicateur de stabilité attendu :
-  - aucun découpage capacitaire justifié uniquement par un processus ;
-  - typage explicite de 100% des processus publiés ;
-  - absence de mélange entre abstractions métier et ressource dans un même artefact de processus.
+- Criticality level: High.
+- Recommended review date: 2027-03-23.
+- Expected stability indicator:
+  - no capability breakdown justified solely by a process;
+  - explicit typing of 100% of published processes;
+  - absence of mixing between business and resource abstractions in a single process artifact.
 
-## Traçabilité
+## Traceability
 
-- Atelier : cadrage urbanisation BCM — structure vs orchestration.
-- Participants : Urbanisme SI, Architecture, Référents métier.
-- Références :
+- Workshop: BCM urbanization framing — structure vs. orchestration.
+- Participants: IS Urbanization, Architecture, Business domain leads.
+- References:
   - ADR-BCM-GOV-0001
   - ADR-BCM-URBA-0007
   - ADR-BCM-URBA-0008
   - ADR-BCM-URBA-0009
   - ADR-BCM-URBA-0010
-  - Template `externals-templates/processus-metier/template-processus-metier.yaml`
+  - Template `externals-templates/business-process/template-business-process.yaml`

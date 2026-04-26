@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-URBA-0011
-title: "Décompression locale de la complexité par L3 tout en conservant L2 comme pivot"
+title: "Local Complexity Decompression via L3 While Maintaining L2 as Pivot"
 status: Proposed
 date: 2026-03-17
 
@@ -36,95 +36,95 @@ tags:
   - BCM
   - L2
   - L3
-  - complexite
-  - evenements
-  - urbanisation
+  - complexity
+  - events
+  - urbanization
 
 stability_impact: Structural
 ---
 
-# ADR-BCM-URBA-0011 — Décompression locale de la complexité par L3 tout en conservant L2 comme pivot
+# ADR-BCM-URBA-0011 — Local Complexity Decompression via L3 While Maintaining L2 as Pivot
 
-## Contexte
+## Context
 
-Le niveau L2 a été retenu comme pivot d’urbanisation, point d’ancrage des relations du modèle, niveau de référence pour les mappings SI / DATA / ORG et pour l’ownership fonctionnel.
+The L2 level has been retained as the urbanization pivot, the model relationship anchor point, the reference level for SI / DATA / ORG mappings, and for functional ownership.
 
-Dans certaines capacités L2, notamment lorsque la densité de règles, la variété des cas de gestion ou la charge cognitive deviennent trop fortes, une modélisation purement L2 peut devenir difficile à exploiter opérationnellement.
+In certain L2 capabilities, particularly when the density of rules, the variety of management cases, or the cognitive load becomes too high, a purely L2 modeling can become difficult to exploit operationally.
 
-Ce risque est particulièrement visible sur des capacités comme l’instruction ou l’indemnisation dans la capacité CAP.COEUR.005 "Sinistres & Prestations", qui concentrent de nombreuses variantes métier, décisions intermédiaires et interactions externes.
+This risk is particularly visible on capabilities such as claim instruction or indemnification in capability CAP.COEUR.005 "Claims & Benefits", which concentrate many business variants, intermediate decisions, and external interactions.
 
-## Décision
+## Decision
 
-### 1) Le niveau L2 reste le pivot par défaut
+### 1) The L2 level remains the default pivot
 
-Les capacités L2 demeurent :
-- le niveau de référence pour l’ownership,
-- le point d’ancrage des objets métier, événements métier et abonnements métier,
-- le niveau canonique de lecture transverse,
-- le niveau de référence des mappings SI / DATA / ORG.
+L2 capabilities remain:
+- the reference level for ownership,
+- the anchor point for business objects, business events, and business subscriptions,
+- the canonical cross-reading level,
+- the reference level for SI / DATA / ORG mappings.
 
-### 2) Le niveau L3 est autorisé uniquement comme mécanisme local de décompression
+### 2) The L3 level is authorized only as a local decompression mechanism
 
-Lorsqu’une capacité L2 devient trop complexe pour rester gouvernable à elle seule, un niveau L3 peut être introduit localement pour :
-- ségréger des sous-ensembles homogènes,
-- expliciter la production détaillée,
-- réduire la charge cognitive et la taille des contrats opérationnels.
+When an L2 capability becomes too complex to remain governable on its own, an L3 level may be introduced locally to:
+- segregate homogeneous subsets,
+- explicit the detailed production,
+- reduce the cognitive load and size of operational contracts.
 
-Le L3 ne devient pas un nouveau pivot global.
+L3 does not become a new global pivot.
 
-### 3) Les contrats canoniques restent exprimés au niveau L2
+### 3) Canonical contracts remain expressed at the L2 level
 
-Les consommateurs transverses doivent continuer à s’appuyer en priorité sur les objets métier, événements métier et abonnements métier rattachés au L2.
+Transverse consumers must continue to rely primarily on the business objects, business events, and business subscriptions attached to the L2.
 
-Les éléments plus fins introduits au L3 servent à décrire la production détaillée ou spécialisée d’une capacité L2, sans remettre en cause la lisibilité transverse du modèle.
+The finer elements introduced at L3 serve to describe the detailed or specialized production of an L2 capability, without calling into question the transverse readability of the model.
 
-### 4) Les éléments détaillés peuvent être réagrégés vers le L2
+### 4) Detailed elements can be re-aggregated toward the L2
 
-Quand un zoom L3 est utilisé, des mécanismes d’agrégation, de normalisation ou de projection peuvent être employés pour reconstituer un jalon canonique au niveau L2.
+When an L3 zoom is used, aggregation, normalization, or projection mechanisms may be used to reconstitute a canonical milestone at the L2 level.
 
-Le L2 reste donc le niveau d’exposition transverse ; le L3 reste le niveau local de détail.
+The L2 therefore remains the transverse exposure level; the L3 remains the local detail level.
 
-## Conséquences
+## Consequences
 
-### Positives
+### Positive
 
-- Conservation d’une règle simple et stable : L2 reste le pivot.
-- Possibilité de traiter localement les zones trop denses sans refondre tout le modèle.
-- Meilleure maîtrise de la complexité sur les capacités les plus chargées.
-- Maintien d’une lecture transverse homogène pour les consommateurs.
+- Preservation of a simple and stable rule: L2 remains the pivot.
+- Ability to locally handle overly dense zones without overhauling the entire model.
+- Better management of complexity on the most loaded capabilities.
+- Maintenance of a homogeneous cross-reading for consumers.
 
-### Négatives / Risques
+### Negative / Risks
 
-- Introduction d’une couche supplémentaire de dérivation entre L3 et L2.
-- Risque de sur-utiliser le L3 si les critères d’entrée ne sont pas explicités.
-- Nécessité de gouverner clairement les règles de réagrégation et de responsabilité.
+- Introduction of an additional derivation layer between L3 and L2.
+- Risk of over-using L3 if the entry criteria are not made explicit.
+- Need to clearly govern the re-aggregation and responsibility rules.
 
-### Dette acceptée
+### Accepted Debt
 
-- Les critères précis de déclenchement d’un zoom L3 pourront être affinés par ADR locale de capacité.
-- Tous les cas de décomposition L3 ne sont pas définis à ce stade.
-- Certaines capacités L2 pourront rester temporairement surchargées avant formalisation de leur L3.
+- The precise trigger criteria for an L3 zoom may be refined by a capability-local ADR.
+- Not all L3 decomposition cases are defined at this stage.
+- Some L2 capabilities may temporarily remain overloaded before their L3 is formalized.
 
-## Règle de gouvernance
+## Governance Rule
 
-Un zoom L3 n’est acceptable que si les trois conditions suivantes sont réunies :
-1. la capacité L2 n’est plus cognitivement ou opérationnellement maîtrisable en l’état ;
-2. la décomposition permet d’isoler des sous-ensembles réellement homogènes ;
-3. les contrats canoniques exposés au reste du SI demeurent lisibles au niveau L2.
+An L3 zoom is only acceptable if the following three conditions are met:
+1. the L2 capability is no longer cognitively or operationally manageable as-is;
+2. the decomposition allows isolating genuinely homogeneous subsets;
+3. the canonical contracts exposed to the rest of the IS remain readable at the L2 level.
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Le niveau L2 reste le point d’ancrage de 100 % des mappings SI / DATA / ORG.
-- Le recours au L3 reste justifié par exception documentée.
-- Chaque capacité disposant d’un L3 conserve un contrat canonique identifiable au niveau L2.
+- The L2 level remains the anchor point of 100% of SI / DATA / ORG mappings.
+- The use of L3 remains justified by documented exception.
+- Each capability with an L3 retains an identifiable canonical contract at the L2 level.
 
-## Traçabilité
+## Traceability
 
-- Références :
-  - ADR-BCM-URBA-0004 — bon niveau de décision
-  - ADR-BCM-URBA-0007 — méta-modèle événementiel normalisé
-  - ADR-BCM-URBA-0008 — modélisation des événements à deux niveaux
-  - ADR-BCM-URBA-0009 — définition complète d’une capacité
-  - ADR-BCM-URBA-0010 — L2 pivot d’urbanisation
-  - ADR-BCM-FUNC-0002 — découpage L2 de COEUR.005
-  - ADR-BCM-FUNC-0003 — limites de DSP
+- References:
+  - ADR-BCM-URBA-0004 — deciding at the right level
+  - ADR-BCM-URBA-0007 — normalized event meta-model
+  - ADR-BCM-URBA-0008 — two-level event modeling
+  - ADR-BCM-URBA-0009 — complete capability definition
+  - ADR-BCM-URBA-0010 — L2 urbanization pivot
+  - ADR-BCM-FUNC-0002 — L2 breakdown of COEUR.005
+  - ADR-BCM-FUNC-0003 — DSP limits

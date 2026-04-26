@@ -1,0 +1,21 @@
+{
+  "ServiceVersion": "1.0.0",
+  "AzureServiceBusConnection": "",
+  "AzureManagementEnabled": false,
+  "RabbitMQConnection": "amqp://admin:password@localhost:5672/naive",
+  "RabbitMQManagementEnabled": true,
+  "HostName": "localhost",
+  "Port": 5672,
+  "UserName": "admin",
+  "Password": "password",
+  "VirtualHost": "naive",
+  "ExchangeName": "naive-policy-management-exchange",
+  "ExchangeType": "topic",
+  "MongoDbConnection": "mongodb://localhost:27017/naive?replicaSet=rs0",
+  "Namespace": "Local",
+  "TargetEventBus": "RabbitMq",
+  "TargetNoSQL": "MongoDB",
+  "TargetUrl": "localhost",
+  "TargetPort": "66666",
+  "LogAppender": "Console"
+}

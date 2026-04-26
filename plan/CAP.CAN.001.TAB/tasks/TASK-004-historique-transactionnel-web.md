@@ -1,73 +1,73 @@
 ---
 task_id: TASK-004
 capability_id: CAP.CAN.001.TAB
-capability_name: Tableau de Bord Bénéficiaire
-epic: Épic 3 — Tableau de bord web — historique transactionnel
+capability_name: Beneficiary Dashboard
+epic: Epic 3 — Web Dashboard — Transaction History
 status: todo
 priority: medium
 depends_on: [TASK-003]
 ---
 
-# TASK-004 — Stub BSP.004.AUT et historique transactionnel web
+# TASK-004 — BSP.004.AUT stub and transaction history web view
 
-## Contexte
-La vue situation courante (TASK-003) expose l'état présent du bénéficiaire. Cette tâche y ajoute la dimension historique : l'accès à l'historique complet des transactions (autorisées et refusées) avec filtres et tri. Les refus doivent afficher leur motif — une exigence de la règle de dignité (ADR-BCM-FUNC-0009 : tout refus est accompagné d'une explication motivée). Les événements transactionnels viennent de CAP.BSP.004.AUT, une capacité distincte des trois déjà stub-ées en TASK-002 : un stub dédié à BSP.004.AUT est donc nécessaire.
+## Context
+The current situation view (TASK-003) exposes the beneficiary's present state. This task adds the historical dimension: access to the complete transaction history (authorized and declined) with filters and sorting. Declines must display their reason — a requirement of the dignity rule (ADR-BCM-FUNC-0009: every decline is accompanied by a motivated explanation). Transactional events come from CAP.BSP.004.AUT, a capability distinct from the three already stubbed in TASK-002: a dedicated stub for BSP.004.AUT is therefore necessary.
 
-## Référence capacité
-- Capacité : Tableau de Bord Bénéficiaire (CAP.CAN.001.TAB)
-- Zone : CANAL
-- ADR gouvernants : ADR-BCM-FUNC-0009, ADR-BCM-URBA-0009
+## Capability Reference
+- Capability: Beneficiary Dashboard (CAP.CAN.001.TAB)
+- Zone: CHANNEL
+- Governing ADRs: ADR-BCM-FUNC-0009, ADR-BCM-URBA-0009
 
-## Ce qu'il faut produire
+## What needs to be produced
 
-### Extension du stub — événements BSP.004.AUT
-Étendre le mécanisme de stub de TASK-002 pour publier sur le point de souscription de CAP.CAN.001.TAB les événements transactionnels :
-- `Transaction.Autorisée` — avec catégorie, montant, marchand, horodatage, bénéficiaire
-- `Transaction.Refusée` — avec catégorie, montant tenté, motif de refus (règle du palier appliquée), horodatage, bénéficiaire
+### Stub extension — BSP.004.AUT events
+Extend the TASK-002 stub mechanism to publish the transactional events on the CAP.CAN.001.TAB subscription point:
+- `Transaction.Authorized` — with category, amount, merchant, timestamp, beneficiary
+- `Transaction.Declined` — with category, attempted amount, decline reason (tier rule applied), timestamp, beneficiary
 
-Le stub génère un historique simulé suffisant pour tester les filtres et le tri.
+The stub generates a simulated history sufficient to test filters and sorting.
 
-### Extension du read model — historique transactionnel
-Étendre le read model de TASK-002 pour stocker les transactions par bénéficiaire (autorisées et refusées), incluant le motif de refus pour les transactions refusées.
+### Read model extension — transaction history
+Extend the TASK-002 read model to store transactions per beneficiary (authorized and declined), including the decline reason for declined transactions.
 
-### Vue historique transactionnel (interface web)
-L'interface web expose, depuis la vue principale de TASK-003, un accès à l'historique transactionnel :
-- Affichage de toutes les transactions du bénéficiaire (autorisées et refusées)
-- **Filtres disponibles** : période (date début / date fin), catégorie de dépense, statut (autorisée / refusée)
-- **Tri disponible** : par date (croissant/décroissant), par montant (croissant/décroissant)
-- Chaque transaction refusée affiche le motif de refus de manière intelligible (pas un code technique)
-- `TableauDeBord.Consulté` est produit à chaque accès à la vue historique
+### Transaction history view (web interface)
+The web interface exposes, from the TASK-003 main view, access to the transaction history:
+- Display of all the beneficiary's transactions (authorized and declined)
+- **Available filters**: period (start date / end date), spending category, status (authorized / declined)
+- **Available sorting**: by date (ascending/descending), by amount (ascending/descending)
+- Each declined transaction displays the decline reason in an intelligible way (not a technical code)
+- `Dashboard.Viewed` is produced on each access to the history view
 
-## Événements métier à produire
-- `TableauDeBord.Consulté` — émis à chaque accès à la vue historique (enrichi du contexte : canal=web, vue=historique)
+## Business Events to Produce
+- `Dashboard.Viewed` — emitted on each access to the history view (enriched with context: channel=web, view=history)
 
-## Objets métier impliqués
-- **Bénéficiaire** — sujet de l'historique
-- **Transaction** — chaque acte d'achat autorisé ou refusé, avec son contexte (catégorie, montant, motif si refus)
-- **Enveloppe** — catégorie de dépense permettant de filtrer les transactions
+## Business Objects Involved
+- **Beneficiary** — subject of the history
+- **Transaction** — each authorized or declined purchase act, with its context (category, amount, reason if declined)
+- **Envelope** — spending category allowing transactions to be filtered
 
-## Souscriptions événementielles requises
-- `Transaction.Autorisée` (de CAP.BSP.004.AUT) — abonnement ressource : alimente l'historique dans le read model
-- `Transaction.Refusée` (de CAP.BSP.004.AUT) — abonnement métier : fait partie du cycle de vie visible du bénéficiaire ; le motif de refus est une donnée métier à afficher
+## Required Event Subscriptions
+- `Transaction.Authorized` (from CAP.BSP.004.AUT) — resource subscription: feeds the history in the read model
+- `Transaction.Declined` (from CAP.BSP.004.AUT) — business subscription: part of the beneficiary's visible lifecycle; the decline reason is business data to be displayed
 
-## Définition de Done
-- [ ] Le stub produit `Transaction.Autorisée` et `Transaction.Refusée` conformément au contrat BSP.004.AUT
-- [ ] Le read model stocke l'historique transactionnel par bénéficiaire avec les motifs de refus
-- [ ] La vue web affiche les transactions avec filtre sur période, catégorie et statut
-- [ ] Le tri par date et par montant fonctionne dans les deux sens
-- [ ] Les transactions refusées affichent leur motif de refus en langage intelligible (pas un code)
-- [ ] `TableauDeBord.Consulté` est émis à chaque accès à la vue historique
-- [ ] L'historique fonctionne avec le bénéficiaire de test alimenté par le stub
-- [ ] validate_repo.py passe sans erreur
-- [ ] validate_events.py passe sans erreur
+## Definition of Done
+- [ ] The stub produces `Transaction.Authorized` and `Transaction.Declined` compliant with the BSP.004.AUT contract
+- [ ] The read model stores the transaction history per beneficiary with decline reasons
+- [ ] The web view displays transactions with filter on period, category, and status
+- [ ] Sorting by date and by amount works in both directions
+- [ ] Declined transactions display their decline reason in intelligible language (not a code)
+- [ ] `Dashboard.Viewed` is emitted on each access to the history view
+- [ ] The history works with the test beneficiary fed by the stub
+- [ ] validate_repo.py passes without error
+- [ ] validate_events.py passes without error
 
-## Critères d'acceptation (métier)
-Un bénéficiaire de test peut filtrer ses transactions par catégorie et période, trier par montant décroissant, et lire le motif de chaque refus en clair. Aucune transaction refusée n'est affichée sans explication.
+## Acceptance Criteria (business)
+A test beneficiary can filter their transactions by category and period, sort by descending amount, and read each decline reason in plain language. No declined transaction is displayed without an explanation.
 
-## Dépendances
-- **TASK-003** : la vue situation courante et le read model de base doivent exister avant d'ajouter l'historique
-- **CAP.BSP.004.AUT** : source de `Transaction.Autorisée` et `Transaction.Refusée` — stub obligatoire pour le développement isolé
+## Dependencies
+- **TASK-003**: the current situation view and the base read model must exist before adding the history
+- **CAP.BSP.004.AUT**: source of `Transaction.Authorized` and `Transaction.Declined` — stub mandatory for isolated development
 
-## Questions ouvertes
-- Quelle est la durée de rétention de l'historique transactionnel affiché (30 jours ? durée du dispositif complet ?)
-- Le motif de refus est-il une énumération fixe (dictée par les paliers de CAP.REF.001.PAL) ou un texte libre produit par BSP.004.AUT ?
+## Open Questions
+- What is the retention period for the displayed transaction history (30 days? duration of the full program)?
+- Is the decline reason a fixed enumeration (dictated by CAP.REF.001.PAL tiers) or free text produced by BSP.004.AUT?

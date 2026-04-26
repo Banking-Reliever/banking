@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-URBA-0008
-title: "Modélisation des événements — Guide à deux niveaux"
+title: "Event Modeling — Two-Level Guide"
 status: Proposed
 date: 2026-03-09
 
@@ -34,269 +34,269 @@ supersedes: []
 
 tags:
   - event-driven
-  - objet-metier
-  - evenement-metier
-  - ressource
-  - modelisation
+  - business-object
+  - business-event
+  - resource
+  - modeling
   - guide
-  - polymorphisme
+  - polymorphism
   - abstraction
 
 stability_impact: Structural
 ---
 
-# ADR-BCM-URBA-0008 — Modélisation des événements — Guide à deux niveaux
+# ADR-BCM-URBA-0008 — Event Modeling — Two-Level Guide
 
-## Contexte
+## Context
 
-Le méta-modèle BCM (ADR-BCM-URBA-0007) introduit une architecture événementielle
-structurée en **deux niveaux d'abstraction** :
+The BCM meta-model (ADR-BCM-URBA-0007) introduces an event-driven architecture
+structured in **two levels of abstraction**:
 
-| Niveau | Objets | Événements | Abonnements |
+| Level | Objects | Events | Subscriptions |
 |--------|--------|------------|---------------|
-| **Métier** | Objet métier | Événement métier | Abonnement métier |
-| **opérationnel** | Ressource | Événement ressource | Abonnement ressource |
+| **Business** | Business object | Business event | Business subscription |
+| **Operational** | Resource | Resource event | Resource subscription |
 
-Cette structure répond à un besoin récurrent : modéliser des variantes métier
-structurellement hétérogènes pour un même jalon de cycle de vie, tout en préservant
-une abstraction stable pour les consommateurs transverses.
+This structure addresses a recurring need: modeling structurally heterogeneous business
+variants for the same lifecycle milestone, while preserving a stable abstraction for
+transverse consumers.
 
-**Exemple concret :**
-- Jalon de cycle de vie : *Sinistre déclaré*
-- Variantes métier : *Dégât des eaux*, *Vol*, *Incendie* — chacune avec des
-  propriétés spécifiques.
+**Concrete example:**
+- Lifecycle milestone: *Claim declared*
+- Business variants: *Water damage*, *Theft*, *Fire* — each with specific
+  properties.
 
-Cet ADR formalise les règles de modélisation à chaque niveau et leurs relations.
+This ADR formalizes the modeling rules at each level and their relations.
 
-## Décision
+## Decision
 
-### Vue d'ensemble : architecture à deux niveaux
+### Overview: Two-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           NIVEAU MÉTIER (abstraction)                       │
+│                        BUSINESS LEVEL (abstraction)                         │
 │                                                                             │
 │   ┌─────────────────────┐         ┌─────────────────────┐                   │
-│   │    Objet Métier     │◄────────│  Événement Métier   │                   │
-│   │  (propriétés        │ porté   │  (jalon de cycle    │                   │
-│   │   communes)         │         │   de vie)           │                   │
+│   │   Business Object   │◄────────│   Business Event    │                   │
+│   │  (common            │ carried │  (lifecycle         │                   │
+│   │   properties)       │         │   milestone)        │                   │
 │   └─────────────────────┘         └─────────────────────┘                   │
 │             ▲                               ▲                               │
 │             │ business_object               │ business_event               │
 │             │                               │                               │
 ├─────────────┼───────────────────────────────┼───────────────────────────────┤
 │             │                               │                               │
-│             │   NIVEAU RESSOURCE (implémentation)                           │
+│             │   RESOURCE LEVEL (implementation)                             │
 │             │                               │                               │
 │   ┌─────────┴───────────┐         ┌─────────┴───────────┐                   │
-│   │     Ressource       │◄────────│ Événement Ressource │                   │
-│   │  (propriétés        │ portée  │  (fait publié       │                   │
-│   │   spécialisées)     │         │   spécialisé)       │                   │
+│   │      Resource       │◄────────│   Resource Event    │                   │
+│   │  (specialized       │ carried │  (published         │                   │
+│   │   properties)       │         │   specialized fact) │                   │
 │   └─────────────────────┘         └─────────────────────┘                   │
 │                                                                             │
-│   Ressource.data[].business_object_property → Objet Métier.data[].name      │
+│   Resource.data[].business_object_property → Business Object.data[].name    │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Niveau 1 : Modélisation Métier
+## Level 1: Business Modeling
 
-### 1.1 Objet Métier — Le socle commun de propriétés
+### 1.1 Business Object — The Common Property Base
 
-L'**objet métier** définit les propriétés **abstraites et stables** partagées par
-toutes les variantes d'un même concept.
+The **business object** defines the **abstract and stable properties** shared by
+all variants of the same concept.
 
-**Règles de modélisation :**
+**Modeling rules:**
 
-| Règle | Description |
+| Rule | Description |
 |-------|-------------|
-| **Abstraction** | Ne contient que les propriétés communes à toutes les variantes |
-| **Stabilité** | Les propriétés sont conçues pour rester stables dans le temps |
-| **Indépendance** | Ne dépend pas de détails d'implémentation technique |
-| **Sens des références** | Ne référence pas d'événement métier ; la relation est portée uniquement par `EVT.carried_business_object` |
-| **Complétude** | Chaque propriété doit être référencée par au moins une ressource |
+| **Abstraction** | Contains only the properties common to all variants |
+| **Stability** | Properties are designed to remain stable over time |
+| **Independence** | Does not depend on technical implementation details |
+| **Reference direction** | Does not reference a business event; the relation is carried only by `EVT.carried_business_object` |
+| **Completeness** | Each property must be referenced by at least one resource |
 
-**Exemple — Objet métier `OBJ.COEUR.005.DECLARATION_SINISTRE` :**
+**Example — Business object `OBJ.COEUR.005.DECLARATION_SINISTRE`:**
 
 ```yaml
 data:
-  - name: identifiantDeclaration      # Commun à toutes les variantes
-  - name: dateSurvenance              # Commun à toutes les variantes
-  - name: identifiantContrat          # Commun à toutes les variantes
-  - name: canalDeclaration            # Commun à toutes les variantes
-  - name: statutVerificationCouverture # Commun à toutes les variantes
+  - name: claimDeclarationId       # Common to all variants
+  - name: occurrenceDate           # Common to all variants
+  - name: contractId               # Common to all variants
+  - name: declarationChannel       # Common to all variants
+  - name: coverageVerificationStatus # Common to all variants
 ```
 
-**À éviter :**
-- Propriétés spécifiques à une seule variante (ex. `origineFuite` pour dégât des eaux)
-- Propriétés techniques ou d'implémentation
-- Propriétés polymorphes nécessitant un décodage
+**To avoid:**
+- Properties specific to a single variant (e.g., `leakOrigin` for water damage)
+- Technical or implementation properties
+- Polymorphic properties requiring decoding
 
-### 1.2 Événement Métier — Le jalon de cycle de vie
+### 1.2 Business Event — The Lifecycle Milestone
 
-L'**événement métier** représente un **jalon abstrait du cycle de vie** d'un
-agrégat métier. Il porte un objet métier.
+The **business event** represents an **abstract lifecycle milestone** of a
+business aggregate. It carries a business object.
 
-**Règles de modélisation :**
+**Modeling rules:**
 
-| Règle | Description |
+| Rule | Description |
 |-------|-------------|
-| **Unicité du jalon** | Un seul événement métier par jalon de cycle de vie |
-| **Abstraction** | Décrit le *quoi* (le fait métier), pas le *comment* (l'implémentation) |
-| **Porteur d'objet métier** | Référence obligatoirement un objet métier via `carried_business_object` |
-| **Pas de publication directe** | N'est pas publié tel quel ; sert de point d'abstraction |
+| **Milestone uniqueness** | Only one business event per lifecycle milestone |
+| **Abstraction** | Describes the *what* (the business fact), not the *how* (the implementation) |
+| **Business object carrier** | Mandatorily references a business object via `carried_business_object` |
+| **No direct publication** | Is not published as-is; serves as an abstraction point |
 
-**Exemple — Événement métier `EVT.COEUR.005.SINISTRE_DECLARE` :**
+**Example — Business event `EVT.COEUR.005.SINISTRE_DECLARE`:**
 
 ```yaml
 id: EVT.COEUR.005.SINISTRE_DECLARE
-name: Sinistre déclaré
+name: Claim declared
 carried_business_object: OBJ.COEUR.005.DECLARATION_SINISTRE
 emitting_capability: CAP.COEUR.005.DSP
 ```
 
-### 1.3 Abonnement Métier — La consommation transverse
+### 1.3 Business Subscription — Transverse Consumption
 
-Un **abonnement métier** permet à un consommateur de s'abonner à un **événement
-métier**, recevant ainsi **tous les événements ressource** qui l'implémentent.
+A **business subscription** allows a consumer to subscribe to a **business
+event**, thus receiving **all resource events** that implement it.
 
-**Règles de modélisation :**
+**Modeling rules:**
 
-| Règle | Description |
+| Rule | Description |
 |-------|-------------|
-| **Cible abstraite** | Référence un événement métier, pas un événement ressource |
-| **Résolution automatique** | Est résolue vers tous les événements ressource liés |
-| **Propriétés communes** | Le consommateur ne peut lire que les propriétés de l'objet métier |
+| **Abstract target** | References a business event, not a resource event |
+| **Automatic resolution** | Is resolved toward all linked resource events |
+| **Common properties** | The consumer can only read the business object properties |
 
-**Cas d'usage :**
-- Consommateur généraliste (ex. reporting, audit, data lake)
-- Consommateur qui n'a pas besoin des détails spécialisés
+**Use cases:**
+- Generalist consumer (e.g., reporting, audit, data lake)
+- Consumer that does not need the specialized details
 
 ---
 
-## Niveau 2 : Modélisation Ressource
+## Level 2: Resource Modeling
 
-### 2.1 Ressource — L'implémentation spécialisée
+### 2.1 Resource — The Specialized Implementation
 
-La **ressource** implémente un objet métier avec des **propriétés spécialisées**
-propres à une variante.
+The **resource** implements a business object with **specialized properties**
+specific to a variant.
 
-**Règles de modélisation :**
+**Modeling rules:**
 
-| Règle | Description |
+| Rule | Description |
 |-------|-------------|
-| **Spécialisation** | Contient les propriétés spécifiques à la variante |
-| **Référence obligatoire** | Référence l'objet métier via `business_object` |
-| **Traçabilité des propriétés** | Chaque propriété commune référence sa source via `business_object_property` |
-| **Autonomie** | Doit être compréhensible seule, sans jointure avec d'autres ressources |
+| **Specialization** | Contains properties specific to the variant |
+| **Mandatory reference** | References the business object via `business_object` |
+| **Property traceability** | Each common property references its source via `business_object_property` |
+| **Autonomy** | Must be understandable alone, without joins with other resources |
 
-**Exemple — Ressource `RES.COEUR.005.DECLARATION_SINISTRE_HABITATION_DEGAT_EAUX` :**
+**Example — Resource `RES.COEUR.005.DECLARATION_SINISTRE_HABITATION_DEGAT_EAUX`:**
 
 ```yaml
 id: RES.COEUR.005.DECLARATION_SINISTRE_HABITATION_DEGAT_EAUX
 business_object: OBJ.COEUR.005.DECLARATION_SINISTRE
 
 data:
-  # Propriétés communes (référencent l'objet métier)
-  - name: identifiantDeclaration
-    business_object_property: identifiantDeclaration
-  - name: dateSurvenance
-    business_object_property: dateSurvenance
-  - name: identifiantContrat
-    business_object_property: identifiantContrat
+  # Common properties (reference the business object)
+  - name: claimDeclarationId
+    business_object_property: claimDeclarationId
+  - name: occurrenceDate
+    business_object_property: occurrenceDate
+  - name: contractId
+    business_object_property: contractId
 
-  # Propriétés spécialisées (propres à cette variante)
-  - name: origineFuite           # Spécifique dégât des eaux
-  - name: zoneImpactee           # Spécifique dégât des eaux
-  - name: tiersImpactes          # Spécifique dégât des eaux
+  # Specialized properties (specific to this variant)
+  - name: leakOrigin           # Specific to water damage
+  - name: impactedArea         # Specific to water damage
+  - name: affectedThirdParties # Specific to water damage
 ```
 
-### 2.2 Événement Ressource — Le fait publié
+### 2.2 Resource Event — The Published Fact
 
-L'**événement ressource** est le **fait réellement publié** sur le bus. Il porte
-une ressource et implémente un événement métier.
+The **resource event** is the **fact actually published** on the bus. It carries
+a resource and implements a business event.
 
-**Règles de modélisation :**
+**Modeling rules:**
 
-| Règle | Description |
+| Rule | Description |
 |-------|-------------|
-| **Publication effective** | C'est l'événement réellement publié et consommé |
-| **Spécialisé** | Un type d'événement ressource par variante métier |
-| **Référence double** | Référence une ressource (`carried_resource`) et un unique événement métier (`business_event`) |
-| **Autonomie** | Compréhensible sans décodage polymorphe ni jointure |
+| **Effective publication** | This is the event actually published and consumed |
+| **Specialized** | One type of resource event per business variant |
+| **Double reference** | References a resource (`carried_resource`) and a unique business event (`business_event`) |
+| **Autonomy** | Understandable without polymorphic decoding or join |
 
-**Exemple — Événement ressource `EVT.RES.COEUR.005.SINISTRE_HABITATION_DEGAT_EAUX_DECLARE` :**
+**Example — Resource event `EVT.RES.COEUR.005.SINISTRE_HABITATION_DEGAT_EAUX_DECLARE`:**
 
 ```yaml
 id: EVT.RES.COEUR.005.SINISTRE_HABITATION_DEGAT_EAUX_DECLARE
-name: Sinistre habitation dégât des eaux déclaré
+name: Residential water damage claim declared
 carried_resource: RES.COEUR.005.DECLARATION_SINISTRE_HABITATION_DEGAT_EAUX
 business_event: EVT.COEUR.005.SINISTRE_DECLARE
 emitting_capability: CAP.COEUR.005.DSP
 ```
 
-### 2.3 Abonnement Ressource — La consommation spécialisée
+### 2.3 Resource Subscription — Specialized Consumption
 
-Un **abonnement ressource** permet à un consommateur de s'abonner à un
-**événement ressource spécifique**.
+A **resource subscription** allows a consumer to subscribe to a
+**specific resource event**.
 
-**Règles de modélisation :**
+**Modeling rules:**
 
-| Règle | Description |
+| Rule | Description |
 |-------|-------------|
-| **Cible précise** | Référence un événement ressource spécifique |
-| **Lien métier** | Référence l'abonnement métier associée via `linked_business_subscription` |
-| **Propriétés complètes** | Le consommateur accède à toutes les propriétés (communes + spécialisées) |
+| **Precise target** | References a specific resource event |
+| **Business link** | References the associated business subscription via `linked_business_subscription` |
+| **Complete properties** | The consumer accesses all properties (common + specialized) |
 
-**Cas d'usage :**
-- Consommateur spécialisé qui traite une variante particulière
-- Consommateur qui a besoin des propriétés spécialisées
+**Use cases:**
+- Specialized consumer that processes a particular variant
+- Consumer that needs the specialized properties
 
 ---
 
-## Relations entre les deux niveaux
+## Relations Between the Two Levels
 
-### Tableau de synthèse des relations
+### Relation Summary Table
 
-| Relation | Source | Cible | Champ |
+| Relation | Source | Target | Field |
 |----------|--------|-------|-------|
-| Porte | Événement Métier | Objet Métier | `carried_business_object` |
-| Implémente | Ressource | Objet Métier | `business_object` |
-| Implémente | Ressource.data[] | Objet Métier.data[] | `business_object_property` |
-| Porte | Événement Ressource | Ressource | `carried_resource` |
-| Implémente | Événement Ressource | Événement Métier | `business_event` |
-| Cible | Abonnement Métier | Événement Métier | `subscribed_event` |
-| Cible | Abonnement Ressource | Événement Ressource | `subscribed_resource_event` |
-| Lie | Abonnement Ressource | Abonnement Métier | `linked_business_subscription` |
+| Carries | Business Event | Business Object | `carried_business_object` |
+| Implements | Resource | Business Object | `business_object` |
+| Implements | Resource.data[] | Business Object.data[] | `business_object_property` |
+| Carries | Resource Event | Resource | `carried_resource` |
+| Implements | Resource Event | Business Event | `business_event` |
+| Targets | Business Subscription | Business Event | `subscribed_event` |
+| Targets | Resource Subscription | Resource Event | `subscribed_resource_event` |
+| Links | Resource Subscription | Business Subscription | `linked_business_subscription` |
 
-### Exemple complet de modélisation
+### Complete Modeling Example
 
 ```
-Niveau Métier
-─────────────
+Business Level
+──────────────
 OBJ.COEUR.005.DECLARATION_SINISTRE
-    └── data: identifiantDeclaration, dateSurvenance, identifiantContrat...
+    └── data: claimDeclarationId, occurrenceDate, contractId...
 
 EVT.COEUR.005.SINISTRE_DECLARE
     └── carried_business_object: OBJ.COEUR.005.DECLARATION_SINISTRE
 
-Niveau Ressource (Variante 1 : Dégât des eaux)
-──────────────────────────────────────────────
+Resource Level (Variant 1: Water damage)
+─────────────────────────────────────────
 RES.COEUR.005.DECLARATION_SINISTRE_HABITATION_DEGAT_EAUX
     ├── business_object: OBJ.COEUR.005.DECLARATION_SINISTRE
-    └── data: identifiantDeclaration (→BO), dateSurvenance (→BO), origineFuite, zoneImpactee...
+    └── data: claimDeclarationId (→BO), occurrenceDate (→BO), leakOrigin, impactedArea...
 
 EVT.RES.COEUR.005.SINISTRE_HABITATION_DEGAT_EAUX_DECLARE
   ├── carried_resource: RES.COEUR.005.DECLARATION_SINISTRE_HABITATION_DEGAT_EAUX
   └── business_event: EVT.COEUR.005.SINISTRE_DECLARE
 
-Niveau Ressource (Variante 2 : Vol)
-───────────────────────────────────
+Resource Level (Variant 2: Theft)
+──────────────────────────────────
 RES.COEUR.005.DECLARATION_SINISTRE_HABITATION_VOL
     ├── business_object: OBJ.COEUR.005.DECLARATION_SINISTRE
-    └── data: identifiantDeclaration (→BO), dateSurvenance (→BO), typeVol, biensVoles...
+    └── data: claimDeclarationId (→BO), occurrenceDate (→BO), theftType, stolenGoods...
 
 EVT.RES.COEUR.005.SINISTRE_HABITATION_VOL_DECLARE
   ├── carried_resource: RES.COEUR.005.DECLARATION_SINISTRE_HABITATION_VOL
@@ -305,50 +305,50 @@ EVT.RES.COEUR.005.SINISTRE_HABITATION_VOL_DECLARE
 
 ---
 
-## Règles de validation
+## Validation Rules
 
-Le référentiel BCM valide automatiquement les règles suivantes :
+The BCM referential automatically validates the following rules:
 
-| Règle | Niveau | Description |
+| Rule | Level | Description |
 |-------|--------|-------------|
-| V1 | Métier | Tout événement métier référence un objet métier existant |
-| V2 | Ressource | Toute ressource référence un unique objet métier existant |
-| V3 | Ressource | Tout événement ressource référence un unique événement métier existant |
-| V4 | Traçabilité | Toute propriété d'objet métier est référencée par au moins une ressource |
-| V5 | Abonnement | Toute abonnement ressource référence une abonnement métier existante |
-| V6 | Cohérence | L'événement métier de l'abonnement ressource correspond à celui de l'abonnement métier liée |
+| V1 | Business | Every business event references an existing business object |
+| V2 | Resource | Every resource references a unique existing business object |
+| V3 | Resource | Every resource event references a unique existing business event |
+| V4 | Traceability | Every business object property is referenced by at least one resource |
+| V5 | Subscription | Every resource subscription references an existing business subscription |
+| V6 | Coherence | The business event of the resource subscription matches that of the linked business subscription |
 
 ---
 
-## Anti-patterns à éviter
+## Anti-Patterns to Avoid
 
-### ❌ Événement générique avec typologie
+### Generic event with type field
 
 ```yaml
-# INCORRECT — force le décodage polymorphe côté consommateur
+# INCORRECT — forces polymorphic decoding on the consumer side
 id: EVT.RES.COEUR.005.SINISTRE_DECLARE
 data:
-  - name: typologie        # "DEGAT_EAUX", "VOL", "INCENDIE"
-  - name: payloadGenerique # structure variable selon typologie
+  - name: type             # "WATER_DAMAGE", "THEFT", "FIRE"
+  - name: genericPayload   # variable structure depending on type
 ```
 
-### ❌ Double publication pour le même fait
+### Double publication for the same fact
 
 ```yaml
-# INCORRECT — impose une corrélation côté consommateur
-# Publication 1 : événement générique
+# INCORRECT — imposes a correlation on the consumer side
+# Publication 1: generic event
 id: EVT.RES.COEUR.005.SINISTRE_DECLARE
-# Publication 2 : événement spécialisé (en parallèle, même instant)
+# Publication 2: specialized event (in parallel, same moment)
 id: EVT.RES.COEUR.005.SINISTRE_HABITATION_DEGAT_EAUX_DECLARE
 ```
 
-### ❌ Événement ressource dépendant d'un pair
+### Resource event dependent on a peer
 
 ```yaml
-# INCORRECT — nécessite une jointure pour être compris
+# INCORRECT — requires a join to be understood
 id: EVT.RES.COEUR.005.SINISTRE_HABITATION_DEGAT_EAUX_DECLARE
 data:
-  - name: parentEventId    # pointe vers un événement publié en parallèle
+  - name: parentEventId    # points to an event published in parallel
     required: true
 ```
 
@@ -356,46 +356,45 @@ data:
 
 ## Justification
 
-Cette architecture à deux niveaux permet de :
+This two-level architecture allows:
 
-- **Séparer l'abstraction de l'implémentation** : l'événement métier abstrait le
-  jalon, l'événement ressource matérialise la variante
-- **Supporter les variantes sans complexité** : pas de nouveau concept, exploitation
-  du méta-modèle existant
-- **Faciliter la consommation transverse** : abonnement métier pour les consommateurs
-  généralistes
-- **Garantir la traçabilité** : chaque propriété de ressource peut être tracée vers
-  l'objet métier source
-- **Simplifier la gouvernance** : distinction claire entre abstraction et implémentation
+- **Separating abstraction from implementation**: the business event abstracts the
+  milestone, the resource event materializes the variant
+- **Supporting variants without complexity**: no new concept, exploitation
+  of the existing meta-model
+- **Facilitating transverse consumption**: business subscription for generalist consumers
+- **Guaranteeing traceability**: each resource property can be traced back
+  to the source business object
+- **Simplifying governance**: clear distinction between abstraction and implementation
 
 ---
 
 ## Impacts
 
 ### Structure
-- Aucune extension du méta-modèle (ADR-BCM-URBA-0007)
-- Clarification de l'usage des relations existantes
+- No extension of the meta-model (ADR-BCM-URBA-0007)
+- Clarification of the usage of existing relations
 
 ### Validation
-- Règle ajoutée : toute propriété d'objet métier doit être référencée par au moins
-  une ressource via `business_object_property`
+- Rule added: every business object property must be referenced by at least
+  one resource via `business_object_property`
 
-### Outillage
-- Les outils de génération et validation exploitent les deux niveaux pour produire
-  documentation et diagrammes cohérents
-
----
-
-## Indicateurs de gouvernance
-
-- **Couverture objet métier** : % de propriétés d'objet métier référencées par des ressources
-- **Cohérence événementielle** : tous les événements ressource référencent un événement métier
-- **Autonomie des événements** : aucun événement ressource ne dépend d'un pair pour être compris
+### Tooling
+- Generation and validation tools exploit both levels to produce
+  coherent documentation and diagrams
 
 ---
 
-## Traçabilité
+## Governance Indicators
 
-- Atelier : Modélisation événementielle BCM
-- Participants : Urbanisme SI, Architecture, Lead BA, BA, Lead Dev
-- Références : ADR-BCM-URBA-0007, ADR-BCM-FUNC-0003
+- **Business object coverage**: % of business object properties referenced by resources
+- **Event coherence**: all resource events reference a business event
+- **Event autonomy**: no resource event depends on a peer to be understood
+
+---
+
+## Traceability
+
+- Workshop: BCM Event Modeling
+- Participants: IS Urbanization, Architecture, Lead BA, BA, Lead Dev
+- References: ADR-BCM-URBA-0007, ADR-BCM-FUNC-0003

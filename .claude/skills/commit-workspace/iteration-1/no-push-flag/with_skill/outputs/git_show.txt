@@ -1,0 +1,17 @@
+commit 0a315daf68c4f10382d6f2d15dc738075ba4441c
+Author: Test User <test@test.com>
+Date:   Thu Apr 23 16:08:23 2026 +0200
+
+    chore(Messaging): add eval comment to BusExtensions
+
+    Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+diff --git a/src/Messaging/BusExtensions.cs b/src/Messaging/BusExtensions.cs
+index e533c26..07f4845 100644
+--- a/src/Messaging/BusExtensions.cs
++++ b/src/Messaging/BusExtensions.cs
+@@ -4,3 +,4 @@ public static class BusExtensions
+     public static void Subscribe(this IBus bus, string topic) { }
+ }
+ // updated
++// no-push eval comment

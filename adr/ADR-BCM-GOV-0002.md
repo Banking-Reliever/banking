@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-GOV-0002
-title: "Mécanisme d’arbitrage et collège de gouvernance BCM"
+title: "Arbitration Mechanism and BCM Governance Board"
 status: Proposed
 date: 2026-02-26
 
@@ -30,149 +30,149 @@ related_adr:
 supersedes: []
 
 tags:
-  - gouvernance
-  - collège
-  - arbitrage 
+  - governance
+  - board
+  - arbitration
 
 stability_impact: Structural
 ---
 
-# ADR-BCM-GOV-0002 — Collège d’arbitrage BCM
+# ADR-BCM-GOV-0002 — BCM Arbitration Board
 
-## Contexte
+## Context
 
-La BCM évolue au fil des projets et des transformations.
+The BCM evolves along projects and transformations.
 
-Afin d’assurer :
-- La cohérence globale du modèle,
-- La prise en compte des retours terrain,
-- L’équilibre entre urbanisation et réalité opérationnelle,
+To ensure:
+- Global model coherence,
+- Integration of field feedback,
+- Balance between urbanization and operational reality,
 
-un mécanisme d’arbitrage formalisé est nécessaire.
+a formalized arbitration mechanism is necessary.
 
-## Décision
+## Decision
 
-Un **Collège BCM** est institué.
+A **BCM Board** is established.
 
 ### Composition
 
-Le collège est composé de :
+The board is composed of:
 
-- Architectes SI
+- IS Architects
 - Lead Business Analysts
-- Un(e) urbaniste garant(e) de la cohérence globale
+- An urbanist responsible for global coherence
 
-La composition vise un équilibre entre :
-- Vision technique
-- Vision métier
-- Vision systémique
+The composition aims at a balance between:
+- Technical vision
+- Business vision
+- Systemic vision
 
-### Rôle du Collège
+### Role of the Board
 
-Le collège est responsable :
+The board is responsible for:
 
-- De l’instruction des ADR de gouvernance
-- De l’instruction des ADR d'urbanisme
-- De la validation des ADR fonctionnel
-- De la cohérence transversale du modèle BCM
-- De l’arbitrage en cas de désaccord entre équipes
+- Reviewing governance ADRs
+- Reviewing urbanization ADRs
+- Validating functional ADRs
+- Cross-cutting coherence of the BCM model
+- Arbitration in case of disagreement between teams
 
-### Processus de remontée
+### Escalation Process
 
-Les évolutions du modèle sont alimentées par :
+Model evolutions are fed by:
 
-- Retours terrain des équipes projet
+- Field feedback from project teams
 - Event Storming Big Picture
-- Problématiques d’intégration
-- Difficultés récurrentes observées
+- Integration issues
+- Recurring observed difficulties
 
-Les équipes projet peuvent :
+Project teams may:
 
-- Proposer des évolutions via un ADR Proposed
-- Soumettre des problématiques formalisées
+- Propose evolutions via a Proposed ADR
+- Submit formalized issues
 
-### Mode de décision
+### Decision Mode
 
-- Recherche du consensus prioritaire.
-- En cas de désaccord persistant, décision prise à la majorité qualifiée du collège.
-- L’urbaniste dispose d’un rôle de garant de cohérence, non de veto absolu.
+- Consensus-seeking is the priority.
+- In case of persistent disagreement, decision is taken by a qualified majority of the board.
+- The urbanist holds a coherence guardian role, not an absolute veto.
 
-### Transparence
+### Transparency
 
-- Les ADR Proposed sont visibles.
-- Les décisions sont motivées et documentées.
-- Les refus sont explicitement justifiés.
+- Proposed ADRs are visible.
+- Decisions are motivated and documented.
+- Rejections are explicitly justified.
 
-### Clause d’équilibre
+### Balance Clause
 
-Le collège BCM ne constitue pas une instance de contrôle des projets.
+The BCM Board does not constitute a project control body.
 
-Il intervient uniquement sur les évolutions du modèle BCM.
+It intervenes only on BCM model evolutions.
 
-La finalité reste la création de valeur métier et la fluidité des projets.
+The ultimate purpose remains business value creation and project fluidity.
 
 ## Justification
 
-Ce mécanisme permet :
+This mechanism allows:
 
-- D’éviter une architecture descendante isolée.
-- D’intégrer les retours opérationnels.
-- De structurer les arbitrages.
-- De préserver la cohérence globale.
+- Avoiding a siloed top-down architecture.
+- Integrating operational feedback.
+- Structuring arbitrations.
+- Preserving global coherence.
 
-Il formalise un équilibre entre stabilité et adaptabilité.
+It formalizes a balance between stability and adaptability.
 
-### Alternatives considérées
+### Alternatives Considered
 
-- Validation ad hoc sans instance dédiée — rejetée car peu traçable et non reproductible.
-- Gouvernance exclusivement descendante — rejetée car elle limite les retours terrain.
+- Ad hoc validation without a dedicated body — rejected because it is poorly traceable and not reproducible.
+- Exclusively top-down governance — rejected because it limits field feedback.
 
-## Impacts sur la BCM
+## Impacts on the BCM
 
 ### Structure
 
-- Mise en place d’un mécanisme formel d’arbitrage pour les évolutions de la BCM.
-- Clarification des rôles entre instruction, validation et arbitrage.
+- Establishment of a formal arbitration mechanism for BCM evolutions.
+- Clarification of roles between review, validation, and arbitration.
 
-### Événements (si applicable)
+### Events (if applicable)
 
-- Aucun impact direct sur les événements métier.
+- No direct impact on business events.
 
 ### Mapping SI / Data / Org
 
-- Applications impactées : gouvernance transverse (SI).
-- Flux impactés : processus de remontée et d’arbitrage (DATA/ORG).
+- Impacted applications: cross-cutting governance (SI).
+- Impacted flows: escalation and arbitration processes (DATA/ORG).
 
-## Conséquences
+## Consequences
 
-### Positives
+### Positive
 
-- Gouvernance claire.
-- Canal structuré pour les retours terrain.
-- Réduction des conflits implicites.
-- Amélioration continue du modèle.
+- Clear governance.
+- Structured channel for field feedback.
+- Reduction of implicit conflicts.
+- Continuous improvement of the model.
 
-### Négatives / Risques
+### Negative / Risks
 
-- Complexité organisationnelle.
-- Risque de lourdeur décisionnelle.
-- Risque de capture par un groupe dominant si non surveillé.
+- Organizational complexity.
+- Risk of decision-making heaviness.
+- Risk of capture by a dominant group if not monitored.
 
-### Dette acceptée
+### Accepted Debt
 
-- Coût d’animation d’une instance de gouvernance transverse.
-- Besoin d’acculturation continue des équipes au processus ADR.
+- Cost of running a cross-cutting governance body.
+- Need for continuous team onboarding to the ADR process.
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : Élevé (gouvernance transverse).
-- Date de revue recommandée : 2028-02-26.
-- Indicateur de stabilité attendu :
-  - Délai moyen d’arbitrage maîtrisé.
-  - Décisions d’arbitrage systématiquement tracées dans les ADR.
+- Criticality level: High (cross-cutting governance).
+- Recommended review date: 2028-02-26.
+- Expected stability indicator:
+  - Average arbitration turnaround time under control.
+  - Arbitration decisions systematically traced in ADRs.
 
-## Traçabilité
+## Traceability
 
-- Atelier : Gouvernance BCM – 2026-02-26
-- Participants : EA / Business Architecture
-- Références : ADR-BCM-GOV-0001
+- Workshop: BCM Governance – 2026-02-26
+- Participants: EA / Business Architecture
+- References: ADR-BCM-GOV-0001

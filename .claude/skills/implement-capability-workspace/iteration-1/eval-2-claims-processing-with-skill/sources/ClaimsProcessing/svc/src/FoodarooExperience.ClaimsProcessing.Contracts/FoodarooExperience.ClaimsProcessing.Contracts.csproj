@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>FoodarooExperience.ClaimsProcessing.Contracts</RootNamespace>
+    <AssemblyName>FoodarooExperience.ClaimsProcessing.Contracts</AssemblyName>
+    <PackageId>NaiveUnicorn.FoodarooExperience.ClaimsProcessing.Contracts</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>naive-unicorn</Authors>
+    <Description>Shared contracts for the FoodarooExperience ClaimsProcessing business capability</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="NaiveUnicorn.Component.Messaging" Version="1.2.0" />
+  </ItemGroup>
+</Project>

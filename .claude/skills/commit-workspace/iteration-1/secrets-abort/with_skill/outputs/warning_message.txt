@@ -1,0 +1,3 @@
+Sensitive file detected: .env
+
+I won't stage these — they look like they might contain secrets. Exclude them or add them to .gitignore, then re-run /commit.

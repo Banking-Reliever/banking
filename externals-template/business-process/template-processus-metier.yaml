@@ -99,38 +99,38 @@ business_process:
       note: First step of the business process.
 
     - step_id: STEP.DOM.002
-      consumes_business_event: EVT.DOM.000.EVENEMENT_1
-      emits_business_event: EVT.DOM.000.EVENEMENT_2
-      carries_business_object: OBJ.DOM.000.OBJET_1
-      note: Deuxième étape du processus métier.
+      consumes_business_event: EVT.DOM.000.EVENT_1
+      emits_business_event: EVT.DOM.000.EVENT_2
+      carries_business_object: OBJ.DOM.000.OBJECT_1
+      note: Second step of the business process.
 
   orchestration_rules:
     - id: RULE.ABO.001
       rule: >-
-        Décrire ici la règle d'enchaînement métier généraliste.
+        Describe here the generic business sequencing rule.
 
     - id: RULE.ABO.002
       rule: >-
-        Vérifier l'absence de contraintes opérationnelles appliquées
-        dans ce processus métier.
+        Verify the absence of applied operational constraints
+        in this business process.
 
   exits_metier:
-    - to_business_event: EVT.DOM.000.SORTIE_1
-      meaning: Signification métier de la sortie 1.
+    - to_business_event: EVT.DOM.000.EXIT_1
+      meaning: Business meaning of exit 1.
 
-    - to_business_event: EVT.DOM.000.SORTIE_2
-      meaning: Signification métier de la sortie 2.
+    - to_business_event: EVT.DOM.000.EXIT_2
+      meaning: Business meaning of exit 2.
 
   traceability:
     adrs:
       - ADR-BCM-XXXX
 
-  # Champs optionnels
+  # Optional fields
   tags:
-    - processus-metier
+    - business-process
 
-  # Critères de complétude documentaire (guideline)
-  # - Le lecteur comprend l'objectif et la valeur métier sans lire le code SI.
-  # - Le périmètre inclus/exclu est explicite et non ambigu.
-  # - Les scénarios nominal/alternatif sont retraçables dans event_subscription_chain.
-  # - Les indicateurs proposés permettent un suivi du processus dans le temps.
+  # Documentary completeness criteria (guideline)
+  # - The reader understands the objective and business value without reading the IS code.
+  # - The included/excluded scope is explicit and unambiguous.
+  # - The nominal/alternative scenarios are traceable in event_subscription_chain.
+  # - The proposed indicators allow the process to be monitored over time.

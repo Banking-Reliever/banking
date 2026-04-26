@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-GOV-0003
-title: "Revue de stabilité périodique de la BCM"
+title: "Periodic Stability Review of the BCM"
 status: Proposed
 date: 2026-03-05
 
@@ -22,93 +22,93 @@ related_adr:
 supersedes: []
 
 tags:
-  - gouvernance
-  - stabilite
-  - revue-periodique
+  - governance
+  - stability
+  - periodic-review
 
 stability_impact: Structural
 ---
 
-# ADR-BCM-GOV-0003 — Revue de stabilité périodique de la BCM
+# ADR-BCM-GOV-0003 — Periodic Stability Review of the BCM
 
-## Contexte
+## Context
 
-Le référentiel BCM évolue rapidement (capabilities, événements, ADR, mappings).
-Sans rituel de revue périodique, le risque est d'accumuler des décisions obsolètes,
-des incohérences transverses et une dette de gouvernance difficile à résorber.
+The BCM referential evolves rapidly (capabilities, events, ADRs, mappings).
+Without a periodic review ritual, the risk is to accumulate obsolete decisions,
+cross-cutting inconsistencies, and governance debt that is difficult to resolve.
 
-Le besoin est d'installer un mécanisme simple, répétable et auditable de revue
-de stabilité pour sécuriser la cohérence du modèle dans la durée.
+The need is to install a simple, repeatable, and auditable stability review
+mechanism to secure model coherence over time.
 
-## Décision
+## Decision
 
-Le Collège BCM met en place une **revue de stabilité périodique** avec les règles suivantes :
+The BCM Board establishes a **periodic stability review** with the following rules:
 
-- **Rythme standard** : une revue trimestrielle.
-- **Déclencheurs exceptionnels** : revue anticipée en cas de changement structurant
-	(nouvelle zone, refonte L1/L2, évolution majeure du méta-modèle).
-- **Périmètre minimum** : ADR GOV/URBA/FUNC, cohérence capacités/événements,
-	conformité des validations automatiques et dette de documentation.
-- **Sortie obligatoire** : un compte-rendu formel incluant décisions, écarts,
-	actions, responsables et échéances.
+- **Standard cadence**: one quarterly review.
+- **Exceptional triggers**: early review in case of a structural change
+	(new zone, L1/L2 overhaul, major meta-model evolution).
+- **Minimum scope**: GOV/URBA/FUNC ADRs, capabilities/events coherence,
+	compliance of automated validations, and documentation debt.
+- **Mandatory output**: a formal report including decisions, gaps,
+	actions, owners, and deadlines.
 
-Critères vérifiables :
+Verifiable criteria:
 
-- au moins une revue réalisée par trimestre ;
-- existence d'un compte-rendu daté et tracé ;
-- taux de traitement des actions ouvertes suivi à la revue suivante.
+- at least one review performed per quarter;
+- existence of a dated and traced report;
+- action completion rate tracked at the next review.
 
 ## Justification
 
-Cette décision réduit le risque de dérive progressive du modèle et améliore
-la capacité d'arbitrage du Collège BCM sur des faits objectivables.
+This decision reduces the risk of progressive model drift and improves
+the BCM Board's arbitration capacity based on objective facts.
 
-### Alternatives considérées
+### Alternatives Considered
 
-- **Revue ad hoc uniquement** — rejetée : trop dépendante des urgences projet.
-- **Revue mensuelle** — rejetée : charge trop élevée au regard du niveau de maturité actuel.
+- **Ad hoc review only** — rejected: too dependent on project urgencies.
+- **Monthly review** — rejected: too high a burden given the current maturity level.
 
-## Impacts sur la BCM
+## Impacts on the BCM
 
 ### Structure
 
-- Aucun changement direct de structure L1/L2/L3.
-- Amélioration de la qualité et de la stabilité des décisions d'évolution.
+- No direct change to the L1/L2/L3 structure.
+- Improvement of the quality and stability of evolution decisions.
 
-### Événements (si applicable)
+### Events (if applicable)
 
-- Vérification périodique de la cohérence des liens événements/objets/ressources/abonnements.
+- Periodic verification of the coherence of event/object/resource/subscription links.
 
 ### Mapping SI / Data / Org
 
-- ORG : formalisation du rituel de pilotage et des responsabilités de suivi.
+- ORG: formalization of the governance ritual and monitoring responsibilities.
 
-## Conséquences
+## Consequences
 
-### Positives
+### Positive
 
-- Gouvernance plus prévisible et traçable.
-- Détection plus précoce des incohérences.
-- Réduction de la dette documentaire dans le temps.
+- More predictable and traceable governance.
+- Earlier detection of inconsistencies.
+- Reduction of documentation debt over time.
 
-### Négatives / Risques
+### Negative / Risks
 
-- Charge de coordination supplémentaire pour les parties prenantes.
-- Risque de revue formelle sans décisions actionnables si le cadrage est insuffisant.
+- Additional coordination burden for stakeholders.
+- Risk of a formal review without actionable decisions if the framing is insufficient.
 
-### Dette acceptée
+### Accepted Debt
 
-- Le format détaillé de compte-rendu et les indicateurs cibles seront affinés
-	dans une itération ultérieure, après deux cycles de revue.
+- The detailed report format and target indicators will be refined
+	in a subsequent iteration, after two review cycles.
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : élevé.
-- Date de revue recommandée : 2026-06-30.
-- Indicateur de stabilité attendu : amélioration continue trimestrielle.
+- Criticality level: High.
+- Recommended review date: 2026-06-30.
+- Expected stability indicator: continuous quarterly improvement.
 
-## Traçabilité
+## Traceability
 
-- Atelier : Gouvernance BCM — cadrage du rituel de stabilité.
-- Participants : Collège BCM (Architecture, Urbanisme, BA Lead).
-- Références : ADR-BCM-GOV-0001, ADR-BCM-GOV-0002, ADR-BCM-URBA-0004.
+- Workshop: BCM Governance — stability ritual framing.
+- Participants: BCM Board (Architecture, Urbanization, Lead BA).
+- References: ADR-BCM-GOV-0001, ADR-BCM-GOV-0002, ADR-BCM-URBA-0004.

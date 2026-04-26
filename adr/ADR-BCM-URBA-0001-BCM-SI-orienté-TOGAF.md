@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-URBA-0001
-title: "BCM SI orienté TOGAF étendu (7 zones)"
+title: "TOGAF-Extended IS BCM (7 Zones)"
 status: Proposed
 date: 2026-02-27
 
@@ -25,163 +25,162 @@ impacted_mappings:
   - ORG
 
 related_adr:
-  - ADR-BCM-GOV-0001  # hiérarchie GOV → URBA → FUNC
+  - ADR-BCM-GOV-0001  # GOV → URBA → FUNC hierarchy
 supersedes: []
 
 tags:
   - BCM
-  - Modélisation
+  - Modeling
   - TOGAF
   - Zoning
 
 stability_impact: Structural
 ---
 
-# ADR-BCM-URBA-0001 — BCM SI orienté TOGAF étendu (7 zones)
+# ADR-BCM-URBA-0001 — TOGAF-Extended IS BCM (7 Zones)
 
-## Contexte
-Il faut une carto permettant de donner les fondations du système d'informations.
-Cette cartographie doit permettre d'individualiser et de responsabiliser la production d'information au sein du SI.
+## Context
+A map is needed that provides the foundations of the information system.
+This mapping must make it possible to individualize and assign responsibility for information production within the IS.
 
-Elle doit permettre de coordonner et de localiser les différents applicatifs.
+It must allow coordination and location of the various applications.
 
-Sans structuration claire, le risque est double :
-- une BCM "plate" (sans zoning) mélange pilotage, production métier et support,
-- une BCM custom non standardisée complique le dialogue avec les éditeurs, partenaires et l'alignement sur les bonnes pratiques du marché.
+Without clear structuring, the risk is twofold:
+- a "flat" BCM (without zoning) mixes steering, business production, and support,
+- a non-standardized custom BCM complicates dialogue with vendors, partners, and alignment with market best practices.
 
-La méthodologie TOGAF permet un premier niveau de standardisation permettant de cadrer les capacités de production d'un SI en découpant en différentes zones les capacités du SI.
+The TOGAF methodology provides a first level of standardization that frames the production capabilities of an IS by dividing its capabilities into different zones.
 
-Cependant, pour une mutuelle/assurance moderne, TOGAF seul (3 zones : Pilotage, COEUR, Support) est **insuffisant** pour adresser :
-- la distinction entre capacités métier core et capacités transverses d'exposition (parcours omnicanaux, portails),
-- la gestion des référentiels master (données pivot partagées),
-- les échanges avec l'écosystème externe (partenaires, délégataires, régulateur, prestataires),
-- les capacités DATA_ANALYTIQUE (gouvernance, BI, IA) qui ne sont ni du "support" pur ni de la "production métier".
+However, for a modern mutual/insurance company, TOGAF alone (3 zones: Steering, CORE, Support) is **insufficient** to address:
+- the distinction between core business capabilities and transverse exposure capabilities (omnichannel journeys, portals),
+- master referential management (shared pivot data),
+- exchanges with the external ecosystem (partners, delegates, regulator, providers),
+- DATA_ANALYTIQUE capabilities (governance, BI, AI) that are neither pure "support" nor "business production".
 
-D'où l'extension proposée à **7 zones** :
-- **PILOTAGE** : pilotage d'entreprise, conformité, gouvernance
-- **SERVICES COEUR** : cœur de métier (produits, distribution, souscription, contrats, sinistres, service client...)
-- **SUPPORT** : fonctions support transverses (cybersecurity, gestion documentaire, interopérabilité interne, comptabilité...)
-- **REFERENTIEL** : référentiels master partagés (Personne, Adresse, Contrat, Produit, Bancaire, Organisation...)
-- **ECHANGE_B2B** : échanges avec l'écosystème externe (onboarding partenaires, hub d'échanges, API externes, traçabilité des flux tiers)
-- **CANAL** : exposition omnicanale et parcours utilisateurs (portails adhérent/entreprise, poste conseiller, acquisition digitale, centre de contact)
-- **DATA_ANALYTIQUE** : gouvernance des données, ingestion, plateformes data, BI/reporting, analytique avancé & IA
+Hence the proposed extension to **7 zones**:
+- **PILOTAGE**: enterprise steering, compliance, governance
+- **SERVICES COEUR**: core business (products, distribution, subscription, contracts, claims, customer service...)
+- **SUPPORT**: transverse IT support functions (cybersecurity, document management, internal interoperability, accounting...)
+- **REFERENTIEL**: shared master referentials (Person, Address, Contract, Product, Banking, Organization...)
+- **ECHANGE_B2B**: exchanges with the external ecosystem (partner onboarding, exchange hub, external APIs, third-party flow traceability)
+- **CANAL**: omnichannel exposure and user journeys (member/company portals, advisor workstation, digital acquisition, contact center)
+- **DATA_ANALYTIQUE**: data governance, ingestion, data platforms, BI/reporting, advanced analytics & AI
 
-## Décision
-- La BCM est structurée selon le modèle **TOGAF étendu** avec sept zones principales :
-  - **PILOTAGE** : capacités de pilotage et de conformité
-  - **SERVICES COEUR** : capacités métier cœur
-  - **SUPPORT** : capacités support transverses
-  - **REFERENTIEL** : référentiels master et données pivot partagées
-  - **ECHANGE_B2B** : échanges avec l'écosystème externe (partenaires, délégataires, régulateur, prestataires)
-  - **CANAL** : exposition omnicanale et parcours utilisateurs finaux
-  - **DATA_ANALYTIQUE** : gouvernance data, ingestion, plateformes, BI, analytique & IA
+## Decision
+- The BCM is structured according to the **extended TOGAF model** with seven main zones:
+  - **PILOTAGE**: steering and compliance capabilities
+  - **SERVICES COEUR**: core business capabilities
+  - **SUPPORT**: transverse support capabilities
+  - **REFERENTIEL**: master referentials and shared pivot data
+  - **ECHANGE_B2B**: exchanges with the external ecosystem (partners, delegates, regulator, providers)
+  - **CANAL**: omnichannel exposure and end-user journeys
+  - **DATA_ANALYTIQUE**: data governance, ingestion, platforms, BI, analytics & AI
 
-- Chaque capacité dispose d'un attribut **zoning** dans `bcm/capabilities.yaml` faisant référence à l'une de ces sept zones.
+- Each capability has a **zoning** attribute in `bcm/capabilities.yaml` referring to one of these seven zones.
 
-- Les vues générées (Mermaid, graphes) doivent visualiser cette séparation pour faciliter les arbitrages d'urbanisation.
+- Generated views (Mermaid, graphs) must visualize this separation to facilitate urbanization arbitrations.
 
-- Règles de disambiguation claires :
-  - **CANAL** (UX, parcours, exposition front) ≠ **Canaux & Intermédiation** (COEUR : règles de distribution + réseaux)
-  - **ECHANGE_B2B** (écosystème, flux externes, SLA) ≠ **Interopérabilité** (SUPPORT : intégration interne SI)
-  - **DATA_ANALYTIQUE** (ingestion analytique décorrélée) ≠ **Interopérabilité** (échanges opérationnels transactionnels)
-  - **REFERENTIEL** (master data partagées) ≠ capacités de production utilisant ces référentiels
+- Clear disambiguation rules:
+  - **CANAL** (UX, journeys, front exposure) ≠ **Channels & Intermediation** (CORE: distribution rules + networks)
+  - **ECHANGE_B2B** (ecosystem, external flows, SLA) ≠ **Interoperability** (SUPPORT: internal IS integration)
+  - **DATA_ANALYTIQUE** (decoupled analytics ingestion) ≠ **Interoperability** (transactional operational exchanges)
+  - **REFERENTIEL** (shared master data) ≠ production capabilities using these referentials
 
 ## Justification
-TOGAF est un standard reconnu qui permet :
-- un langage commun avec l'écosystème (éditeurs, intégrateurs, consultants),
-- une séparation claire entre pilotage, production et support,
-- une meilleure gouvernance de la couverture SI (éviter que le support déborde sur le métier, ou que le pilotage soit noyé dans le COEUR).
+TOGAF is a recognized standard that allows:
+- a common language with the ecosystem (vendors, integrators, consultants),
+- a clear separation between steering, production, and support,
+- better governance of IS coverage (preventing support from overflowing into business, or steering being buried in CORE).
 
-**Extension avec 4 zones supplémentaires** :
+**Extension with 4 additional zones**:
 
-1. **REFERENTIEL** : Les référentiels (Personne, Adresse, Contrat, Produit...) sont des **données pivot** consommées par toutes les zones. Les isoler permet :
-   - une gouvernance claire de la master data (ownership, qualité, cycle de vie),
-   - d'éviter la duplication et les incohérences,
-   - de piloter séparément les investissements "référentiels" vs "production".
+1. **REFERENTIEL**: Referentials (Person, Address, Contract, Product...) are **pivot data** consumed by all zones. Isolating them allows:
+   - clear master data governance (ownership, quality, lifecycle),
+   - avoiding duplication and inconsistencies,
+   - separately steering "referential" investments vs. "production".
 
-2. **ECHANGE_B2B** : La "façade écosystème" (partenaires, délégataires, régulateur, réseaux de soin, prestataires) a des contraintes spécifiques (SLA, onboarding, traçabilité, formats normalisés, preuves) distinctes de l'interopérabilité interne (SUPPORT). Séparer permet :
-   - de piloter la relation externe vs intégration interne,
-   - de gérer les exigences réglementaires sur les échanges (RGPD, traçabilité, archivage probatoire),
-   - d'industrialiser l'onboarding partenaires et la gouvernance des API externes.
+2. **ECHANGE_B2B**: The "ecosystem facade" (partners, delegates, regulator, care networks, providers) has specific constraints (SLA, onboarding, traceability, standardized formats, proofs) distinct from internal interoperability (SUPPORT). Separating them allows:
+   - steering external relations vs. internal integration,
+   - managing regulatory requirements on exchanges (GDPR, traceability, evidentiary archiving),
+   - industrializing partner onboarding and external API governance.
 
+3. **CANAL**: The omnichannel experience (portals, journeys, advisor workstation, contact center) is neither "Customer Service" (CORE: business processing of requests) nor pure "Support". It is the **exposure layer** to end users. Separating it allows:
+   - steering user experience independently of business production,
+   - avoiding confusion between "business capability" (e.g., Subscription) and "access channel" (e.g., digital funnel),
+   - measuring and optimizing journeys (conversion, abandonment, NPS/CSAT).
+   It groups all pure applications allowing the backend of the company's information system to be interfaced, with the backend carried by the CORE zone.
 
-3. **CANAL** : L'expérience omnicanale (portails, parcours, poste conseiller, centre de contact) n'est ni du "Service Client" (COEUR : traitement métier des demandes) ni du pur "Support". C'est la **couche d'exposition** aux utilisateurs finaux. Séparer permet :
-   - de piloter l'expérience utilisateur indépendamment de la production métier,
-   - d'éviter la confusion entre "capacité métier" (ex : Souscription) et "canal d'accès" (ex : tunnel digital),
-   - de mesurer et optimiser les parcours (conversion, abandon, NPS/CSAT).
-Elle regroupe l'esemble des applicatifs pur permettant d'interfacer le backend du système d'information de l'entreprise qui lui est porté par la zone COEUR.
+4. **DATA_ANALYTIQUE**: Data governance, analytics ingestion, BI, and AI are neither "transactional production" (CORE) nor pure "technical support". Isolating them allows:
+   - steering the data strategy (governance, quality, data products),
+   - distinguishing analytical flows (decoupled, batch/stream) vs. transactional flows (operational),
+   - separately valuing analytics & AI investments.
 
-4. **DATA_ANALYTIQUE** : La gouvernance data, l'ingestion analytique, le BI et l'IA ne sont ni "production transactionnelle" (COEUR) ni "support technique" pur. Les isoler permet :
-   - de piloter la stratégie data (gouvernance, qualité, data products),
-   - de distinguer flux analytiques (décorrélés, batch/stream) vs flux transactionnels (opérationnels),
-   - de valoriser les investissements analytique & IA séparément.
+### Alternatives Considered
 
-### Alternatives considérées
+- **Pure 3-zone TOGAF** — rejected because it is insufficient to address omnichannel journeys, ecosystem exchanges, master data, analytics.
+- **Everything in SUPPORT** — rejected because of lost visibility and mixing of heterogeneous responsibilities.
+- **Fully custom model (without TOGAF)** — rejected because of loss of alignment with standards, training cost.
+- **8+ zones** (e.g., separating "Payments" from "ECHANGE_B2B") — deferred (added if needed, currently limited to 7 zones for readability).
 
-- **TOGAF 3 zones pur** — rejeté car insuffisant pour adresser parcours omnicanaux, échanges écosystème, master data, analytique.
-- **Tout dans SUPPORT** — rejeté car perte de visibilité, mélange de responsabilités hétérogènes.
-- **Modèle custom complet (sans TOGAF)** — rejeté car perte d'alignement avec standards, coût de formation.
-- **8+ zones** (ex : séparer "Payments" de "ECHANGE_B2B") — reporté (ajouté si besoin identifié, pour l'instant limité à 7 zones pour garder lisibilité).
-
-## Impacts sur la BCM
+## Impacts on the BCM
 
 ### Structure
 
-- Capacités impactées : toutes (ajout obligatoire du champ `zoning` dans `capabilities.yaml` avec une des 7 valeurs).
-- L1/L2/L3 + zoning (deux dimensions orthogonales).
-- Règles de placement (testables via validation) :
-  - Pilotage → **PILOTAGE**
-  - Cœur métier assurance/mutuelle → **SERVICES COEUR**
-  - Fonctions support IT transverses (cybersecurity, GED, interopérabilité interne) → **SUPPORT**
-  - Master data partagées → **REFERENTIEL**
-  - Échanges avec tiers externes → **ECHANGE_B2B**
-  - Parcours et exposition utilisateurs → **CANAL**
-  - Gouvernance data, BI, analytique, IA → **DATA_ANALYTIQUE**
-- Disambiguation obligatoire :
-  - "Canaux & Intermédiation" (règles distribution) reste **COEUR**, "Canal" (parcours UX) est **CANAL**
-  - "Interopérabilité" (SI interne) reste **SUPPORT**, échanges tiers vont en **ECHANGE_B2B**
-  - Flux transactionnels → **SUPPORT/Interopérabilité**, flux analytiques → **DATA_ANALYTIQUE/Ingestion**
+- Impacted capabilities: all (mandatory addition of the `zoning` field in `capabilities.yaml` with one of the 7 values).
+- L1/L2/L3 + zoning (two orthogonal dimensions).
+- Placement rules (testable via validation):
+  - Steering → **PILOTAGE**
+  - Core insurance/mutual business → **SERVICES COEUR**
+  - Transverse IT support functions (cybersecurity, DMS, internal interoperability) → **SUPPORT**
+  - Shared master data → **REFERENTIEL**
+  - Exchanges with external parties → **ECHANGE_B2B**
+  - User journeys and exposure → **CANAL**
+  - Data governance, BI, analytics, AI → **DATA_ANALYTIQUE**
+- Mandatory disambiguation:
+  - "Channels & Intermediation" (distribution rules) stays in **CORE**, "Canal" (UX journeys) is **CANAL**
+  - "Interoperability" (internal IS) stays in **SUPPORT**, third-party exchanges go to **ECHANGE_B2B**
+  - Transactional flows → **SUPPORT/Interoperability**, analytics flows → **DATA_ANALYTIQUE/Ingestion**
 
-### Événements (si applicable)
+### Events (if applicable)
 
-- Aucun impact direct sur les événements métier.
+- No direct impact on business events.
 
 ### Mapping SI / Data / Org
 
-- Applications, domaines de données et équipes peuvent être **mappés** par zone, facilitant les analyses de couverture et de responsabilité.
+- Applications, data domains, and teams can be **mapped** by zone, facilitating coverage and responsibility analyses.
 
-## Conséquences
-### Positives
-- **Lisibilité renforcée** : distinction claire entre what (COEUR), how we steer (PILOTAGE), how we support (SUPPORT), what we share (REFERENTIEL), how we expose (CANAL), how we exchange (ECHANGE_B2B), how we analyze (DATA_ANALYTIQUE).
-- **Standardisation** : alignement avec TOGAF facilite l'onboarding, les revues externes, les benchmarks.
-- **Gouvernance** : règles de placement (7 zones) deviennent testables et auditables.
-- **Communication** : dialogue simplifié avec partenaires/éditeurs qui connaissent TOGAF, enrichi par des zones métier spécifiques au contexte assurance/mutuelle.
-- **Pilotage différencié** : 
-  - investissements référentiels (master data) vs production,
-  - stratégie omnicanale (CANAL) vs capacités métier (COEUR),
-  - gouvernance DATA_ANALYTIQUE séparée,
-  - roadmap écosystème (ECHANGE_B2B) vs intégration interne (SUPPORT).
-- **Disambiguation** : plus de risque de mélanger parcours client (CANAL) et capacité métier (COEUR), ou échanges tiers (ECHANGE_B2B) et interopérabilité interne (SUPPORT).
+## Consequences
+### Positive
+- **Enhanced readability**: clear distinction between what (CORE), how we steer (PILOTAGE), how we support (SUPPORT), what we share (REFERENTIEL), how we expose (CANAL), how we exchange (ECHANGE_B2B), how we analyze (DATA_ANALYTIQUE).
+- **Standardization**: TOGAF alignment facilitates onboarding, external reviews, benchmarks.
+- **Governance**: placement rules (7 zones) become testable and auditable.
+- **Communication**: simplified dialogue with partners/vendors familiar with TOGAF, enriched by business-specific zones for the insurance/mutual context.
+- **Differentiated steering**: 
+  - referential investments (master data) vs. production,
+  - omnichannel strategy (CANAL) vs. business capabilities (CORE),
+  - separate DATA_ANALYTIQUE governance,
+  - ecosystem roadmap (ECHANGE_B2B) vs. internal integration (SUPPORT).
+- **Disambiguation**: no more risk of mixing customer journeys (CANAL) and business capability (CORE), or third-party exchanges (ECHANGE_B2B) and internal interoperability (SUPPORT).
 
-### Négatives / Risques
-- **Complexité** : 7 zones au lieu de 3 → plus de règles à maîtriser, risque de débats sur le placement (ex : "Notifications" → CANAL ou SUPPORT ? "Portail partenaire" → CANAL ou ECHANGE_B2B ?).
-- **Formation** : nécessite une acculturation des équipes au vocabulaire TOGAF **étendu** (zones custom).
-- **Rigidité** : débats possibles sur le placement de certaines capacités (ex : "Gestion des paiements" → ECHANGE_B2B ou COEUR ?).
-- **Distinction infrastructure vs capacité** : les plateformes transverses (ESB, API Gateway, bus d'événements) ne sont **pas** des capacités à zoner. Ce qui doit être localisé, ce sont les **topics/événements produits par chaque capacité** et les **capacités métier/SI** utilisant ces plateformes.
-- **Gouvernance renforcée** : nécessite des critères de placement documentés et des revues régulières pour éviter les dérives.
-- **Outillage** : les vues générées doivent supporter 7 zones (complexité visuelle, besoin de légende claire).
+### Negative / Risks
+- **Complexity**: 7 zones instead of 3 → more rules to master, risk of debates on placement (e.g., "Notifications" → CANAL or SUPPORT? "Partner portal" → CANAL or ECHANGE_B2B?).
+- **Training**: requires team onboarding on the **extended** TOGAF vocabulary (custom zones).
+- **Rigidity**: possible debates on the placement of certain capabilities (e.g., "Payment management" → ECHANGE_B2B or CORE?).
+- **Infrastructure vs. capability distinction**: transverse platforms (ESB, API Gateway, event bus) are **not** capabilities to be zoned. What must be localized are the **topics/events produced by each capability** and the **business/IS capabilities** using these platforms.
+- **Reinforced governance**: requires documented placement criteria and regular reviews to avoid drift.
+- **Tooling**: generated views must support 7 zones (visual complexity, need for a clear legend).
 
-### Dette acceptée
-- Certaines capacités peuvent avoir des **zones multiples** (ex : une API exposée en CANAL **et** consommant ECHANGE_B2B). Pour l'instant, on force un **placement unique** (zone principale) et on documente les interactions via les ADRs de capacités.
+### Accepted Debt
+- Some capabilities may have **multiple zones** (e.g., an API exposed in CANAL **and** consuming ECHANGE_B2B). For now, we force a **unique placement** (main zone) and document interactions via capability ADRs.
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : Élevé (décision structurante transverse).
-- Date de revue recommandée : 2028-01-21.
-- Indicateur de stabilité attendu : toutes les capabilities possèdent un attribut `zoning` parmi les 7 valeurs.
+- Criticality level: High (structuring cross-cutting decision).
+- Recommended review date: 2028-01-21.
+- Expected stability indicator: all capabilities have a `zoning` attribute among the 7 values.
 
-## Traçabilité
+## Traceability
 
-- Atelier : Urbanisation 2026-02-27
-- Participants : EA / Urbanisation, yremy, acoutant
-- Références : —
+- Workshop: Urbanization 2026-02-27
+- Participants: EA / Urbanization, yremy, acoutant
+- References: —

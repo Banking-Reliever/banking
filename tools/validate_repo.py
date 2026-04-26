@@ -1,38 +1,38 @@
 #!/usr/bin/env python3
 """
-validate_repo.py — Validation structurelle du référentiel BCM.
+validate_repo.py — Structural validation of the BCM repository.
 
-Vérifie :
-  1. Présence du fichier vocab.yaml
-  2. Présence d'au moins un fichier capabilities-*.yaml dans bcm/
-  3. Unicité des identifiants de capacités (tous fichiers confondus)
-  4. Validité des champs level et zoning par rapport à vocab.yaml
-  5. Règles parent :
-     - un L1 ne doit PAS avoir de champ parent
-     - un L2+ DOIT avoir un parent
-     - le parent référencé DOIT exister dans l'ensemble des capacités chargées
-     - le parent d'un L2 doit être un L1 ; le parent d'un L3 doit être un L2
-  6. Contrôles heatmap optionnels
-      7. Règles cross-assets (evts/) :
-         - un événement métier doit être émis par une capacité de niveau L2 ou L3
-         - un événement métier doit référencer un objet métier
-         - un événement ressource doit référencer une ressource et un seul événement métier (`business_event`)
-            - l'événement métier référencé et la ressource portée d'un événement ressource doivent pointer vers le même objet métier
-         - une ressource doit référencer un objet métier
-                 - une abonnement métier doit référencer un événement métier existant avec la bonne version
-             - une abonnement ressource doit référencer un événement ressource existant et cohérent
-             - une abonnement ressource doit référencer une abonnement métier existante et cohérente
-             - toute abonnement métier doit être référencée par au moins une abonnement ressource
-  8. Couverture des propriétés d'objets métier :
-     - toute propriété définie dans un objet métier doit être référencée
-       via business_object_property dans au moins une ressource
-    9. Cohérence L2/L3 des objets métier :
-         - si une capacité L2 possède des capacités L3, tout objet métier référant cette L2
-             doit déclarer emitting_capability_L3 (liste non vide)
-         - chaque capacité listée dans emitting_capability_L3 doit être une L3 existante
-             dont le parent est la L2 référencée
+Checks:
+  1. Presence of vocab.yaml file
+  2. Presence of at least one capabilities-*.yaml file in bcm/
+  3. Uniqueness of capability identifiers (across all files)
+  4. Validity of level and zoning fields against vocab.yaml
+  5. Parent rules:
+     - an L1 must NOT have a parent field
+     - an L2+ MUST have a parent
+     - the referenced parent MUST exist in the set of loaded capabilities
+     - the parent of an L2 must be an L1; the parent of an L3 must be an L2
+  6. Optional heatmap checks
+      7. Cross-asset rules (evts/):
+         - a business event must be emitted by a capability of level L2 or L3
+         - a business event must reference a business object
+         - a resource event must reference a resource and exactly one business event (`business_event`)
+            - the referenced business event and the carried resource of a resource event must point to the same business object
+         - a resource must reference a business object
+                 - a business subscription must reference an existing business event with the correct version
+             - a resource subscription must reference an existing and coherent resource event
+             - a resource subscription must reference an existing and coherent business subscription
+             - every business subscription must be referenced by at least one resource subscription
+  8. Business object property coverage:
+     - every property defined in a business object must be referenced
+       via business_object_property in at least one resource
+    9. L2/L3 coherence of business objects:
+         - if an L2 capability has L3 capabilities, every business object referencing this L2
+             must declare emitting_capability_L3 (non-empty list)
+         - each capability listed in emitting_capability_L3 must be an existing L3
+             whose parent is the referenced L2
 
-Usage :
+Usage:
     python tools/validate_repo.py
     python tools/validate_repo.py --business-object OBJ.COEUR.005.DECLARATION_SINISTRE
 """
@@ -94,32 +94,32 @@ def validate_templates() -> None:
 
     for template_path in expected_templates:
         if not template_path.exists():
-            error(f"[templates] fichier template introuvable: {template_path.relative_to(ROOT)}")
+            error(f"[templates] template file not found: {template_path.relative_to(ROOT)}")
             continue
 
         try:
             data = yaml.safe_load(template_path.read_text(encoding="utf-8")) or {}
         except Exception as exc:
-            error(f"[templates] impossible de parser {template_path.relative_to(ROOT)}: {exc}")
+            error(f"[templates] unable to parse {template_path.relative_to(ROOT)}: {exc}")
             continue
 
         meta = data.get("meta")
         if not isinstance(meta, dict):
-            error(f"[templates] {template_path.name}: champ 'meta' manquant ou invalide")
+            error(f"[templates] {template_path.name}: 'meta' field missing or invalid")
             continue
 
         template_version = meta.get("template_version")
         if not isinstance(template_version, str) or not template_version.strip():
             error(
-                f"[templates] {template_path.name}: champ 'meta.template_version' obligatoire "
-                f"(format attendu: x.y.z)"
+                f"[templates] {template_path.name}: 'meta.template_version' field required "
+                f"(expected format: x.y.z)"
             )
             continue
 
         if not semver_pattern.match(template_version.strip()):
             error(
                 f"[templates] {template_path.name}: meta.template_version '{template_version}' "
-                f"invalide (format attendu: x.y.z)"
+                f"invalid (expected format: x.y.z)"
             )
 
 
@@ -130,19 +130,19 @@ def validate_templates() -> None:
 
 def load_vocab() -> dict:
     if not VOCAB_FILE.exists():
-        print(f"[FATAL] Fichier introuvable : {VOCAB_FILE}")
+        print(f"[FATAL] File not found: {VOCAB_FILE}")
         sys.exit(1)
     return yaml.safe_load(VOCAB_FILE.read_text(encoding="utf-8"))
 
 
 def load_all_capabilities() -> tuple[list[dict], list[Path]]:
-    """Charge toutes les capacités depuis bcm/capabilities-*.yaml."""
+    """Loads all capabilities from bcm/capabilities-*.yaml."""
     caps: list[dict] = []
     files: list[Path] = []
     for f in sorted(BCM_DIR.glob("capabilities-*.yaml")):
         data = yaml.safe_load(f.read_text(encoding="utf-8"))
         file_caps = data.get("capabilities", [])
-        # Ajoute un champ _source pour le reporting
+        # Add a _source field for reporting
         for c in file_caps:
             c["_source"] = f.name
         caps.extend(file_caps)
@@ -151,7 +151,7 @@ def load_all_capabilities() -> tuple[list[dict], list[Path]]:
 
 
 def load_assets(pattern: str, key: str) -> tuple[list[dict], list[Path]]:
-    """Charge des assets YAML depuis bcm/ (sous-répertoires inclus)."""
+    """Loads YAML assets from bcm/ (including subdirectories)."""
     items: list[dict] = []
     files: list[Path] = []
 
@@ -167,7 +167,7 @@ def load_assets(pattern: str, key: str) -> tuple[list[dict], list[Path]]:
         data = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
         file_items = data.get(key, []) or []
         if not isinstance(file_items, list):
-            error(f"[{rel_source}] Champ '{key}' invalide (liste attendue)")
+            error(f"[{rel_source}] Field '{key}' invalid (list expected)")
             files.append(f)
             continue
 
@@ -176,7 +176,7 @@ def load_assets(pattern: str, key: str) -> tuple[list[dict], list[Path]]:
                 item["_source"] = rel_source
                 items.append(item)
             else:
-                error(f"[{rel_source}] Entrée invalide dans '{key}' (mapping attendu)")
+                error(f"[{rel_source}] Invalid entry in '{key}' (mapping expected)")
 
         files.append(f)
 
@@ -184,7 +184,7 @@ def load_assets(pattern: str, key: str) -> tuple[list[dict], list[Path]]:
 
 
 def load_external_processes(process_dir: Path, root_key: str) -> tuple[list[dict], list[Path]]:
-    """Charge des processus externes (métier ou ressource)."""
+    """Loads external processes (business or resource)."""
     items: list[dict] = []
     files: list[Path] = []
 
@@ -196,18 +196,18 @@ def load_external_processes(process_dir: Path, root_key: str) -> tuple[list[dict
         try:
             data = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
         except Exception as exc:
-            error(f"[{rel_source}] impossible de parser le fichier: {exc}")
+            error(f"[{rel_source}] unable to parse file: {exc}")
             files.append(f)
             continue
 
         if not isinstance(data, dict):
-            error(f"[{rel_source}] contenu YAML invalide (mapping racine attendu)")
+            error(f"[{rel_source}] invalid YAML content (root mapping expected)")
             files.append(f)
             continue
 
         process_item = data.get(root_key)
         if not isinstance(process_item, dict):
-            error(f"[{rel_source}] champ racine '{root_key}' manquant ou invalide")
+            error(f"[{rel_source}] root field '{root_key}' missing or invalid")
             files.append(f)
             continue
 
@@ -230,48 +230,48 @@ def validate(caps: list[dict], vocab: dict) -> None:
     ids: set[str] = set()
     by_id: dict[str, dict] = {}
 
-    # ── Passe 1 : champs individuels ────────────────────────
+    # ── Pass 1: individual fields ────────────────────────
     for c in caps:
         src = c.get("_source", "?")
         cid = c.get("id")
 
         if not cid:
-            error(f"[{src}] Capacité sans champ 'id'")
+            error(f"[{src}] Capability without 'id' field")
             continue
 
         if cid in ids:
-            error(f"[{src}] Identifiant dupliqué : {cid}")
+            error(f"[{src}] Duplicate identifier: {cid}")
         ids.add(cid)
         by_id[cid] = c
 
         lvl = c.get("level")
         if lvl not in levels:
-            error(f"[{src}] {cid}: level '{lvl}' invalide (attendu : {sorted(levels)})")
+            error(f"[{src}] {cid}: level '{lvl}' invalid (expected: {sorted(levels)})")
 
         zon = c.get("zoning")
         if zon not in zonings:
-            error(f"[{src}] {cid}: zoning '{zon}' invalide (attendu : {sorted(zonings)})")
+            error(f"[{src}] {cid}: zoning '{zon}' invalid (expected: {sorted(zonings)})")
 
-        # Règles parent selon le level
+        # Parent rules by level
         if lvl == "L1":
             if "parent" in c:
-                error(f"[{src}] {cid}: un L1 ne doit pas avoir de champ 'parent'")
+                error(f"[{src}] {cid}: an L1 must not have a 'parent' field")
         else:
             parent = c.get("parent")
             if not parent:
-                error(f"[{src}] {cid}: level {lvl} doit avoir un champ 'parent'")
+                error(f"[{src}] {cid}: level {lvl} must have a 'parent' field")
 
-        # Heatmap optionnel
+        # Optional heatmap
         hm = c.get("heatmap", {})
         if hm and "maturity" in hm:
             allowed = set(vocab.get("heatmap_scales", {}).get("maturity", []))
             if allowed and hm["maturity"] not in allowed:
                 error(
                     f"[{src}] {cid}: maturity '{hm['maturity']}' "
-                    f"invalide (attendu : {sorted(allowed)})"
+                    f"invalid (expected: {sorted(allowed)})"
                 )
 
-    # ── Passe 2 : existence et cohérence des parents ────────
+    # ── Pass 2: parent existence and coherence ────────
     for c in caps:
         cid = c.get("id")
         if not cid:
@@ -282,26 +282,26 @@ def validate(caps: list[dict], vocab: dict) -> None:
 
         parent_id = c.get("parent")
         if not parent_id:
-            continue  # déjà signalé en passe 1
+            continue  # already reported in pass 1
 
         src = c.get("_source", "?")
 
         if parent_id not in by_id:
             error(
-                f"[{src}] {cid}: parent '{parent_id}' introuvable "
-                f"dans l'ensemble des capacités chargées"
+                f"[{src}] {cid}: parent '{parent_id}' not found "
+                f"in the set of loaded capabilities"
             )
             continue
 
-        # Vérifier que le level du parent est cohérent
+        # Verify that the parent level is coherent
         expected_parent_level = LEVEL_HIERARCHY.get(lvl)
         if expected_parent_level:
             actual_parent_level = by_id[parent_id].get("level")
             if actual_parent_level != expected_parent_level:
                 error(
-                    f"[{src}] {cid} (level {lvl}): le parent '{parent_id}' "
-                    f"est de level '{actual_parent_level}', "
-                    f"attendu '{expected_parent_level}'"
+                    f"[{src}] {cid} (level {lvl}): parent '{parent_id}' "
+                    f"has level '{actual_parent_level}', "
+                    f"expected '{expected_parent_level}'"
                 )
 
 
@@ -311,10 +311,10 @@ def index_by_id(items: list[dict], kind: str) -> dict[str, dict]:
         src = item.get("_source", "?")
         iid = item.get("id")
         if not iid:
-            error(f"[{src}] {kind} sans champ 'id'")
+            error(f"[{src}] {kind} without 'id' field")
             continue
         if iid in indexed:
-            error(f"[{src}] Identifiant dupliqué ({kind}) : {iid}")
+            error(f"[{src}] Duplicate identifier ({kind}): {iid}")
             continue
         indexed[iid] = item
     return indexed
@@ -328,23 +328,23 @@ def collect_relation_ids(
     item_id: str,
     label: str,
 ) -> list[str]:
-    """Lit une relation 1-n (nouveau format) avec fallback sur l'ancien format 1-1."""
+    """Reads a 1-n relation (new format) with fallback to the old 1-1 format."""
     relation_ids: list[str] = []
 
     if plural_key in item:
         raw_value = item.get(plural_key)
         if not isinstance(raw_value, list):
-            error(f"[{src}] {item_id}: champ '{plural_key}' invalide (liste attendue)")
+            error(f"[{src}] {item_id}: field '{plural_key}' invalid (list expected)")
             return []
         if not raw_value:
-            error(f"[{src}] {item_id}: champ '{plural_key}' obligatoire (liste non vide attendue)")
+            error(f"[{src}] {item_id}: field '{plural_key}' required (non-empty list expected)")
             return []
 
         for idx, rel_id in enumerate(raw_value):
             if not isinstance(rel_id, str) or not rel_id.strip():
                 error(
-                    f"[{src}] {item_id}: {plural_key}[{idx}] invalide "
-                    f"(chaîne non vide attendue)"
+                    f"[{src}] {item_id}: {plural_key}[{idx}] invalid "
+                    f"(non-empty string expected)"
                 )
                 continue
             relation_ids.append(rel_id.strip())
@@ -354,17 +354,17 @@ def collect_relation_ids(
     legacy_value = item.get(singular_key)
     if legacy_value:
         if not isinstance(legacy_value, str) or not legacy_value.strip():
-            error(f"[{src}] {item_id}: champ '{singular_key}' invalide (chaîne non vide attendue)")
+            error(f"[{src}] {item_id}: field '{singular_key}' invalid (non-empty string expected)")
             return []
         warn(
-            f"[{src}] {item_id}: champ '{singular_key}' legacy détecté; "
-            f"préférer '{plural_key}' (liste)"
+            f"[{src}] {item_id}: legacy field '{singular_key}' detected; "
+            f"prefer '{plural_key}' (list)"
         )
         return [legacy_value.strip()]
 
     error(
-        f"[{src}] {item_id}: champ '{plural_key}' obligatoire "
-        f"(ou '{singular_key}' en legacy) pour {label}"
+        f"[{src}] {item_id}: field '{plural_key}' required "
+        f"(or '{singular_key}' in legacy) for {label}"
     )
     return []
 
@@ -379,15 +379,15 @@ def collect_single_relation_id(
 ) -> str | None:
     if plural_key in item:
         error(
-            f"[{src}] {item_id}: champ '{plural_key}' interdit "
-            f"(cardinalité 1 attendue, utiliser '{singular_key}')"
+            f"[{src}] {item_id}: field '{plural_key}' forbidden "
+            f"(cardinality 1 expected, use '{singular_key}')"
         )
 
     value = item.get(singular_key)
     if not isinstance(value, str) or not value.strip():
         error(
-            f"[{src}] {item_id}: champ '{singular_key}' obligatoire "
-            f"(chaîne non vide attendue) pour {label}"
+            f"[{src}] {item_id}: field '{singular_key}' required "
+            f"(non-empty string expected) for {label}"
         )
         return None
 
@@ -413,46 +413,46 @@ def validate_cross_assets(
         if isinstance(parent_id, str) and parent_id:
             l3_children_by_l2.setdefault(parent_id, set()).add(cid)
 
-    be_by_id = index_by_id(business_events, "événement métier")
-    bo_by_id = index_by_id(business_objects, "objet métier")
-    re_by_id = index_by_id(resource_events, "événement ressource")
-    rs_by_id = index_by_id(resources, "ressource")
+    be_by_id = index_by_id(business_events, "business event")
+    bo_by_id = index_by_id(business_objects, "business object")
+    re_by_id = index_by_id(resource_events, "resource event")
+    rs_by_id = index_by_id(resources, "resource")
 
-    # 1) Événement métier : capacité L2/L3 + objet métier
+    # 1) Business event: L2/L3 capability + business object
     for event in business_events:
         src = event.get("_source", "?")
-        eid = event.get("id", "<sans-id>")
+        eid = event.get("id", "<no-id>")
 
         version = event.get("version")
         if not version:
-            error(f"[{src}] {eid}: champ 'version' obligatoire")
+            error(f"[{src}] {eid}: 'version' field required")
 
         emitting_capability = event.get("emitting_capability")
         if not emitting_capability:
-            error(f"[{src}] {eid}: champ 'emitting_capability' obligatoire")
+            error(f"[{src}] {eid}: 'emitting_capability' field required")
         elif emitting_capability not in cap_by_id:
-            error(f"[{src}] {eid}: emitting_capability '{emitting_capability}' introuvable")
+            error(f"[{src}] {eid}: emitting_capability '{emitting_capability}' not found")
         else:
             cap_level = cap_by_id[emitting_capability].get("level")
             if cap_level not in {"L2", "L3"}:
                 error(
                     f"[{src}] {eid}: emitting_capability '{emitting_capability}' "
-                    f"doit être de level L2 ou L3 (actuel: {cap_level})"
+                    f"must be level L2 or L3 (current: {cap_level})"
                 )
 
         carried_business_object = event.get("carried_business_object")
         if not carried_business_object:
-            error(f"[{src}] {eid}: champ 'carried_business_object' obligatoire")
+            error(f"[{src}] {eid}: 'carried_business_object' field required")
         elif carried_business_object not in bo_by_id:
             error(
-                f"[{src}] {eid}: objet métier '{carried_business_object}' introuvable "
-                f"dans business-object-*.yaml"
+                f"[{src}] {eid}: business object '{carried_business_object}' not found "
+                f"in business-object-*.yaml"
             )
 
-    # 1 bis) Objet métier : ne doit pas référencer d'événement métier
+    # 1 bis) Business object: must not reference a business event
     for obj in business_objects:
         src = obj.get("_source", "?")
-        oid = obj.get("id", "<sans-id>")
+        oid = obj.get("id", "<no-id>")
 
         emitting_capability = obj.get("emitting_capability")
         if isinstance(emitting_capability, str) and emitting_capability in cap_by_id:
@@ -462,36 +462,36 @@ def validate_cross_assets(
             if children_l3:
                 if not has_l3_field:
                     error(
-                        f"[{src}] {oid}: champ 'emitting_capability_L3' obligatoire car "
-                        f"la capacité L2 '{emitting_capability}' possède des capacités L3"
+                        f"[{src}] {oid}: 'emitting_capability_L3' field required because "
+                        f"L2 capability '{emitting_capability}' has L3 capabilities"
                     )
                 else:
                     raw_l3_list = obj.get("emitting_capability_L3")
                     if not isinstance(raw_l3_list, list):
                         error(
-                            f"[{src}] {oid}: champ 'emitting_capability_L3' invalide "
-                            f"(liste attendue)"
+                            f"[{src}] {oid}: 'emitting_capability_L3' field invalid "
+                            f"(list expected)"
                         )
                     elif not raw_l3_list:
                         error(
-                            f"[{src}] {oid}: champ 'emitting_capability_L3' obligatoire "
-                            f"(liste non vide attendue)"
+                            f"[{src}] {oid}: 'emitting_capability_L3' field required "
+                            f"(non-empty list expected)"
                         )
                     else:
                         seen_l3: set[str] = set()
                         for idx, l3_id in enumerate(raw_l3_list):
                             if not isinstance(l3_id, str) or not l3_id.strip():
                                 error(
-                                    f"[{src}] {oid}: emitting_capability_L3[{idx}] invalide "
-                                    f"(chaîne non vide attendue)"
+                                    f"[{src}] {oid}: emitting_capability_L3[{idx}] invalid "
+                                    f"(non-empty string expected)"
                                 )
                                 continue
 
                             l3_id = l3_id.strip()
                             if l3_id in seen_l3:
                                 error(
-                                    f"[{src}] {oid}: emitting_capability_L3 contient un "
-                                    f"doublon ('{l3_id}')"
+                                    f"[{src}] {oid}: emitting_capability_L3 contains a "
+                                    f"duplicate ('{l3_id}')"
                                 )
                                 continue
                             seen_l3.add(l3_id)
@@ -499,56 +499,56 @@ def validate_cross_assets(
                             referenced_cap = cap_by_id.get(l3_id)
                             if not referenced_cap:
                                 error(
-                                    f"[{src}] {oid}: emitting_capability_L3 '{l3_id}' introuvable"
+                                    f"[{src}] {oid}: emitting_capability_L3 '{l3_id}' not found"
                                 )
                                 continue
 
                             if referenced_cap.get("level") != "L3":
                                 error(
-                                    f"[{src}] {oid}: emitting_capability_L3 '{l3_id}' doit "
-                                    f"référencer une capacité de niveau L3"
+                                    f"[{src}] {oid}: emitting_capability_L3 '{l3_id}' must "
+                                    f"reference a level L3 capability"
                                 )
                                 continue
 
                             l3_parent = referenced_cap.get("parent")
                             if l3_parent != emitting_capability:
                                 error(
-                                    f"[{src}] {oid}: emitting_capability_L3 '{l3_id}' référence "
-                                    f"la L2 '{l3_parent}', attendu '{emitting_capability}'"
+                                    f"[{src}] {oid}: emitting_capability_L3 '{l3_id}' references "
+                                    f"L2 '{l3_parent}', expected '{emitting_capability}'"
                                 )
             elif has_l3_field:
                 error(
-                    f"[{src}] {oid}: champ 'emitting_capability_L3' interdit car la "
-                    f"capacité L2 '{emitting_capability}' ne possède aucune capacité L3"
+                    f"[{src}] {oid}: 'emitting_capability_L3' field forbidden because "
+                    f"L2 capability '{emitting_capability}' has no L3 capabilities"
                 )
 
         if "emitting_business_event" in obj:
             error(
-                f"[{src}] {oid}: champ 'emitting_business_event' interdit. "
-                f"La relation doit être portée par l'événement métier via 'carried_business_object'."
+                f"[{src}] {oid}: 'emitting_business_event' field forbidden. "
+                f"The relation must be carried by the business event via 'carried_business_object'."
             )
 
         if "emitting_business_events" in obj:
             error(
-                f"[{src}] {oid}: champ 'emitting_business_events' interdit. "
-                f"La relation doit être portée par l'événement métier via 'carried_business_object'."
+                f"[{src}] {oid}: 'emitting_business_events' field forbidden. "
+                f"The relation must be carried by the business event via 'carried_business_object'."
             )
 
-    # 2) Événement ressource : référence ressource + un seul événement métier
+    # 2) Resource event: resource reference + exactly one business event
     for event in resource_events:
         src = event.get("_source", "?")
-        eid = event.get("id", "<sans-id>")
+        eid = event.get("id", "<no-id>")
 
         carried_resource = event.get("carried_resource")
         data = event.get("data")
         if carried_resource and data:
-            error(f"[{src}] {eid}: les champs 'carried_resource' et 'data' sont mutuellement exclusifs")
+            error(f"[{src}] {eid}: 'carried_resource' and 'data' fields are mutually exclusive")
         elif not carried_resource and not data:
-            error(f"[{src}] {eid}: un des champs 'carried_resource' ou 'data' doit être renseigné")
+            error(f"[{src}] {eid}: one of 'carried_resource' or 'data' fields must be provided")
         elif carried_resource and carried_resource not in rs_by_id:
             error(
-                f"[{src}] {eid}: ressource '{carried_resource}' introuvable "
-                f"dans resource-*.yaml"
+                f"[{src}] {eid}: resource '{carried_resource}' not found "
+                f"in resource-*.yaml"
             )
 
         business_event = collect_single_relation_id(
@@ -557,16 +557,16 @@ def validate_cross_assets(
             "business_events",
             src,
             eid,
-            "l'événement métier lié à l'événement ressource",
+            "the business event linked to the resource event",
         )
         if business_event and business_event not in be_by_id:
             error(
-                f"[{src}] {eid}: événement métier '{business_event}' introuvable "
-                f"dans business-event-*.yaml"
+                f"[{src}] {eid}: business event '{business_event}' not found "
+                f"in business-event-*.yaml"
             )
 
-        # Cohérence métier : la ressource portée et l'événement métier lié
-        # doivent converger vers le même objet métier.
+        # Business coherence: the carried resource and the linked business event
+        # must converge toward the same business object.
         if (
             isinstance(carried_resource, str)
             and carried_resource in rs_by_id
@@ -577,23 +577,23 @@ def validate_cross_assets(
             event_business_object = be_by_id[business_event].get("carried_business_object")
             if resource_business_object != event_business_object:
                 error(
-                    f"[{src}] {eid}: incohérence de rattachement objet métier entre "
+                    f"[{src}] {eid}: business object mismatch between "
                     f"carried_resource '{carried_resource}' (business_object='{resource_business_object}') "
-                    f"et business_event '{business_event}' (carried_business_object='{event_business_object}')"
+                    f"and business_event '{business_event}' (carried_business_object='{event_business_object}')"
                 )
 
-    # 3) Ressource : référence objet métier
+    # 3) Resource: business object reference
     for resource in resources:
         src = resource.get("_source", "?")
-        rid = resource.get("id", "<sans-id>")
+        rid = resource.get("id", "<no-id>")
 
         business_object = resource.get("business_object")
         if not business_object:
-            error(f"[{src}] {rid}: champ 'business_object' obligatoire")
+            error(f"[{src}] {rid}: 'business_object' field required")
         elif business_object not in bo_by_id:
             error(
-                f"[{src}] {rid}: objet métier '{business_object}' introuvable "
-                f"dans business-object-*.yaml"
+                f"[{src}] {rid}: business object '{business_object}' not found "
+                f"in business-object-*.yaml"
             )
 
 
@@ -603,7 +603,7 @@ def validate_business_subscriptions(
     business_subscriptions: list[dict],
 ) -> None:
     cap_by_id = {c.get("id"): c for c in caps if c.get("id")}
-    be_by_id = index_by_id(business_events, "événement métier")
+    be_by_id = index_by_id(business_events, "business event")
 
     for sub in business_subscriptions:
         src = sub.get("_source", "?")
@@ -611,31 +611,31 @@ def validate_business_subscriptions(
 
         consumer_capability = sub.get("consumer_capability")
         if not consumer_capability:
-            error(f"[{src}] {sid}: champ 'consumer_capability' obligatoire")
+            error(f"[{src}] {sid}: field 'consumer_capability' required")
         elif consumer_capability not in cap_by_id:
-            error(f"[{src}] {sid}: consumer_capability '{consumer_capability}' introuvable")
+            error(f"[{src}] {sid}: consumer_capability '{consumer_capability}' not found")
         else:
             cap_level = cap_by_id[consumer_capability].get("level")
             if cap_level not in {"L2", "L3"}:
                 error(
                     f"[{src}] {sid}: consumer_capability '{consumer_capability}' "
-                    f"doit être de level L2 ou L3 (actuel: {cap_level})"
+                    f"must be level L2 or L3 (current: {cap_level})"
                 )
 
         subscribed_event = sub.get("subscribed_event")
         if not isinstance(subscribed_event, dict):
-            error(f"[{src}] {sid}: champ 'subscribed_event' obligatoire (mapping attendu)")
+            error(f"[{src}] {sid}: field 'subscribed_event' required (mapping expected)")
             continue
 
         event_id = subscribed_event.get("id")
         if not event_id:
-            error(f"[{src}] {sid}: subscribed_event.id obligatoire")
+            error(f"[{src}] {sid}: subscribed_event.id required")
             continue
 
         if event_id not in be_by_id:
             error(
-                f"[{src}] {sid}: subscribed_event.id '{event_id}' introuvable "
-                f"dans business-event-*.yaml"
+                f"[{src}] {sid}: subscribed_event.id '{event_id}' not found "
+                f"in business-event-*.yaml"
             )
             continue
 
@@ -643,24 +643,24 @@ def validate_business_subscriptions(
 
         subscribed_version = subscribed_event.get("version")
         if not subscribed_version:
-            error(f"[{src}] {sid}: subscribed_event.version obligatoire")
+            error(f"[{src}] {sid}: subscribed_event.version required")
         else:
             expected_version = expected_event.get("version")
             if subscribed_version != expected_version:
                 error(
                     f"[{src}] {sid}: subscribed_event.version '{subscribed_version}' "
-                    f"différente de la version de l'événement métier '{expected_version}'"
+                    f"differs from the business event version '{expected_version}'"
                 )
 
         emitting_capability = subscribed_event.get("emitting_capability")
         if not emitting_capability:
-            error(f"[{src}] {sid}: subscribed_event.emitting_capability obligatoire")
+            error(f"[{src}] {sid}: subscribed_event.emitting_capability required")
         else:
             expected_emitter = expected_event.get("emitting_capability")
             if emitting_capability != expected_emitter:
                 error(
                     f"[{src}] {sid}: subscribed_event.emitting_capability '{emitting_capability}' "
-                    f"différent de l'émetteur de l'événement métier '{expected_emitter}'"
+                    f"differs from the business event emitter '{expected_emitter}'"
                 )
 
 
@@ -671,8 +671,8 @@ def validate_resource_subscriptions(
     resource_subscriptions: list[dict],
 ) -> None:
     cap_by_id = {c.get("id"): c for c in caps if c.get("id")}
-    re_by_id = index_by_id(resource_events, "événement ressource")
-    bs_by_id = index_by_id(business_subscriptions, "abonnement métier")
+    re_by_id = index_by_id(resource_events, "resource event")
+    bs_by_id = index_by_id(business_subscriptions, "business subscription")
     referenced_business_subscriptions: set[str] = set()
 
     for sub in resource_subscriptions:
@@ -681,25 +681,25 @@ def validate_resource_subscriptions(
 
         consumer_capability = sub.get("consumer_capability")
         if not consumer_capability:
-            error(f"[{src}] {sid}: champ 'consumer_capability' obligatoire")
+            error(f"[{src}] {sid}: field 'consumer_capability' required")
         elif consumer_capability not in cap_by_id:
-            error(f"[{src}] {sid}: consumer_capability '{consumer_capability}' introuvable")
+            error(f"[{src}] {sid}: consumer_capability '{consumer_capability}' not found")
         else:
             cap_level = cap_by_id[consumer_capability].get("level")
             if cap_level not in {"L2", "L3"}:
                 error(
                     f"[{src}] {sid}: consumer_capability '{consumer_capability}' "
-                    f"doit être de level L2 ou L3 (actuel: {cap_level})"
+                    f"must be level L2 or L3 (current: {cap_level})"
                 )
 
         linked_business_subscription = sub.get("linked_business_subscription")
         if not linked_business_subscription:
-            error(f"[{src}] {sid}: champ 'linked_business_subscription' obligatoire")
+            error(f"[{src}] {sid}: field 'linked_business_subscription' required")
             linked_business = None
         elif linked_business_subscription not in bs_by_id:
             error(
-                f"[{src}] {sid}: linked_business_subscription '{linked_business_subscription}' introuvable "
-                f"dans business-subscription-*.yaml"
+                f"[{src}] {sid}: linked_business_subscription '{linked_business_subscription}' not found "
+                f"in business-subscription-*.yaml"
             )
             linked_business = None
         else:
@@ -710,23 +710,23 @@ def validate_resource_subscriptions(
             if consumer_capability and consumer_capability != expected_consumer:
                 error(
                     f"[{src}] {sid}: consumer_capability '{consumer_capability}' "
-                    f"différente de celle de la abonnement métier liée '{expected_consumer}'"
+                    f"differs from the linked business subscription's consumer_capability '{expected_consumer}'"
                 )
 
         subscribed_resource_event = sub.get("subscribed_resource_event")
         if not isinstance(subscribed_resource_event, dict):
-            error(f"[{src}] {sid}: champ 'subscribed_resource_event' obligatoire (mapping attendu)")
+            error(f"[{src}] {sid}: field 'subscribed_resource_event' required (mapping expected)")
             continue
 
         event_id = subscribed_resource_event.get("id")
         if not event_id:
-            error(f"[{src}] {sid}: subscribed_resource_event.id obligatoire")
+            error(f"[{src}] {sid}: subscribed_resource_event.id required")
             continue
 
         if event_id not in re_by_id:
             error(
-                f"[{src}] {sid}: subscribed_resource_event.id '{event_id}' introuvable "
-                f"dans resource-event-*.yaml"
+                f"[{src}] {sid}: subscribed_resource_event.id '{event_id}' not found "
+                f"in resource-event-*.yaml"
             )
             continue
 
@@ -734,18 +734,18 @@ def validate_resource_subscriptions(
 
         emitting_capability = subscribed_resource_event.get("emitting_capability")
         if not emitting_capability:
-            error(f"[{src}] {sid}: subscribed_resource_event.emitting_capability obligatoire")
+            error(f"[{src}] {sid}: subscribed_resource_event.emitting_capability required")
         else:
             expected_emitter = expected_event.get("emitting_capability")
             if emitting_capability != expected_emitter:
                 error(
                     f"[{src}] {sid}: subscribed_resource_event.emitting_capability '{emitting_capability}' "
-                    f"différent de l'émetteur de l'événement ressource '{expected_emitter}'"
+                    f"differs from the resource event emitter '{expected_emitter}'"
                 )
 
         linked_business_event = subscribed_resource_event.get("linked_business_event")
         if not linked_business_event:
-            error(f"[{src}] {sid}: subscribed_resource_event.linked_business_event obligatoire")
+            error(f"[{src}] {sid}: subscribed_resource_event.linked_business_event required")
         else:
             expected_business_event = collect_single_relation_id(
                 expected_event,
@@ -753,12 +753,12 @@ def validate_resource_subscriptions(
                 "business_events",
                 expected_event.get("_source", "?"),
                 expected_event.get("id", "<sans-id>"),
-                "l'événement métier lié",
+                "the linked business event",
             )
             if expected_business_event and linked_business_event != expected_business_event:
                 error(
                     f"[{src}] {sid}: subscribed_resource_event.linked_business_event '{linked_business_event}' "
-                    f"différent du business_event de l'événement ressource '{expected_event.get('id', '<sans-id>')}'"
+                    f"differs from the business_event of resource event '{expected_event.get('id', '<sans-id>')}'"
                 )
 
             if linked_business:
@@ -766,7 +766,7 @@ def validate_resource_subscriptions(
                 if business_subscribed_event and linked_business_event != business_subscribed_event:
                     error(
                         f"[{src}] {sid}: linked_business_event '{linked_business_event}' "
-                        f"différent de l'événement de la abonnement métier liée '{business_subscribed_event}'"
+                        f"differs from the event of the linked business subscription '{business_subscribed_event}'"
                     )
 
         if linked_business:
@@ -775,14 +775,14 @@ def validate_resource_subscriptions(
             if business_emitter and resource_emitter and business_emitter != resource_emitter:
                 error(
                     f"[{src}] {sid}: emitting_capability '{resource_emitter}' "
-                    f"différente de l'émetteur de la abonnement métier liée '{business_emitter}'"
+                    f"differs from the linked business subscription's emitter '{business_emitter}'"
                 )
 
     for business_subscription_id in bs_by_id:
         if business_subscription_id not in referenced_business_subscriptions:
             error(
-                f"[cross-subscriptions] abonnement métier '{business_subscription_id}' non référencée "
-                f"par une abonnement ressource"
+                f"[cross-subscriptions] business subscription '{business_subscription_id}' not referenced "
+                f"by any resource subscription"
             )
 
 
@@ -790,14 +790,14 @@ def validate_business_object_properties_coverage(
     business_objects: list[dict],
     resources: list[dict],
 ) -> None:
-    """Vérifie que toute propriété définie dans un objet métier est référencée au moins une fois dans une ressource.
-    
-    Règle : chaque propriété (champ data.name) d'un objet métier doit être référencée
-    via business_object_property dans au moins une ressource qui pointe vers cet objet métier.
-    """
-    bo_by_id = index_by_id(business_objects, "objet métier")
+    """Checks that every property defined in a business object is referenced at least once in a resource.
 
-    # Collecter toutes les propriétés référencées par les ressources
+    Rule: each property (data.name field) of a business object must be referenced
+    via business_object_property in at least one resource that points to that business object.
+    """
+    bo_by_id = index_by_id(business_objects, "business object")
+
+    # Collect all properties referenced by resources
     # Structure: { business_object_id: { property_name1, property_name2, ... } }
     referenced_properties: dict[str, set[str]] = {}
 
@@ -816,7 +816,7 @@ def validate_business_object_properties_coverage(
                     referenced_properties[business_object_id] = set()
                 referenced_properties[business_object_id].add(bo_prop)
 
-    # Vérifier que chaque propriété de chaque objet métier est référencée
+    # Check that every property of each business object is referenced
     for bo in business_objects:
         src = bo.get("_source", "?")
         bo_id = bo.get("id")
@@ -835,8 +835,8 @@ def validate_business_object_properties_coverage(
 
             if field_name not in bo_referenced_props:
                 error(
-                    f"[{src}] {bo_id}: propriété '{field_name}' non référencée "
-                    f"par aucune ressource (via business_object_property)"
+                    f"[{src}] {bo_id}: property '{field_name}' not referenced "
+                    f"by any resource (via business_object_property)"
                 )
 
 
@@ -844,15 +844,15 @@ def _extract_list_of_ids(value: object, src: str, pid: str, field_name: str) -> 
     if value is None:
         return []
     if not isinstance(value, list):
-        error(f"[{src}] {pid}: champ '{field_name}' invalide (liste attendue)")
+        error(f"[{src}] {pid}: field '{field_name}' invalid (list expected)")
         return []
 
     ids: list[str] = []
     for idx, item in enumerate(value):
         if not isinstance(item, str) or not item.strip():
             error(
-                f"[{src}] {pid}: {field_name}[{idx}] invalide "
-                f"(chaîne non vide attendue)"
+                f"[{src}] {pid}: {field_name}[{idx}] invalid "
+                f"(non-empty string expected)"
             )
             continue
         ids.append(item.strip())
@@ -892,13 +892,13 @@ def _validate_capability_refs(
             if chain is None:
                 continue
             if not isinstance(chain, list):
-                error(f"[{src}] {pid}: champ '{chain_key}' invalide (liste attendue)")
+                error(f"[{src}] {pid}: field '{chain_key}' invalid (list expected)")
                 continue
             for idx, step in enumerate(chain):
                 if not isinstance(step, dict):
                     error(
-                        f"[{src}] {pid}: {chain_key}[{idx}] invalide "
-                        f"(mapping attendu)"
+                        f"[{src}] {pid}: {chain_key}[{idx}] invalid "
+                        f"(mapping expected)"
                     )
                     continue
                 step_cap = step.get("capability")
@@ -908,8 +908,8 @@ def _validate_capability_refs(
         for cap_id in cap_refs:
             if cap_id not in cap_by_id:
                 error(
-                    f"[{src}] {pid}: capacité '{cap_id}' introuvable "
-                    f"(processus {process_kind})"
+                    f"[{src}] {pid}: capability '{cap_id}' not found "
+                    f"({process_kind} process)"
                 )
 
 
@@ -930,12 +930,12 @@ def _collect_event_refs_from_chain(
         return event_refs
 
     if not isinstance(chain, list):
-        error(f"[{src}] {pid}: champ '{chain_key}' invalide (liste attendue)")
+        error(f"[{src}] {pid}: field '{chain_key}' invalid (list expected)")
         return event_refs
 
     for idx, step in enumerate(chain):
         if not isinstance(step, dict):
-            error(f"[{src}] {pid}: {chain_key}[{idx}] invalide (mapping attendu)")
+            error(f"[{src}] {pid}: {chain_key}[{idx}] invalid (mapping expected)")
             continue
 
         for key in [single_in_key, single_out_key]:
@@ -944,8 +944,8 @@ def _collect_event_refs_from_chain(
                 continue
             if not isinstance(value, str) or not value.strip():
                 error(
-                    f"[{src}] {pid}: {chain_key}[{idx}].{key} invalide "
-                    f"(chaîne non vide attendue)"
+                    f"[{src}] {pid}: {chain_key}[{idx}].{key} invalid "
+                    f"(non-empty string expected)"
                 )
                 continue
             event_refs.append(value.strip())
@@ -962,13 +962,13 @@ def _collect_event_refs_from_chain(
 
 
 def _validate_process_documentation(process: dict, process_kind: str) -> None:
-    """Valide la complétude de la section documentation d'un processus externe."""
+    """Validates the completeness of the documentation section of an external process."""
     src = process.get("_source", "?")
     pid = process.get("id", "<sans-id>")
 
     documentation = process.get("documentation")
     if not isinstance(documentation, dict):
-        error(f"[{src}] {pid}: champ 'documentation' obligatoire (mapping attendu)")
+        error(f"[{src}] {pid}: field 'documentation' required (mapping expected)")
         return
 
     common_required_fields = [
@@ -981,35 +981,35 @@ def _validate_process_documentation(process: dict, process_kind: str) -> None:
         "indicateurs_suivi",
     ]
 
-    kind_specific_field = "valeur_metier" if process_kind == "métier" else "valeur_operationnelle"
+    kind_specific_field = "valeur_metier" if process_kind == "business" else "valeur_operationnelle"
     required_fields = [*common_required_fields, kind_specific_field]
 
     for field in required_fields:
         value = documentation.get(field)
         if value is None:
-            error(f"[{src}] {pid}: documentation.{field} obligatoire")
+            error(f"[{src}] {pid}: documentation.{field} required")
             continue
 
         if isinstance(value, str):
             if not value.strip():
-                error(f"[{src}] {pid}: documentation.{field} invalide (chaîne non vide attendue)")
+                error(f"[{src}] {pid}: documentation.{field} invalid (non-empty string expected)")
         elif isinstance(value, list):
             if not value:
-                error(f"[{src}] {pid}: documentation.{field} invalide (liste non vide attendue)")
+                error(f"[{src}] {pid}: documentation.{field} invalid (non-empty list expected)")
             else:
                 for idx, item in enumerate(value):
                     if not isinstance(item, str) or not item.strip():
                         error(
-                            f"[{src}] {pid}: documentation.{field}[{idx}] invalide "
-                            f"(chaîne non vide attendue)"
+                            f"[{src}] {pid}: documentation.{field}[{idx}] invalid "
+                            f"(non-empty string expected)"
                         )
         elif isinstance(value, dict):
-            # contrôles détaillés plus bas sur portee / scenarios
+            # detailed checks below for portee / scenarios
             pass
         else:
             error(
-                f"[{src}] {pid}: documentation.{field} invalide "
-                f"(chaîne, liste ou mapping attendu)"
+                f"[{src}] {pid}: documentation.{field} invalid "
+                f"(string, list, or mapping expected)"
             )
 
     portee = documentation.get("portee")
@@ -1018,18 +1018,18 @@ def _validate_process_documentation(process: dict, process_kind: str) -> None:
             subvalue = portee.get(subfield)
             if not isinstance(subvalue, list) or not subvalue:
                 error(
-                    f"[{src}] {pid}: documentation.portee.{subfield} invalide "
-                    f"(liste non vide attendue)"
+                    f"[{src}] {pid}: documentation.portee.{subfield} invalid "
+                    f"(non-empty list expected)"
                 )
                 continue
             for idx, item in enumerate(subvalue):
                 if not isinstance(item, str) or not item.strip():
                     error(
-                        f"[{src}] {pid}: documentation.portee.{subfield}[{idx}] invalide "
-                        f"(chaîne non vide attendue)"
+                        f"[{src}] {pid}: documentation.portee.{subfield}[{idx}] invalid "
+                        f"(non-empty string expected)"
                     )
     elif portee is not None:
-        error(f"[{src}] {pid}: documentation.portee invalide (mapping attendu)")
+        error(f"[{src}] {pid}: documentation.portee invalid (mapping expected)")
 
     scenarios = documentation.get("scenarios")
     if isinstance(scenarios, dict):
@@ -1037,11 +1037,11 @@ def _validate_process_documentation(process: dict, process_kind: str) -> None:
             subvalue = scenarios.get(subfield)
             if not isinstance(subvalue, str) or not subvalue.strip():
                 error(
-                    f"[{src}] {pid}: documentation.scenarios.{subfield} invalide "
-                    f"(chaîne non vide attendue)"
+                    f"[{src}] {pid}: documentation.scenarios.{subfield} invalid "
+                    f"(non-empty string expected)"
                 )
     elif scenarios is not None:
-        error(f"[{src}] {pid}: documentation.scenarios invalide (mapping attendu)")
+        error(f"[{src}] {pid}: documentation.scenarios invalid (mapping expected)")
 
 
 def validate_external_processes(
@@ -1059,16 +1059,16 @@ def validate_external_processes(
     bs_by_id = {s.get("id"): s for s in business_subscriptions if isinstance(s.get("id"), str)}
     rs_by_id = {s.get("id"): s for s in resource_subscriptions if isinstance(s.get("id"), str)}
 
-    _validate_capability_refs(business_processes, cap_by_id, "métier")
-    _validate_capability_refs(resource_processes, cap_by_id, "ressource")
+    _validate_capability_refs(business_processes, cap_by_id, "business")
+    _validate_capability_refs(resource_processes, cap_by_id, "resource")
 
     for process in business_processes:
-        _validate_process_documentation(process, "métier")
+        _validate_process_documentation(process, "business")
 
     for process in resource_processes:
-        _validate_process_documentation(process, "ressource")
+        _validate_process_documentation(process, "resource")
 
-    # Processus métier -> événements métier
+    # Business processes -> business events
     for process in business_processes:
         src = process.get("_source", "?")
         pid = process.get("id", "<sans-id>")
@@ -1080,7 +1080,7 @@ def validate_external_processes(
             if value is None:
                 continue
             if not isinstance(value, str) or not value.strip():
-                error(f"[{src}] {pid}: champ '{field}' invalide (chaîne non vide attendue)")
+                error(f"[{src}] {pid}: field '{field}' invalid (non-empty string expected)")
                 continue
             event_refs.append(value.strip())
 
@@ -1090,7 +1090,7 @@ def validate_external_processes(
             if isinstance(start_event, str) and start_event.strip():
                 event_refs.append(start_event.strip())
             elif start_event is not None:
-                error(f"[{src}] {pid}: start.event invalide (chaîne non vide attendue)")
+                error(f"[{src}] {pid}: start.event invalid (non-empty string expected)")
 
         business_assets = process.get("business_assets")
         if isinstance(business_assets, dict):
@@ -1141,7 +1141,7 @@ def validate_external_processes(
                 if not isinstance(via_subscription, str) or not via_subscription.strip():
                     error(
                         f"[{src}] {pid}: event_subscription_chain[{idx}].via_subscription "
-                        f"invalide (chaîne non vide attendue)"
+                        f"invalid (non-empty string expected)"
                     )
                     continue
                 subscription_refs.append(via_subscription.strip())
@@ -1162,7 +1162,7 @@ def validate_external_processes(
         if isinstance(exits_metier, list):
             for idx, exit_item in enumerate(exits_metier):
                 if not isinstance(exit_item, dict):
-                    error(f"[{src}] {pid}: exits_metier[{idx}] invalide (mapping attendu)")
+                    error(f"[{src}] {pid}: exits_metier[{idx}] invalid (mapping expected)")
                     continue
                 to_event = exit_item.get("to_business_event")
                 if isinstance(to_event, str) and to_event.strip():
@@ -1171,18 +1171,18 @@ def validate_external_processes(
         for event_id in event_refs:
             if event_id not in be_by_id:
                 error(
-                    f"[{src}] {pid}: événement métier '{event_id}' introuvable "
-                    f"(processus métier)"
+                    f"[{src}] {pid}: business event '{event_id}' not found "
+                    f"(business process)"
                 )
 
         for subscription_id in subscription_refs:
             if subscription_id not in bs_by_id:
                 error(
-                    f"[{src}] {pid}: abonnement métier '{subscription_id}' introuvable "
-                    f"(processus métier)"
+                    f"[{src}] {pid}: business subscription '{subscription_id}' not found "
+                    f"(business process)"
                 )
 
-    # Processus ressource -> événements ressource
+    # Resource processes -> resource events
     for process in resource_processes:
         src = process.get("_source", "?")
         pid = process.get("id", "<sans-id>")
@@ -1194,7 +1194,7 @@ def validate_external_processes(
             if value is None:
                 continue
             if not isinstance(value, str) or not value.strip():
-                error(f"[{src}] {pid}: champ '{field}' invalide (chaîne non vide attendue)")
+                error(f"[{src}] {pid}: field '{field}' invalid (non-empty string expected)")
                 continue
             event_refs.append(value.strip())
 
@@ -1204,7 +1204,7 @@ def validate_external_processes(
             if isinstance(start_event, str) and start_event.strip():
                 event_refs.append(start_event.strip())
             elif start_event is not None:
-                error(f"[{src}] {pid}: start.event invalide (chaîne non vide attendue)")
+                error(f"[{src}] {pid}: start.event invalid (non-empty string expected)")
 
         resource_assets = process.get("resource_assets")
         if isinstance(resource_assets, dict):
@@ -1258,7 +1258,7 @@ def validate_external_processes(
                 if not isinstance(via_subscription, str) or not via_subscription.strip():
                     error(
                         f"[{src}] {pid}: event_subscription_chain[{idx}].via_subscription "
-                        f"invalide (chaîne non vide attendue)"
+                        f"invalid (non-empty string expected)"
                     )
                     continue
                 subscription_refs.append(via_subscription.strip())
@@ -1279,7 +1279,7 @@ def validate_external_processes(
         if isinstance(exits_ressource, list):
             for idx, exit_item in enumerate(exits_ressource):
                 if not isinstance(exit_item, dict):
-                    error(f"[{src}] {pid}: exits_ressource[{idx}] invalide (mapping attendu)")
+                    error(f"[{src}] {pid}: exits_ressource[{idx}] invalid (mapping expected)")
                     continue
                 to_event = exit_item.get("to_resource_event")
                 if isinstance(to_event, str) and to_event.strip():
@@ -1288,20 +1288,20 @@ def validate_external_processes(
         for event_id in event_refs:
             if event_id not in re_by_id:
                 error(
-                    f"[{src}] {pid}: événement ressource '{event_id}' introuvable "
-                    f"(processus ressource)"
+                    f"[{src}] {pid}: resource event '{event_id}' not found "
+                    f"(resource process)"
                 )
 
         for subscription_id in subscription_refs:
             if subscription_id not in rs_by_id:
                 error(
-                    f"[{src}] {pid}: abonnement ressource '{subscription_id}' introuvable "
-                    f"(processus ressource)"
+                    f"[{src}] {pid}: resource subscription '{subscription_id}' not found "
+                    f"(resource process)"
                 )
 
 
 # ──────────────────────────────────────────────────────────────
-# Validation ciblée d'un objet métier
+# Targeted validation of a business object
 # ──────────────────────────────────────────────────────────────
 
 
@@ -1312,14 +1312,14 @@ def validate_single_business_object(
     resources: list[dict],
     caps: list[dict],
 ) -> None:
-    """Valide un objet métier spécifique et affiche un rapport détaillé."""
+    """Validates a specific business object and prints a detailed report."""
     bo_by_id = {o.get("id"): o for o in business_objects if o.get("id")}
     be_by_id = {e.get("id"): e for e in business_events if e.get("id")}
     cap_by_id = {c.get("id"): c for c in caps if c.get("id")}
 
     if bo_id not in bo_by_id:
-        print(f"[FATAL] Objet métier '{bo_id}' introuvable.")
-        print(f"\nObjets métier disponibles :")
+        print(f"[FATAL] Business object '{bo_id}' not found.")
+        print(f"\nAvailable business objects:")
         for oid in sorted(bo_by_id.keys()):
             print(f"  • {oid}")
         sys.exit(1)
@@ -1328,34 +1328,34 @@ def validate_single_business_object(
     src = bo.get("_source", "?")
 
     print(f"\n{'='*70}")
-    print(f"VALIDATION OBJET MÉTIER : {bo_id}")
+    print(f"BUSINESS OBJECT VALIDATION: {bo_id}")
     print(f"{'='*70}")
 
-    # Informations générales
-    print(f"\n## Informations générales")
-    print(f"  Nom           : {bo.get('name', '?')}")
+    # General information
+    print(f"\n## General information")
+    print(f"  Name          : {bo.get('name', '?')}")
     print(f"  Source        : {src}")
     print(f"  Definition    : {bo.get('definition', '?')[:80]}..." if len(bo.get('definition', '')) > 80 else f"  Definition    : {bo.get('definition', '?')}")
 
-    # Capability émettrice
+    # Emitting capability
     emitting_cap = bo.get("emitting_capability")
-    print(f"\n## Capability émettrice")
+    print(f"\n## Emitting capability")
     if emitting_cap:
         if emitting_cap in cap_by_id:
             cap = cap_by_id[emitting_cap]
             print(f"  [✓] {emitting_cap} ({cap.get('name', '?')}) - Level {cap.get('level', '?')}")
         else:
-            print(f"  [✗] {emitting_cap} - INTROUVABLE")
-            error(f"[{src}] {bo_id}: emitting_capability '{emitting_cap}' introuvable")
+            print(f"  [✗] {emitting_cap} - NOT FOUND")
+            error(f"[{src}] {bo_id}: emitting_capability '{emitting_cap}' not found")
     else:
-        print(f"  [✗] Non définie")
-        error(f"[{src}] {bo_id}: champ 'emitting_capability' obligatoire")
+        print(f"  [✗] Not defined")
+        error(f"[{src}] {bo_id}: field 'emitting_capability' required")
 
-    # Propriétés de l'objet métier
+    # Business object properties
     data = bo.get("data", []) or []
-    print(f"\n## Propriétés ({len(data)})")
+    print(f"\n## Properties ({len(data)})")
 
-    # Collecter les références depuis les ressources
+    # Collect references from resources
     referencing_resources: dict[str, list[str]] = {}  # property_name -> [resource_ids]
     for resource in resources:
         if resource.get("business_object") != bo_id:
@@ -1381,39 +1381,39 @@ def validate_single_business_object(
         if refs:
             print(f"  {field_required} {field_name} ({field_type}) [✓ {len(refs)} ref(s)]")
         else:
-            print(f"  {field_required} {field_name} ({field_type}) [⚠ non référencée]")
-            warn(f"[{src}] {bo_id}: propriété '{field_name}' non référencée")
+            print(f"  {field_required} {field_name} ({field_type}) [⚠ not referenced]")
+            warn(f"[{src}] {bo_id}: property '{field_name}' not referenced")
 
-    # Ressources qui implémentent cet objet métier
+    # Resources implementing this business object
     implementing_resources = [r for r in resources if r.get("business_object") == bo_id]
-    print(f"\n## Ressources implémentant cet objet métier ({len(implementing_resources)})")
+    print(f"\n## Resources implementing this business object ({len(implementing_resources)})")
     for res in implementing_resources:
         res_id = res.get("id", "?")
         res_name = res.get("name", "?")
         res_data = res.get("data", []) or []
         mapped_props = sum(1 for f in res_data if isinstance(f, dict) and f.get("business_object_property"))
         print(f"  • {res_id}")
-        print(f"    Nom : {res_name}")
-        print(f"    Propriétés mappées : {mapped_props}/{len(data)}")
+        print(f"    Name: {res_name}")
+        print(f"    Mapped properties: {mapped_props}/{len(data)}")
 
     if not implementing_resources:
-        print(f"  [⚠] Aucune ressource n'implémente cet objet métier")
-        warn(f"[{src}] {bo_id}: aucune ressource ne référence cet objet métier")
+        print(f"  [⚠] No resource implements this business object")
+        warn(f"[{src}] {bo_id}: no resource references this business object")
 
-    # Résumé
+    # Summary
     print(f"\n{'='*70}")
-    print(f"RÉSUMÉ")
+    print(f"SUMMARY")
     print(f"{'='*70}")
 
     props_covered = sum(1 for p in data if isinstance(p, dict) and p.get("name") in referencing_resources)
     total_props = len([p for p in data if isinstance(p, dict) and p.get("name")])
     coverage = (props_covered / total_props * 100) if total_props > 0 else 0
 
-    print(f"  Propriétés          : {total_props}")
-    print(f"  Propriétés couvertes: {props_covered} ({coverage:.0f}%)")
-    print(f"  Ressources         : {len(implementing_resources)}")
-    print(f"  Warnings           : {len(warnings)}")
-    print(f"  Erreurs            : {len(errors)}")
+    print(f"  Properties          : {total_props}")
+    print(f"  Covered properties  : {props_covered} ({coverage:.0f}%)")
+    print(f"  Resources           : {len(implementing_resources)}")
+    print(f"  Warnings            : {len(warnings)}")
+    print(f"  Errors              : {len(errors)}")
 
 
 # ──────────────────────────────────────────────────────────────
@@ -1423,18 +1423,18 @@ def validate_single_business_object(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Validation structurelle du référentiel BCM.",
+        description="Structural validation of the BCM repository.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
         "--business-object", "-o",
         metavar="ID",
-        help="Valider un objet métier spécifique (ex: OBJ.COEUR.005.DECLARATION_SINISTRE)",
+        help="Validate a specific business object (e.g.: OBJ.COEUR.005.DECLARATION_SINISTRE)",
     )
     parser.add_argument(
         "--strict",
         action="store_true",
-        help="Mode strict: tout warning est traité comme une erreur bloquante",
+        help="Strict mode: every warning is treated as a blocking error",
     )
     return parser.parse_args()
 
@@ -1445,7 +1445,7 @@ def main() -> None:
 
     caps, files = load_all_capabilities()
     if not files:
-        print(f"[FATAL] Aucun fichier capabilities-*.yaml dans {BCM_DIR}")
+        print(f"[FATAL] No capabilities-*.yaml file found in {BCM_DIR}")
         sys.exit(1)
 
     business_events, business_event_files = load_assets("business-event-*.yaml", "business_events")
@@ -1469,7 +1469,7 @@ def main() -> None:
         "processus_ressource",
     )
 
-    # Mode validation d'un objet métier spécifique
+    # Validate a specific business object
     if args.business_object:
         validate_single_business_object(
             args.business_object,
@@ -1485,19 +1485,19 @@ def main() -> None:
             for w in warnings:
                 print(f"[WARN] {w}")
         if errors:
-            print(f"\n[FAIL] {len(errors)} erreur(s) détectée(s) :\n")
+            print(f"\n[FAIL] {len(errors)} error(s) detected:\n")
             for e in errors:
                 print(f"  ✗ {e}")
             sys.exit(1)
         else:
-            print(f"\n[OK] Validation de l'objet métier '{args.business_object}' réussie.")
+            print(f"\n[OK] Business object '{args.business_object}' validation passed.")
         return
 
-    # Mode validation complète
-    print(f"[INFO] Fichiers chargés :")
+    # Full validation mode
+    print(f"[INFO] Loaded files:")
     for f in files:
         n = sum(1 for c in caps if c.get("_source") == f.name)
-        print(f"  • {f.name}: {n} capacité(s)")
+        print(f"  • {f.name}: {n} capability(ies)")
 
     loaded_evts_files = (
         business_event_files
@@ -1508,41 +1508,41 @@ def main() -> None:
         + resource_subscription_files
     )
     if loaded_evts_files:
-        print(f"[INFO] Assets evts chargés :")
+        print(f"[INFO] Event assets loaded:")
         for f in loaded_evts_files:
             rel_source = str(f.relative_to(ASSETS_DIR))
             if f in business_event_files:
                 n = sum(1 for e in business_events if e.get("_source") == rel_source)
-                print(f"  • {rel_source}: {n} événement(s) métier")
+                print(f"  • {rel_source}: {n} business event(s)")
             elif f in business_object_files:
                 n = sum(1 for o in business_objects if o.get("_source") == rel_source)
-                print(f"  • {rel_source}: {n} objet(s) métier")
+                print(f"  • {rel_source}: {n} business object(s)")
             elif f in resource_event_files:
                 n = sum(1 for e in resource_events if e.get("_source") == rel_source)
-                print(f"  • {rel_source}: {n} événement(s) ressource")
+                print(f"  • {rel_source}: {n} resource event(s)")
             elif f in business_subscription_files:
                 n = sum(1 for s in business_subscriptions if s.get("_source") == rel_source)
-                print(f"  • {rel_source}: {n} abonnement(s) métier")
+                print(f"  • {rel_source}: {n} business subscription(s)")
             elif f in resource_subscription_files:
                 n = sum(1 for s in resource_subscriptions if s.get("_source") == rel_source)
-                print(f"  • {rel_source}: {n} abonnement(s) ressource")
+                print(f"  • {rel_source}: {n} resource subscription(s)")
             else:
                 n = sum(1 for r in resources if r.get("_source") == rel_source)
-                print(f"  • {rel_source}: {n} ressource(s)")
+                print(f"  • {rel_source}: {n} resource(s)")
     else:
-        warn("Aucun fichier evts non-template chargé (contrôles cross-assets ignorés)")
+        warn("No non-template event files loaded (cross-asset checks skipped)")
 
     loaded_process_files = business_process_files + resource_process_files
     if loaded_process_files:
-        print(f"[INFO] Processus externes chargés :")
+        print(f"[INFO] External processes loaded:")
         for f in loaded_process_files:
             rel_source = str(f.relative_to(ROOT))
             if f in business_process_files:
                 n = sum(1 for p in business_processes if p.get("_source") == rel_source)
-                print(f"  • {rel_source}: {n} processus métier")
+                print(f"  • {rel_source}: {n} business process(es)")
             else:
                 n = sum(1 for p in resource_processes if p.get("_source") == rel_source)
-                print(f"  • {rel_source}: {n} processus ressource")
+                print(f"  • {rel_source}: {n} resource process(es)")
 
     validate_templates()
 
@@ -1569,7 +1569,7 @@ def main() -> None:
             print(f"[WARN] {w}")
 
     if errors:
-        print(f"\n[FAIL] {len(errors)} erreur(s) détectée(s) :\n")
+        print(f"\n[FAIL] {len(errors)} error(s) detected:\n")
         for e in errors:
             print(f"  ✗ {e}")
         sys.exit(1)
@@ -1585,8 +1585,8 @@ def main() -> None:
         parts.append(f"{total_l3} L3")
 
     print(
-        f"\n[OK] Validation réussie — {len(caps)} capacités "
-        f"({', '.join(parts)}) dans {len(files)} fichier(s)"
+        f"\n[OK] Validation passed — {len(caps)} capabilities "
+        f"({', '.join(parts)}) in {len(files)} file(s)"
     )
 
 

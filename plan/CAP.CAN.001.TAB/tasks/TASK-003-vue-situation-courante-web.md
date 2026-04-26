@@ -1,77 +1,77 @@
 ---
 task_id: TASK-003
 capability_id: CAP.CAN.001.TAB
-capability_name: Tableau de Bord Bénéficiaire
-epic: Épic 2 — Tableau de bord web — situation courante
+capability_name: Beneficiary Dashboard
+epic: Epic 2 — Web Dashboard — Current Situation
 status: todo
 priority: high
 depends_on: [TASK-002]
 ---
 
-# TASK-003 — Gate de consentement et vue situation courante web
+# TASK-003 — Consent gate and current situation web view
 
-## Contexte
-C'est la première vue métier du tableau de bord : le bénéficiaire consulte son palier actif, ses enveloppes budgétaires par catégorie et son solde disponible sur l'interface web. La règle de dignité (ADR-BCM-FUNC-0009) impose que la progression accomplie soit présentée avant les restrictions. L'accès aux données est conditionné à `Consentement.Accordé` (CAP.SUP.001.CON) — une gate bloquante. Cette vue produit l'événement métier central de CAP.CAN.001.TAB : `TableauDeBord.Consulté`. Elle constitue le socle dont dépendent toutes les vues suivantes (TASK-004, TASK-005).
+## Context
+This is the first business view of the dashboard: the beneficiary views their active tier, budget envelopes by category, and available balance on the web interface. The dignity rule (ADR-BCM-FUNC-0009) requires that accomplished progression be presented before restrictions. Access to data is conditioned on `Consent.Granted` (CAP.SUP.001.CON) — a blocking gate. This view produces the central business event of CAP.CAN.001.TAB: `Dashboard.Viewed`. It forms the foundation on which all subsequent views depend (TASK-004, TASK-005).
 
-## Référence capacité
-- Capacité : Tableau de Bord Bénéficiaire (CAP.CAN.001.TAB)
-- Zone : CANAL
-- ADR gouvernants : ADR-BCM-FUNC-0009, ADR-BCM-URBA-0009
+## Capability Reference
+- Capability: Beneficiary Dashboard (CAP.CAN.001.TAB)
+- Zone: CHANNEL
+- Governing ADRs: ADR-BCM-FUNC-0009, ADR-BCM-URBA-0009
 
-## Ce qu'il faut produire
+## What needs to be produced
 
-### Gate de consentement
-Avant tout affichage de données bénéficiaire, vérifier que `Consentement.Accordé` est présent pour ce bénéficiaire auprès de CAP.SUP.001.CON (ou son stub en phase de développement). Si le consentement est absent ou révoqué, l'accès au tableau de bord est refusé avec un message explicatif.
+### Consent gate
+Before displaying any beneficiary data, verify that `Consent.Granted` is present for this beneficiary from CAP.SUP.001.CON (or its stub during development). If consent is absent or revoked, access to the dashboard is denied with an explanatory message.
 
-### Vue situation courante (interface web)
-L'interface web affiche pour le bénéficiaire authentifié :
+### Current situation view (web interface)
+The web interface displays for the authenticated beneficiary:
 
-1. **Section progression** (affichée en premier — règle de dignité) :
-   - Palier courant avec son nom et sa description
-   - Indication du prochain palier et ce qui le sépare du franchissement
+1. **Progression section** (displayed first — dignity rule):
+   - Current tier with its name and description
+   - Indication of the next tier and what separates them from reaching it
 
-2. **Section enveloppes** :
-   - Liste des enveloppes budgétaires actives par catégorie de dépense
-   - Pour chaque enveloppe : catégorie, solde disponible, montant total de la période
-   - Les restrictions (catégories bloquées) apparaissent après les disponibilités
+2. **Envelopes section**:
+   - List of active budget envelopes by spending category
+   - For each envelope: category, available balance, total period amount
+   - Restrictions (blocked categories) appear after the available ones
 
-Les données sont lues depuis le read model maintenu par TASK-002.
+Data is read from the read model maintained by TASK-002.
 
-### Production de l'événement métier
-`TableauDeBord.Consulté` est émis à chaque consultation de cette vue, avec : identifiant bénéficiaire, palier affiché, horodatage, canal (`web`).
+### Business event production
+`Dashboard.Viewed` is emitted on each consultation of this view, with: beneficiary identifier, displayed tier, timestamp, channel (`web`).
 
-## Événements métier à produire
-- `TableauDeBord.Consulté` — émis à chaque consultation de la vue par un bénéficiaire authentifié et consentant
+## Business Events to Produce
+- `Dashboard.Viewed` — emitted on each consultation of the view by an authenticated and consenting beneficiary
 
-## Objets métier impliqués
-- **Bénéficiaire** — sujet de la consultation, authentifié préalablement
-- **Palier** — état courant affiché (issu du read model de TASK-002)
-- **Enveloppe** — soldes par catégorie affichés (issus du read model de TASK-002)
+## Business Objects Involved
+- **Beneficiary** — subject of the consultation, previously authenticated
+- **Tier** — current state displayed (from the TASK-002 read model)
+- **Envelope** — balances by category displayed (from the TASK-002 read model)
 
-## Souscriptions événementielles requises
-Aucune souscription directe — la vue lit le read model produit par TASK-002, qui est alimenté par les souscriptions définies dans cette tâche.
+## Required Event Subscriptions
+No direct subscriptions — the view reads the read model produced by TASK-002, which is fed by the subscriptions defined in that task.
 
-Dépendance de gate :
-- `Consentement.Accordé` (de CAP.SUP.001.CON) — vérifié en précondition d'affichage (stub acceptable en développement)
+Gate dependency:
+- `Consent.Granted` (from CAP.SUP.001.CON) — verified as a pre-condition for display (stub acceptable in development)
 
-## Définition de Done
-- [ ] La gate de consentement bloque l'accès si `Consentement.Accordé` est absent pour le bénéficiaire
-- [ ] La vue web affiche le palier courant et sa description
-- [ ] La vue web affiche le prochain palier atteignable et l'écart de progression
-- [ ] La vue web affiche toutes les enveloppes actives avec leur solde disponible et leur total de période
-- [ ] La progression est présentée avant les restrictions (règle de dignité ADR-0009)
-- [ ] `TableauDeBord.Consulté` est émis à chaque consultation avec les attributs requis (bénéficiaire, palier, canal=web, horodatage)
-- [ ] La vue fonctionne avec le bénéficiaire de test alimenté par le stub de TASK-002
-- [ ] validate_repo.py passe sans erreur
-- [ ] validate_events.py passe sans erreur
+## Definition of Done
+- [ ] The consent gate blocks access if `Consent.Granted` is absent for the beneficiary
+- [ ] The web view displays the current tier and its description
+- [ ] The web view displays the next reachable tier and the progression gap
+- [ ] The web view displays all active envelopes with their available balance and period total
+- [ ] Progression is presented before restrictions (dignity rule ADR-0009)
+- [ ] `Dashboard.Viewed` is emitted on each consultation with the required attributes (beneficiary, tier, channel=web, timestamp)
+- [ ] The view works with the test beneficiary fed by the TASK-002 stub
+- [ ] validate_repo.py passes without error
+- [ ] validate_events.py passes without error
 
-## Critères d'acceptation (métier)
-Un bénéficiaire de test qui consulte la page principale voit d'abord sa progression (palier atteint, prochain palier), puis ses enveloppes. Si son consentement est simulé comme révoqué, la page est inaccessible. Chaque consultation trace un événement `TableauDeBord.Consulté`.
+## Acceptance Criteria (business)
+A test beneficiary who views the main page first sees their progression (tier reached, next tier), then their envelopes. If their consent is simulated as revoked, the page is inaccessible. Each consultation traces a `Dashboard.Viewed` event.
 
-## Dépendances
-- **TASK-002** : le read model bénéficiaire (score, palier, enveloppes) doit être alimenté avant que la vue puisse afficher des données
-- **CAP.SUP.001.CON** : gate `Consentement.Accordé` — stub acceptable en développement
-- **CAP.REF.001.PAL** : définition des paliers (noms, descriptions, seuils de franchissement) — stub acceptable
+## Dependencies
+- **TASK-002**: the beneficiary read model (score, tier, envelopes) must be fed before the view can display data
+- **CAP.SUP.001.CON**: `Consent.Granted` gate — stub acceptable in development
+- **CAP.REF.001.PAL**: tier definitions (names, descriptions, crossing thresholds) — stub acceptable
 
-## Questions ouvertes
-Aucune bloquante pour démarrer (les données nécessaires sont dans TASK-001 et TASK-002).
+## Open Questions
+None blocking to start (the required data is in TASK-001 and TASK-002).

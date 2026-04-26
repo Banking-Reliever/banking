@@ -1,6 +1,6 @@
 ---
 id: ADR-BCM-FUNC-0013
-title: "L2 Breakdown de CAP.REF.001 — Référentiels Communs"
+title: "L2 Breakdown of CAP.REF.001 — Common Referentials"
 status: Proposed
 date: 2026-04-24
 
@@ -43,97 +43,121 @@ tags:
   - L2
   - REFERENTIEL
   - master-data
-  - bénéficiaire
-  - prescripteur
-  - palier
+  - beneficiary
+  - prescriber
+  - tier
 
 stability_impact: Structural
+
+domain_classification:
+  type: generic
+  coordinates:
+    x: 0.25
+    y: 0.25
+  rationale: "MDM et référentiel partagé sont des patterns IS génériques ; le modèle de données reflète Reliever mais la capacité elle-même est de l'infrastructure"
 ---
 
-# ADR-BCM-FUNC-0013 — L2 Breakdown de CAP.REF.001 — Référentiels Communs
+# ADR-BCM-FUNC-0013 — L2 Breakdown of CAP.REF.001 — Common Referentials
 
-## Contexte
+## Domain Classification
 
-CAP.REF.001 porte les données de référence partagées par toutes les capacités de Reliever. Per ADR-BCM-URBA-0001, les référentiels master sont isolés dans la zone REFERENTIEL pour éviter la duplication et garantir une gouvernance claire de la master data.
+> **Mandatory for FUNC ADRs.** Derived from the product vision and strategic vision — not from technical complexity alone.
 
-Trois concepts métier canoniques (ADR-BCM-URBA-0012) structurent l'ensemble du dispositif : le Bénéficiaire (l'individu en remédiation), le Prescripteur (l'acteur prescrivant le dispositif), et le Palier (le niveau d'autonomie avec ses règles). Ces trois concepts sont consommés par toutes les zones — ils doivent avoir une définition canonique unique.
+| Axis | Score | Interpretation |
+|------|-------|----------------|
+| x — Business Differentiation | 0.25 | 0.0 = commodity (could be bought off-shelf) → 1.0 = uniquely differentiating |
+| y — Model Complexity | 0.25 | 0.0 = trivial / well-understood → 1.0 = proprietary / high cognitive load |
 
-## Décision
+**Classification:** `generic`
 
-CAP.REF.001 est décomposé en **3 capacités L2** :
+**Rationale:**
 
-| ID | Nom | Responsabilité |
-|----|-----|----------------|
-| CAP.REF.001.BEN | Référentiel Bénéficiaire | Porter et maintenir l'identité canonique du bénéficiaire, partagée par toutes les capacités |
-| CAP.REF.001.PRE | Référentiel Prescripteur | Porter et maintenir l'identité canonique des prescripteurs et de leurs organisations |
-| CAP.REF.001.PAL | Référentiel Paliers | Porter et maintenir les définitions canoniques des paliers, leurs règles et leurs seuils de transition |
+> MDM et référentiel partagé sont des patterns IS génériques ; le modèle de données reflète Reliever mais la capacité elle-même est de l'infrastructure
 
-### Événements métier par L2
+---
 
-| L2 | Événements produits | Consommateurs principaux |
-|----|---------------------|--------------------------|
+## Context
+
+CAP.REF.001 holds the reference data shared by all Reliever capabilities. Per ADR-BCM-URBA-0001, master referentials are isolated in the REFERENTIEL zone to avoid duplication and guarantee clear master data governance.
+
+Three canonical business concepts (ADR-BCM-URBA-0012) structure the entire program: the Beneficiary (the individual in remediation), the Prescriber (the actor prescribing the program), and the Tier (the autonomy level with its rules). These three concepts are consumed by all zones — they must have a single canonical definition.
+
+## Decision
+
+CAP.REF.001 is decomposed into **3 L2 capabilities**:
+
+| ID | Name | Responsibility |
+|----|------|----------------|
+| CAP.REF.001.BEN | Beneficiary Referential | Hold and maintain the canonical beneficiary identity, shared by all capabilities |
+| CAP.REF.001.PRE | Prescriber Referential | Hold and maintain the canonical identity of prescribers and their organizations |
+| CAP.REF.001.PAL | Tier Referential | Hold and maintain the canonical definitions of tiers, their rules, and their transition thresholds |
+
+### Business Events per L2
+
+| L2 | Events Produced | Primary Consumers |
+|----|-----------------|-------------------|
 | CAP.REF.001.BEN | `Bénéficiaire.RéférentielMisÀJour` | BSP.002, BSP.003, BSP.004, CAN.001, CAN.002, B2B.001 |
 | CAP.REF.001.PRE | `Prescripteur.RéférentielMisÀJour` | BSP.003, CAN.002 |
 | CAP.REF.001.PAL | `Palier.DéfinitionMisÀJour` | BSP.001.PAL, BSP.004.AUT, B2B.001.CRT |
 
-### Règle de golden record
+### Golden Record Rule
 
-CAP.REF.001.BEN est la source de vérité unique pour l'identité d'un bénéficiaire. Aucune autre capacité ne peut maintenir sa propre copie de l'identité bénéficiaire — elle doit souscrire à `Bénéficiaire.RéférentielMisÀJour`.
+CAP.REF.001.BEN is the single source of truth for a beneficiary's identity. No other capability may maintain its own copy of the beneficiary identity — it must subscribe to `Bénéficiaire.RéférentielMisÀJour`.
 
-CAP.REF.001.PAL est la source de vérité unique pour les définitions de palier. Toute modification des règles d'un palier passe par ce L2 et déclenche `Palier.DéfinitionMisÀJour`, consommé par toutes les capacités applicant des règles de palier.
+CAP.REF.001.PAL is the single source of truth for tier definitions. Any modification of a tier's rules goes through this L2 and triggers `Palier.DéfinitionMisÀJour`, consumed by all capabilities applying tier rules.
 
-### Critères vérifiables
+### Verifiable Criteria
 
-- Chaque L2 produit au moins un événement métier (ADR-BCM-URBA-0009)
-- Aucune capacité hors CAP.REF.001.BEN ne maintient une identité bénéficiaire authoritative
-- Toute modification de définition de palier passe par CAP.REF.001.PAL
+- Each L2 produces at least one business event (ADR-BCM-URBA-0009)
+- No capability outside CAP.REF.001.BEN maintains an authoritative beneficiary identity
+- Any modification to a tier definition goes through CAP.REF.001.PAL
 
-## Justification
+## Rationale
 
-La séparation BEN / PRE / PAL reflète trois domaines de master data distincts avec des cycles de vie, des sources et des gouvernances différents. L'identité bénéficiaire est créée à l'enrôlement et archivée à la sortie. L'identité prescripteur est gérée par les organisations prescriptrices. Les définitions de palier sont gouvernées par le programme lui-même.
+The BEN / PRE / PAL separation reflects three distinct master data domains with different lifecycles, sources, and governance. Beneficiary identity is created at enrollment and archived at exit. Prescriber identity is managed by prescriber organizations. Tier definitions are governed by the program itself.
 
-### Alternatives considérées
+### Alternatives Considered
 
-- **PAL dans BSP.001.PAL** — rejeté car les définitions de palier sont consommées par plusieurs capacités (BSP.001, BSP.004, B2B.001) ; leur ownership dans un seul L2 COEUR créerait une dépendance transverse non gouvernée vers une capacité qui devrait être autonome
-- **BEN + PRE fusionnés** — rejeté car les bénéficiaires et les prescripteurs ont des cycles de vie et des sources de vérité différents ; leur identité ne provient pas des mêmes systèmes sources
+- **PAL in BSP.001.PAL** — rejected because tier definitions are consumed by multiple capabilities (BSP.001, BSP.004, B2B.001); their ownership in a single CORE L2 would create an ungoverned transverse dependency toward a capability that should be autonomous
+- **BEN + PRE merged** — rejected because beneficiaries and prescribers have different lifecycles and sources of truth; their identities do not originate from the same source systems
 
-## Impacts sur la BCM
+## BCM Impacts
 
 ### Structure
 
-- 3 L2 créés sous CAP.REF.001
-- Capacité consommée par la quasi-totalité des autres L2 du dispositif
+- 3 L2s created under CAP.REF.001
+- Capability consumed by almost all other L2s in the program
 
-### Mapping SI / Data / Org
+### SI / Data / Org Mapping
 
-- **DATA** : CAP.REF.001 est le MDM (Master Data Management) de Reliever
-- **ORG** : owner recommandé : équipe "Data & Référentiels"
+- **DATA**: CAP.REF.001 is the MDM (Master Data Management) of Reliever
+- **ORG**: recommended owner: "Data & Referentials" team
 
-## Conséquences
+## Consequences
 
-### Positives
+### Positive
 
-- Source de vérité unique pour les trois concepts canoniques du dispositif
-- Évolution des définitions de palier sans impact sur l'identité des acteurs
+- Single source of truth for the three canonical concepts of the program
+- Evolution of tier definitions without impact on actor identities
 
-### Négatives / Risques
+### Negative / Risks
 
-- CAP.REF.001.PAL est critique opérationnellement : une modification de définition de palier impacte en cascade BSP.001, BSP.004, B2B.001
+- CAP.REF.001.PAL is operationally critical: a tier definition modification has a cascading impact on BSP.001, BSP.004, B2B.001
 
-### Dette acceptée
+### Accepted Debt
 
-- La stratégie de synchronisation entre REF.001.BEN et les sources d'identité externes (banques, hôpitaux, services sociaux) n'est pas modélisée ici
+- The synchronization strategy between REF.001.BEN and external identity sources (banks, hospitals, social services) is not modeled here
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : Élevé (infrastructure de données du dispositif)
-- Date de revue recommandée : 2028-04-24
-- Indicateur de stabilité attendu : 0 doublon d'identité bénéficiaire entre capacités
+- Criticality level: High (data infrastructure of the program)
+- Recommended review date: 2028-04-24
+- Expected stability indicator: 0 duplicate beneficiary identities between capabilities
 
-## Traçabilité
+## Traceability
 
-- Atelier : Session BCM Reliever — 2026-04-24
-- Participants : yremy
-- Références :
-  - ADR-BCM-URBA-0012 — Concept métier canonique
+- Workshop: BCM Reliever Session — 2026-04-24
+- Participants: yremy
+- References:
+  - ADR-BCM-URBA-0012 — Canonical business concept
   - ADR-BCM-FUNC-0004

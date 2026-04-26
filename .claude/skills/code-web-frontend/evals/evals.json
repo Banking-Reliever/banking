@@ -1,0 +1,92 @@
+{
+  "skill_name": "code-web-frontend",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Implémente le frontend web pour TASK-003 du tableau de bord bénéficiaire (CAP.CAN.001.TAB). Le microservice n'est pas encore scaffoldé, déduis le contrat API depuis la tâche.",
+      "expected_output": "Un dossier frontend/CAP.CAN.001.TAB/ contenant index.html, css/style.css, js/config.js, js/api.js, js/views/situation-courante.js, js/app.js. Gate de consentement implémentée. Section progression avant restrictions (règle de dignité). Émission de TableauDeBord.Consulté. MOCK_DATA commenté fourni. Labels en français.",
+      "files": [
+        "/home/yoann/banking/plan/CAP.CAN.001.TAB/tasks/TASK-003-vue-situation-courante-web.md",
+        "/home/yoann/banking/plan/CAP.CAN.001.TAB/plan.md",
+        "/home/yoann/banking/product-vision/product.md"
+      ],
+      "assertions": [
+        {
+          "text": "Le dossier frontend/CAP.CAN.001.TAB/ contient au moins index.html, css/style.css, js/config.js, js/api.js, js/app.js"
+        },
+        {
+          "text": "index.html utilise <script type=\"module\"> et ne charge aucune librairie externe (pas de CDN jQuery/Bootstrap/React)"
+        },
+        {
+          "text": "js/config.js exporte API_BASE_URL et contient un objet MOCK_DATA commenté"
+        },
+        {
+          "text": "Une gate de consentement est implémentée : appel ou vérification avant affichage des données bénéficiaire"
+        },
+        {
+          "text": "La section progression apparaît en premier dans le DOM HTML (avant la section enveloppes/restrictions)"
+        },
+        {
+          "text": "L'émission de l'événement TableauDeBord.Consulté est présente dans le JS"
+        },
+        {
+          "text": "Les labels et messages visibles dans le HTML/JS sont en français"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "code web frontend TASK-004 — historique transactionnel pour CAP.CAN.001.TAB",
+      "expected_output": "Une vue js/views/historique-transactionnel.js. Filtres (période, catégorie, statut). Tri (date, montant). Refus avec motif intelligible. TableauDeBord.Consulté émis avec vue=historique.",
+      "files": [
+        "/home/yoann/banking/plan/CAP.CAN.001.TAB/tasks/TASK-004-historique-transactionnel-web.md",
+        "/home/yoann/banking/plan/CAP.CAN.001.TAB/tasks/TASK-003-vue-situation-courante-web.md",
+        "/home/yoann/banking/plan/CAP.CAN.001.TAB/plan.md"
+      ],
+      "assertions": [
+        {
+          "text": "Un fichier de vue pour l'historique transactionnel est généré (js/views/historique*.js ou similaire)"
+        },
+        {
+          "text": "Des filtres sont implémentés : période (date début/fin), catégorie de dépense, statut (autorisée/refusée)"
+        },
+        {
+          "text": "Le tri par date et par montant (croissant/décroissant) est implémenté"
+        },
+        {
+          "text": "Les transactions refusées affichent un motif de refus en langage métier (pas un code technique)"
+        },
+        {
+          "text": "TableauDeBord.Consulté est émis avec un contexte vue=historique ou équivalent"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Lance le code-web-frontend pour TASK-003 du projet banking. TASK-002 est done, les sources du microservice ne sont pas générées.",
+      "expected_output": "Résumé pre-génération présenté (capacité, épic, vues, API inférée, règles). Zéro dépendance CDN. ES6 modules. Structure frontend/{id}/css/ et js/views/. Commentaire signalant que l'API est inférée.",
+      "files": [
+        "/home/yoann/banking/plan/CAP.CAN.001.TAB/tasks/TASK-003-vue-situation-courante-web.md",
+        "/home/yoann/banking/plan/CAP.CAN.001.TAB/tasks/TASK-002-stub-et-couche-consommation.md",
+        "/home/yoann/banking/plan/CAP.CAN.001.TAB/plan.md"
+      ],
+      "assertions": [
+        {
+          "text": "Un résumé pre-génération est produit avec : capacité, épic, vues à générer, contrat API inféré, règles métier"
+        },
+        {
+          "text": "Zéro import CDN externe dans les fichiers HTML générés"
+        },
+        {
+          "text": "Le JavaScript utilise import/export ES6 modules (pas de var global, pas de require)"
+        },
+        {
+          "text": "Les dossiers css/ et js/views/ existent dans la structure de sortie"
+        },
+        {
+          "text": "Un commentaire indique que le contrat API est inféré (sources microservice non présentes)"
+        }
+      ]
+    }
+  ]
+}

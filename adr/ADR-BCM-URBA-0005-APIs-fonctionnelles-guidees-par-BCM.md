@@ -1,12 +1,12 @@
 ---
 id: ADR-BCM-URBA-0005
-title: "Contrats d'interface guidés par la BCM (découplage logique/physique)"
+title: "Interface Contracts Guided by the BCM (Logical/Physical Decoupling)"
 status: Suspended
 date: 2026-02-24
 suspension_date: 2026-03-10
 suspension_reason: >
-  Reflète un niveau de maturité non présent encore dans l'entreprise.
-  Risque d'amener plus de confusion que d'éclaircissements pour le moment.
+  Reflects a maturity level not yet present in the company.
+  Risk of causing more confusion than clarity at this point.
 
 family: URBA
 
@@ -28,7 +28,7 @@ impacted_mappings:
   - DATA
 
 related_adr:
-  - ADR-BCM-GOV-0001  # hiérarchie GOV → URBA → FUNC
+  - ADR-BCM-GOV-0001  # GOV → URBA → FUNC hierarchy
   - ADR-BCM-URBA-0003
   - ADR-BCM-URBA-0004
 
@@ -36,146 +36,146 @@ supersedes: []
 
 tags:
   - BCM
-  - Urbanisation
-  - Événements
+  - Urbanization
+  - Events
   - API
-  - Découplage
+  - Decoupling
   - Legacy
-  - SI Cible
+  - Target IS
 
 stability_impact: Structural
 ---
 
-# ADR-BCM-URBA-0005 — Contrats d'interface guidés par la BCM (découplage logique/physique)
+# ADR-BCM-URBA-0005 — Interface Contracts Guided by the BCM (Logical/Physical Decoupling)
 
-## Contexte
-Dans un contexte de SI legacy, plusieurs problèmes structurels émergent :
-- **Couplage applicatif/fonctionnel** : les interfaces (APIs/événements) exposées suivent la structure des applications existantes (silos) plutôt que les responsabilités métier.
-- **Dette technique invisible** : impossible de mesurer l'écart entre l'existant et le cible si le cible n'est pas défini.
-- **Évolution applicative non dirigée** : chaque modification d'applicatif crée de nouvelles interfaces "opportunistes" sans vision d'ensemble.
-- **Dépendance au legacy** : le SI est prisonnier de l'organisation physique des applications, rendant toute transformation coûteuse et risquée.
+## Context
+In a legacy IS context, several structural problems emerge:
+- **Application/functional coupling**: interfaces (APIs/events) exposed follow the structure of existing applications (silos) rather than business responsibilities.
+- **Invisible technical debt**: impossible to measure the gap between existing and target if the target is not defined.
+- **Undirected application evolution**: each application modification creates new "opportunistic" interfaces without an overall vision.
+- **Legacy dependency**: the IS is prisoner of the physical organization of applications, making any transformation costly and risky.
 
-Sans référentiel fonctionnel stable, on ne peut pas :
-- piloter la convergence vers un SI cible,
-- mesurer et prioriser la dette technique,
-- garantir la cohérence des interfaces lors d'évolutions,
-- préparer le remplacement progressif d'applications legacy.
+Without a stable functional referential, one cannot:
+- steer convergence toward a target IS,
+- measure and prioritize technical debt,
+- guarantee interface coherence during evolutions,
+- prepare the progressive replacement of legacy applications.
 
-**Dans ce repository, les contrats d'interface se matérialisent principalement via des événements métier** documentés dans les fichiers `bcm/events-*.yaml`. Chaque capacité L2 doit déclarer :
-- les événements qu'elle **produit** (avec `emitted_by_l2`)
-- les événements qu'elle **consomme** (avec `handled_by_l2` + capacité L2 d'origine)
+**In this repository, interface contracts are primarily materialized via business events** documented in the `bcm/events-*.yaml` files. Each L2 capability must declare:
+- the events it **produces** (with `emitted_by_l2`)
+- the events it **consumes** (with `handled_by_l2` + originating L2 capability)
 
-Cette approche événementielle favorise le découplage et l'asynchronisme, mais nécessite une gouvernance stricte pour éviter la dérive ("event spaghetti").
+This event-driven approach favors decoupling and asynchronism, but requires strict governance to avoid drift ("event spaghetti").
 
-## Décision
-- **Les contrats d'interface fonctionnels sont définis par les capacités de la BCM** :
-  - Niveau **L2** : définit les **domaines fonctionnels** (périmètre, ownership, événements produits/consommés)
-  - Niveau **L3** : définit les **contrats détaillés** (services métiers, événements, règles d'interface) lorsque nécessaire (cf. [ADR-BCM-URBA-0004](ADR-BCM-URBA-0004-bon-niveau-de-decision.md))
+## Decision
+- **Functional interface contracts are defined by BCM capabilities**:
+  - **L2** level: defines **functional domains** (scope, ownership, produced/consumed events)
+  - **L3** level: defines **detailed contracts** (business services, events, interface rules) when necessary (cf. [ADR-BCM-URBA-0004](ADR-BCM-URBA-0004-bon-niveau-de-decision.md))
 
-- **Les contrats d'interface se matérialisent via des événements métier** :
-  - Chaque capacité **L2** déclare les **événements qu'elle produit** (avec `emitted_by_l2`)
-  - Chaque capacité **L2** déclare les **événements qu'elle consomme** (avec `handled_by_l2` + origine L2 productrice)
-  - Ces contrats sont documentés dans les fichiers `bcm/events-<L1>.yaml`
+- **Interface contracts are materialized via business events**:
+  - Each **L2** capability declares the **events it produces** (with `emitted_by_l2`)
+  - Each **L2** capability declares the **events it consumes** (with `handled_by_l2` + originating L2 producer)
+  - These contracts are documented in the `bcm/events-<L1>.yaml` files
 
-- **Tout applicatif doit tendre vers cette organisation** :
-  - Peu importe l'état de legacy, les événements exposés/consommés doivent être **mappés** sur les capacités de la BCM
-  - Toute modification d'un applicatif legacy doit **converger vers la mise en place des contrats d'événements** définis dans la BCM
-  - Les écarts entre événements existants et événements cibles sont **documentés et tracés** comme dette technique
+- **Every application must tend toward this organization**:
+  - Regardless of legacy state, exposed/consumed events must be **mapped** onto BCM capabilities
+  - Any modification of a legacy application must **converge toward implementing the event contracts** defined in the BCM
+  - Gaps between existing events and target events are **documented and traced** as technical debt
 
-- **Création d'une couche fonctionnelle virtuelle** :
-  - Les contrats d'événements représentent le **SI cible logique** (le "quoi"), indépendant de l'implémentation physique (le "comment")
-  - Les applications sont des **réalisations physiques** qui produisent ou consomment ces événements
-  - Le mapping Capacité → Événements → Application permet de piloter la transformation
+- **Creation of a virtual functional layer**:
+  - Event contracts represent the **logical target IS** (the "what"), independent of physical implementation (the "how")
+  - Applications are **physical realizations** that produce or consume these events
+  - The Capability → Events → Application mapping allows transformation governance
 
-- **Règle d'évolution** :
-  - Tout nouvel événement ou modification d'événement existant doit être **justifié par une capacité** de la BCM
-  - Les événements "hors BCM" sont considérés comme **dette technique** et doivent être migrés ou supprimés
-  - En cas de remplacement applicatif, les **contrats d'événements restent stables** (contrat de continuité)
+- **Evolution rule**:
+  - Any new event or modification of an existing event must be **justified by a BCM capability**
+  - Events "outside BCM" are considered **technical debt** and must be migrated or deleted
+  - In case of application replacement, the **event contracts remain stable** (continuity contract)
 
 ## Justification
-Cette approche permet de **découpler le logique du physique** :
+This approach allows **decoupling the logical from the physical**:
 
-1. **SI cible par défaut** : La BCM définit le modèle de contrats d'événements cible. Par défaut, on est **toujours** dans le SI cible (au niveau logique), même si les applications legacy ne l'implémentent pas encore parfaitement.
+1. **Default target IS**: The BCM defines the target event contract model. By default, we are **always** in the target IS (at the logical level), even if legacy applications do not yet perfectly implement it.
 
-2. **Dette technique pilotable** : L'écart entre événements existants (legacy) et événements fonctionnels (BCM) devient **mesurable et actionnable**. On peut prioriser la convergence en fonction de la valeur métier.
+2. **Manageable technical debt**: The gap between existing (legacy) and functional (BCM) events becomes **measurable and actionable**. We can prioritize convergence based on business value.
 
-3. **Évolution dirigée** : Toute modification d'applicatif sait "vers où aller" (contrat d'événement cible). Pas de dérive, pas d'événement opportuniste.
+3. **Directed evolution**: Any application modification knows "where to go" (target event contract). No drift, no opportunistic events.
 
-4. **Transformation progressive** : On peut remplacer une application legacy par une autre sans changer les contrats d'événements (si bien conçus). Le métier ne voit pas la transformation technique.
+4. **Progressive transformation**: We can replace a legacy application with another without changing event contracts (if well designed). The business does not see the technical transformation.
 
-5. **Gouvernance renforcée** : Les événements deviennent un actif gouverné (ownership, contrats, versioning, schémas) aligné sur les responsabilités métier.
+5. **Reinforced governance**: Events become a governed asset (ownership, contracts, versioning, schemas) aligned with business responsibilities.
 
-6. **Architecture événementielle** : Favorise le découplage (producteurs/consommateurs indépendants), l'asynchronisme et la résilience du SI.
+6. **Event-driven architecture**: Favors decoupling (independent producers/consumers), asynchronism, and IS resilience.
 
-### Alternatives considérées
+### Alternatives Considered
 
-- **Événements définis par les applications** — rejeté car renforce les silos, empêche toute convergence vers un SI cible cohérent.
-- **Événements définis par les projets** — rejeté car opportunisme, incohérence, multiplication des contrats, dette accumulée.
-- **Bus d'événements sans référentiel fonctionnel** — rejeté car manque de stabilité, risque de "event spaghetti", absence de gouvernance.
-- **Attendre le remplacement complet des applications** — rejeté car trop long, trop coûteux, ne permet pas d'amélioration continue.
+- **Events defined by applications** — rejected because it reinforces silos, prevents any convergence toward a coherent target IS.
+- **Events defined by projects** — rejected because of opportunism, incoherence, multiplication of contracts, accumulated debt.
+- **Event bus without functional referential** — rejected because of lack of stability, risk of "event spaghetti", absence of governance.
+- **Wait for complete application replacement** — rejected because too slow, too costly, does not allow continuous improvement.
 
-## Impacts sur la BCM
+## Impacts on the BCM
 
 ### Structure
 
-- Capacités impactées : toutes (chaque capacité L2/L3 peut définir des contrats d'événements).
-- Les **capacités L2** définissent les **domaines événementiels** (ownership, périmètre fonctionnel, événements produits/consommés).
-- Les **capacités L3** (exceptionnelles, cf. ADR-BCM-URBA-0004) définissent les **contrats détaillés** (schémas d'événements, règles métier).
+- Impacted capabilities: all (each L2/L3 capability can define event contracts).
+- **L2 capabilities** define the **event domains** (ownership, functional scope, produced/consumed events).
+- **L3 capabilities** (exceptional, cf. ADR-BCM-URBA-0004) define the **detailed contracts** (event schemas, business rules).
 
-### Événements (si applicable)
+### Events (if applicable)
 
-- Nouveau mapping : `Capacité L2 → Événements (produits/consommés) → Applications` (traçabilité logique/physique).
-- Chaque événement doit être rattaché à **une et une seule** capacité L2 émettrice (ownership clair).
-- Utiliser les fichiers `bcm/events-<L1>.yaml` pour décrire les contrats par capacité L1.
-- Chaque événement produit indique la capacité L2 émettrice (`emitted_by_l2`).
-- Chaque événement consommé indique la capacité L2 consommatrice (`handled_by_l2`) et la capacité L2 d'origine.
+- New mapping: `L2 Capability → Events (produced/consumed) → Applications` (logical/physical traceability).
+- Each event must be attached to **one and only one** L2 emitting capability (clear ownership).
+- Use `bcm/events-<L1>.yaml` files to describe contracts by L1 capability.
+- Each produced event indicates the emitting L2 capability (`emitted_by_l2`).
+- Each consumed event indicates the consuming L2 capability (`handled_by_l2`) and the originating L2 capability.
 
 ### Mapping SI / Data / Org
 
-- Créer un fichier `bcm/mappings/apis-capabilities.yaml` pour tracer Capacité ↔ Application.
-- Générer une vue "couverture événementielle".
-- Les écarts (événements legacy hors BCM) sont tracés et revus périodiquement.
-- Les objets métier véhiculés dans les événements doivent être documentés (schémas, propriétés).
+- Create a `bcm/mappings/apis-capabilities.yaml` file to trace Capability ↔ Application.
+- Generate an "event coverage" view.
+- Gaps (legacy events outside BCM) are traced and reviewed periodically.
+- Business objects carried in events must be documented (schemas, properties).
 
-## Conséquences
-### Positives
-- **Vision SI cible claire** : les contrats d'événements définissent "où on va", même si on n'y est pas encore.
-- **Dette technique visible et mesurable** : écart événements existants vs événements cibles, priorisation objective.
-- **Évolution dirigée** : chaque modification d'applicatif sait vers quels événements tendre (pas de dérive).
-- **Découplage logique/physique** : on peut remplacer/moderniser les applications sans changer les contrats événementiels.
-- **Gouvernance des interfaces** : ownership, contrats, schémas, versioning alignés sur les responsabilités métier (BCM).
-- **Résilience transformation** : les contrats d'événements restent stables même si les applications changent.
-- **Meilleure interopérabilité** : événements conçus "métier" (capacités) plutôt que "technique" (silos applicatifs).
-- **Découplage producteurs/consommateurs** : architecture événementielle asynchrone favorisant la résilience et la scalabilité.
-- **Traçabilité fonctionnelle** : chaque événement est relié à une capacité L2, facilitant l'audit et la compréhension des flux.
+## Consequences
+### Positive
+- **Clear target IS vision**: event contracts define "where we are going", even if we are not there yet.
+- **Visible and measurable technical debt**: gap between existing vs. target events, objective prioritization.
+- **Directed evolution**: each application modification knows which events to tend toward (no drift).
+- **Logical/physical decoupling**: we can replace/modernize applications without changing event contracts.
+- **Interface governance**: ownership, contracts, schemas, versioning aligned with business responsibilities (BCM).
+- **Transformation resilience**: event contracts remain stable even as applications change.
+- **Better interoperability**: events designed "business-first" (capabilities) rather than "technical-first" (application silos).
+- **Producer/consumer decoupling**: asynchronous event-driven architecture favoring resilience and scalability.
+- **Functional traceability**: each event is linked to an L2 capability, facilitating audit and flow understanding.
 
-### Négatives / Risques
-- **Complexité initiale** : nécessite de définir les contrats d'événements (effort de modélisation, ateliers).
-- **Coût de convergence** : les applications legacy doivent progressivement s'aligner (investissement continu).
-- **Couche d'adaptation** : peut nécessiter des adaptateurs/traducteurs temporaires (événements legacy → événements fonctionnels).
-- **Discipline de gouvernance** : risque de dérive si les événements ne sont pas revus régulièrement.
-- **Tentation du "big design"** : risque de vouloir tout définir en L3 (rappel : L3 exceptionnel, cf. [ADR-BCM-URBA-0004](ADR-BCM-URBA-0004-bon-niveau-de-decision.md)).
-- **Gestion du versioning** : les schémas d'événements doivent évoluer sans casser les consommateurs (rétrocompatibilité, stratégies de migration).
-- **Résistance au changement** : les équipes applicatives peuvent voir cela comme une contrainte supplémentaire (nécessite accompagnement).
-- **Infrastructure événementielle** : nécessite un bus d'événements robuste (disponibilité, performance, monitoring).
+### Negative / Risks
+- **Initial complexity**: requires defining event contracts (modeling effort, workshops).
+- **Convergence cost**: legacy applications must progressively align (continuous investment).
+- **Adaptation layer**: may require temporary adapters/translators (legacy events → functional events).
+- **Governance discipline**: risk of drift if events are not regularly reviewed.
+- **Big design temptation**: risk of wanting to define everything at L3 (reminder: L3 exceptional, cf. [ADR-BCM-URBA-0004](ADR-BCM-URBA-0004-bon-niveau-de-decision.md)).
+- **Versioning management**: event schemas must evolve without breaking consumers (backward compatibility, migration strategies).
+- **Change resistance**: application teams may see this as an additional constraint (requires support).
+- **Event infrastructure**: requires a robust event bus (availability, performance, monitoring).
 
-### Dette acceptée
-- Les **événements legacy existants** ne seront pas migrés immédiatement. Ils sont **documentés comme dette technique** et migrés progressivement lors des évolutions.
-- Les **adaptateurs/traducteurs temporaires** peuvent être nécessaires en phase de transition (coût accepté pour garantir la convergence).
-- Les **capacités L3** pour définir les schémas d'événements détaillés restent exceptionnelles (cf. [ADR-BCM-URBA-0004](ADR-BCM-URBA-0004-bon-niveau-de-decision.md)). On commence par L2 (domaine événementiel) et on descend en L3 uniquement si nécessaire.
-- Les **événements techniques** (heartbeats, logs, métriques) ne sont pas forcément reliés à la BCM (focus sur les événements métier).
+### Accepted Debt
+- **Existing legacy events** will not be migrated immediately. They are **documented as technical debt** and migrated progressively during evolutions.
+- **Temporary adapters/translators** may be necessary during the transition phase (cost accepted to guarantee convergence).
+- **L3 capabilities** for defining detailed event schemas remain exceptional (cf. [ADR-BCM-URBA-0004](ADR-BCM-URBA-0004-bon-niveau-de-decision.md)). We start at L2 (event domain) and go down to L3 only if necessary.
+- **Technical events** (heartbeats, logs, metrics) are not necessarily linked to the BCM (focus on business events).
 
-## Indicateurs de gouvernance
+## Governance Indicators
 
-- Niveau de criticité : Élevé (décision structurante transverse).
-- Date de revue recommandée : 2028-02-24.
-- Indicateur de stabilité attendu : 100 % des événements métier rattachés à une capacité L2.
+- Criticality level: High (structuring transverse decision).
+- Recommended review date: 2028-02-24.
+- Expected stability indicator: 100% of business events attached to an L2 capability.
 
-## Traçabilité
+## Traceability
 
-- Atelier : Urbanisation 2026-02-24
-- Participants : EA / Urbanisation, Architecture SI, yremy, acoutant
-- Références :
-  - ADR-BCM-URBA-0003 — 1 capacité = 1 responsabilité → 1 domaine événementiel
-  - ADR-BCM-URBA-0004 — L3 pour schémas d'événements détaillés (exceptionnel)
-  - Fichiers : `bcm/events-*.yaml`
+- Workshop: Urbanization 2026-02-24
+- Participants: EA / Urbanization, IS Architecture, yremy, acoutant
+- References:
+  - ADR-BCM-URBA-0003 — 1 capability = 1 responsibility → 1 event domain
+  - ADR-BCM-URBA-0004 — L3 for detailed event schemas (exceptional)
+  - Files: `bcm/events-*.yaml`

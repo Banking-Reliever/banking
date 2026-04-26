@@ -1,0 +1,2 @@
+3f4355c feat: add ResourceSubscriptionAttribute and update BusExtensions
+5e83492 chore: initial commit

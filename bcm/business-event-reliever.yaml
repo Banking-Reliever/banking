@@ -1,22 +1,22 @@
 meta:
-  bcm_name: BCM Reliever — Événements métier
+  bcm_name: BCM Reliever — Business Events
   version: 0.1.0
   template_version: 1.0.0
   last_updated: '2026-04-24'
   owners:
-    - Direction Programme Reliever
+    - Reliever Programme Directorate
 
 business_events:
 
-  # ── CAP.BSP.001.SCO — Scoring comportemental ────────────────────────────────
+  # ── CAP.BSP.001.SCO — Behavioural scoring ───────────────────────────────────
 
   - id: EVT.BSP.001.SCORE_RECALCULE
-    name: Score recalculé
+    name: Score recomputed
     version: 1.0.0
     definition: >-
-      Le score comportemental d'un bénéficiaire a été recalculé après une transaction
-      ou un signal comportemental significatif. Déclenche l'évaluation d'un éventuel
-      changement de palier.
+      The behavioural score of a beneficiary has been recomputed after a transaction
+      or a significant behavioural signal. Triggers the evaluation of a potential
+      tier change.
     emitting_capability: CAP.BSP.001.SCO
     carried_business_object: OBJ.BSP.001.EVALUATION
     scope: public
@@ -28,12 +28,12 @@ business_events:
       - real-time
 
   - id: EVT.BSP.001.SCORE_SEUIL_ATTEINT
-    name: Seuil de score atteint
+    name: Score threshold reached
     version: 1.0.0
     definition: >-
-      Le score comportemental d'un bénéficiaire a atteint ou franchi un seuil de
-      transition de palier — que ce soit le seuil de franchissement ou de rétrogradation.
-      Déclenche le processus d'évaluation de changement de palier dans CAP.BSP.001.PAL.
+      The behavioural score of a beneficiary has reached or crossed a tier transition
+      threshold — whether the upward progression threshold or the demotion threshold.
+      Triggers the tier change evaluation process in CAP.BSP.001.PAL.
     emitting_capability: CAP.BSP.001.SCO
     carried_business_object: OBJ.BSP.001.EVALUATION
     scope: public
@@ -44,15 +44,15 @@ business_events:
       - core-domain
       - trigger
 
-  # ── CAP.BSP.001.PAL — Gestion des paliers ───────────────────────────────────
+  # ── CAP.BSP.001.PAL — Tier management ───────────────────────────────────────
 
   - id: EVT.BSP.001.PALIER_HAUSSE
-    name: Palier en hausse
+    name: Tier upgraded
     version: 1.0.0
     definition: >-
-      Un bénéficiaire a progressé vers un palier d'autonomie supérieur. Déclenche
-      la mise à jour des règles de la carte dédiée (B2B.001.CRT) et l'allocation
-      des nouvelles enveloppes budgétaires (BSP.004.ENV).
+      A beneficiary has progressed to a higher autonomy tier. Triggers
+      the update of the dedicated card rules (B2B.001.CRT) and the allocation
+      of new budget envelopes (BSP.004.ENV).
     emitting_capability: CAP.BSP.001.PAL
     carried_business_object: OBJ.BSP.001.CHANGEMENT_PALIER
     scope: public
@@ -63,12 +63,12 @@ business_events:
       - core-domain
 
   - id: EVT.BSP.001.PALIER_RETROGRADE
-    name: Palier rétrogradé
+    name: Tier demoted
     version: 1.0.0
     definition: >-
-      Un bénéficiaire a été ramené à un palier d'autonomie inférieur suite à des
-      signaux comportementaux détériorés. Déclenche la mise à jour restrictive des
-      règles de la carte dédiée et une alerte aux prescripteurs.
+      A beneficiary has been moved back to a lower autonomy tier following
+      deteriorated behavioural signals. Triggers a restrictive update of the
+      dedicated card rules and an alert to prescribers.
     emitting_capability: CAP.BSP.001.PAL
     carried_business_object: OBJ.BSP.001.CHANGEMENT_PALIER
     scope: public
@@ -79,12 +79,12 @@ business_events:
       - core-domain
 
   - id: EVT.BSP.001.PALIER_OVERRIDE_APPLIQUE
-    name: Override de palier appliqué
+    name: Tier override applied
     version: 1.0.0
     definition: >-
-      Un prescripteur a forcé un changement de palier contre la décision algorithmique.
-      L'algorithme surveille le résultat et reprend le contrôle dès que les conditions
-      sont réunies ou que la surcharge est clôturée.
+      A prescriber has forced a tier change against the algorithmic decision.
+      The algorithm monitors the outcome and resumes control as soon as conditions
+      are met or the override is closed.
     emitting_capability: CAP.BSP.001.PAL
     carried_business_object: OBJ.BSP.001.SURCHARGE_ALGO
     scope: public
@@ -94,15 +94,15 @@ business_events:
       - human-override
       - core-domain
 
-  # ── CAP.BSP.001.SIG — Interprétation des signaux ────────────────────────────
+  # ── CAP.BSP.001.SIG — Signal interpretation ─────────────────────────────────
 
   - id: EVT.BSP.001.SIGNAL_RECHUTE
-    name: Signal de rechute détecté
+    name: Relapse signal detected
     version: 1.0.0
     definition: >-
-      Un signal comportemental de rechute potentielle a été détecté et qualifié —
-      notamment la non-consommation d'enveloppe budgétaire, qui indique un contournement
-      du canal contrôlé plutôt qu'un comportement vertueux.
+      A potential relapse behavioural signal has been detected and qualified —
+      notably the non-consumption of a budget envelope, which indicates a bypass
+      of the controlled channel rather than virtuous behaviour.
     emitting_capability: CAP.BSP.001.SIG
     carried_business_object: OBJ.BSP.001.SIGNAL_INTERPRETE
     scope: public
@@ -114,12 +114,12 @@ business_events:
       - core-domain
 
   - id: EVT.BSP.001.SIGNAL_PROGRESSION
-    name: Signal de progression détecté
+    name: Progression signal detected
     version: 1.0.0
     definition: >-
-      Un signal comportemental positif a été qualifié — consommation régulière,
-      respect des catégories autorisées, tendance à l'amélioration. Contribue
-      positivement au recalcul du score.
+      A positive behavioural signal has been qualified — regular consumption,
+      compliance with authorised categories, improving trend. Contributes
+      positively to score recomputation.
     emitting_capability: CAP.BSP.001.SIG
     carried_business_object: OBJ.BSP.001.SIGNAL_INTERPRETE
     scope: public
@@ -129,15 +129,15 @@ business_events:
       - behavioral
       - core-domain
 
-  # ── CAP.BSP.001.ARB — Arbitrage algo vs prescripteur ────────────────────────
+  # ── CAP.BSP.001.ARB — Algorithm vs prescriber arbitration ───────────────────
 
   - id: EVT.BSP.001.ARBITRAGE_OVERRIDE_VALIDE
-    name: Override validé par arbitrage
+    name: Override validated by arbitration
     version: 1.0.0
     definition: >-
-      La surcharge prescripteur a été maintenue et validée par le mécanisme
-      d'arbitrage : les résultats observés ont confirmé la pertinence de la décision
-      humaine face à l'algorithme.
+      The prescriber override has been maintained and validated by the arbitration
+      mechanism: the observed outcomes confirmed the relevance of the human decision
+      over the algorithm.
     emitting_capability: CAP.BSP.001.ARB
     carried_business_object: OBJ.BSP.001.SURCHARGE_ALGO
     scope: public
@@ -148,12 +148,12 @@ business_events:
       - audit
 
   - id: EVT.BSP.001.ARBITRAGE_ALGO_REAFFIRME
-    name: Algorithme réaffirmé par arbitrage
+    name: Algorithm reaffirmed by arbitration
     version: 1.0.0
     definition: >-
-      L'algorithme a repris le contrôle du palier : les résultats observés ont
-      infirmé ou rendu non concluante la décision de surcharge prescripteur.
-      La surcharge est clôturée.
+      The algorithm has resumed control of the tier: the observed outcomes refuted
+      or rendered inconclusive the prescriber override decision.
+      The override is closed.
     emitting_capability: CAP.BSP.001.ARB
     carried_business_object: OBJ.BSP.001.SURCHARGE_ALGO
     scope: public
@@ -163,14 +163,14 @@ business_events:
       - algorithmic
       - audit
 
-  # ── CAP.BSP.002.ELI — Vérification d'éligibilité ───────────────────────────
+  # ── CAP.BSP.002.ELI — Eligibility verification ──────────────────────────────
 
   - id: EVT.BSP.002.ELIGIBILITE_VALIDEE
-    name: Éligibilité validée
+    name: Eligibility validated
     version: 1.0.0
     definition: >-
-      Un candidat a été déclaré éligible au programme Reliever après vérification
-      de l'ensemble des critères d'entrée. Autorise le démarrage de l'enrôlement.
+      A candidate has been declared eligible for the Reliever programme after
+      verification of all entry criteria. Authorises the start of enrolment.
     emitting_capability: CAP.BSP.002.ELI
     carried_business_object: OBJ.BSP.002.PARTICIPATION
     scope: public
@@ -180,11 +180,11 @@ business_events:
       - core-domain
 
   - id: EVT.BSP.002.ELIGIBILITE_REFUSEE
-    name: Éligibilité refusée
+    name: Eligibility refused
     version: 1.0.0
     definition: >-
-      Un candidat n'a pas satisfait les critères d'éligibilité au programme Reliever.
-      Le dossier ne sera pas ouvert.
+      A candidate did not meet the eligibility criteria for the Reliever programme.
+      The case will not be opened.
     emitting_capability: CAP.BSP.002.ELI
     carried_business_object: OBJ.BSP.002.PARTICIPATION
     scope: public
@@ -193,15 +193,15 @@ business_events:
     tags:
       - core-domain
 
-  # ── CAP.BSP.002.ENR — Enrôlement ────────────────────────────────────────────
+  # ── CAP.BSP.002.ENR — Enrolment ─────────────────────────────────────────────
 
   - id: EVT.BSP.002.BENEFICIAIRE_ENROLE
-    name: Bénéficiaire enrôlé
+    name: Beneficiary enrolled
     version: 1.0.0
     definition: >-
-      Un bénéficiaire éligible a été officiellement intégré au programme Reliever :
-      dossier ouvert, consentement recueilli, score baseline calculé, palier initial
-      activé, carte dédiée émise.
+      An eligible beneficiary has been officially integrated into the Reliever programme:
+      case opened, consent collected, baseline score computed, initial tier
+      activated, dedicated card issued.
     emitting_capability: CAP.BSP.002.ENR
     carried_business_object: OBJ.BSP.002.PARTICIPATION
     scope: public
@@ -212,11 +212,11 @@ business_events:
       - lifecycle
 
   - id: EVT.BSP.002.PALIER_INITIAL_ACTIVE
-    name: Palier initial activé
+    name: Initial tier activated
     version: 1.0.0
     definition: >-
-      Le palier d'entrée dans le programme a été activé pour un nouveau bénéficiaire,
-      sur la base du score baseline calculé à l'enrôlement.
+      The programme entry tier has been activated for a new beneficiary,
+      based on the baseline score computed at enrolment.
     emitting_capability: CAP.BSP.002.ENR
     carried_business_object: OBJ.BSP.001.CHANGEMENT_PALIER
     scope: public
@@ -226,14 +226,14 @@ business_events:
       - core-domain
       - lifecycle
 
-  # ── CAP.BSP.002.CYC — Gestion du cycle de vie ───────────────────────────────
+  # ── CAP.BSP.002.CYC — Lifecycle management ──────────────────────────────────
 
   - id: EVT.BSP.002.BENEFICIAIRE_SUSPENDU
-    name: Bénéficiaire suspendu
+    name: Beneficiary suspended
     version: 1.0.0
     definition: >-
-      La participation d'un bénéficiaire au programme a été temporairement suspendue.
-      La carte dédiée est bloquée et les accès prescripteurs sont maintenus.
+      A beneficiary's programme participation has been temporarily suspended.
+      The dedicated card is blocked and prescriber access is maintained.
     emitting_capability: CAP.BSP.002.CYC
     carried_business_object: OBJ.BSP.002.PARTICIPATION
     scope: public
@@ -244,11 +244,11 @@ business_events:
       - stateful
 
   - id: EVT.BSP.002.BENEFICIAIRE_REACTIVE
-    name: Bénéficiaire réactivé
+    name: Beneficiary reactivated
     version: 1.0.0
     definition: >-
-      Un bénéficiaire précédemment suspendu a repris sa participation au programme.
-      La carte dédiée est réactivée avec les règles du palier courant.
+      A previously suspended beneficiary has resumed their programme participation.
+      The dedicated card is reactivated with the current tier rules.
     emitting_capability: CAP.BSP.002.CYC
     carried_business_object: OBJ.BSP.002.PARTICIPATION
     scope: public
@@ -258,15 +258,15 @@ business_events:
       - lifecycle
       - stateful
 
-  # ── CAP.BSP.002.SOR — Sortie du dispositif ──────────────────────────────────
+  # ── CAP.BSP.002.SOR — Programme exit ────────────────────────────────────────
 
   - id: EVT.BSP.002.BENEFICIAIRE_SORTI
-    name: Bénéficiaire sorti
+    name: Beneficiary exited
     version: 1.0.0
     definition: >-
-      Un bénéficiaire a quitté le programme Reliever. Le dossier est clôturé,
-      la carte dédiée résiliée. Le motif de sortie détermine les actions
-      post-sortie (succès, abandon, administratif).
+      A beneficiary has left the Reliever programme. The case is closed,
+      the dedicated card terminated. The exit reason determines the
+      post-exit actions (success, dropout, administrative).
     emitting_capability: CAP.BSP.002.SOR
     carried_business_object: OBJ.BSP.002.PARTICIPATION
     scope: public
@@ -278,12 +278,12 @@ business_events:
       - core-domain
 
   - id: EVT.BSP.002.BENEFICIAIRE_TRANSFERE_APP_STANDARD
-    name: Bénéficiaire transféré vers application standard
+    name: Beneficiary transferred to standard application
     version: 1.0.0
     definition: >-
-      Un bénéficiaire a atteint le dernier palier et est transféré vers l'application
-      bancaire standard. C'est l'issue nominale et souhaitée du programme : l'autonomie
-      financière complète a été atteinte.
+      A beneficiary has reached the final tier and is transferred to the standard
+      banking application. This is the nominal and desired outcome of the programme:
+      full financial autonomy has been achieved.
     emitting_capability: CAP.BSP.002.SOR
     carried_business_object: OBJ.BSP.002.PARTICIPATION
     scope: public
@@ -294,15 +294,15 @@ business_events:
       - success
       - core-domain
 
-  # ── CAP.BSP.003.ROL — Gestion des rôles prescripteurs ───────────────────────
+  # ── CAP.BSP.003.ROL — Prescriber role management ────────────────────────────
 
   - id: EVT.BSP.003.ROLE_ATTRIBUE
-    name: Rôle prescripteur attribué
+    name: Prescriber role assigned
     version: 1.0.0
     definition: >-
-      Un prescripteur s'est vu attribuer un rôle sur un dossier bénéficiaire.
-      Ses droits de consultation et d'action sont déterminés par son type de rôle
-      (bancaire, médical, social) selon ADR-BCM-FUNC-0007.
+      A prescriber has been assigned a role on a beneficiary case.
+      Their consultation and action rights are determined by their role type
+      (banking, medical, social) per ADR-BCM-FUNC-0007.
     emitting_capability: CAP.BSP.003.ROL
     carried_business_object: OBJ.BSP.003.ROLE_PRESCRIPTEUR
     scope: public
@@ -313,11 +313,11 @@ business_events:
       - access-control
 
   - id: EVT.BSP.003.ROLE_REVOQUE
-    name: Rôle prescripteur révoqué
+    name: Prescriber role revoked
     version: 1.0.0
     definition: >-
-      L'attribution d'un rôle prescripteur sur un dossier a été révoquée.
-      L'accès du prescripteur au dossier est immédiatement supprimé.
+      A prescriber's role assignment on a case has been revoked.
+      The prescriber's access to the case is immediately removed.
     emitting_capability: CAP.BSP.003.ROL
     carried_business_object: OBJ.BSP.003.ROLE_PRESCRIPTEUR
     scope: public
@@ -327,14 +327,14 @@ business_events:
       - multi-actor
       - access-control
 
-  # ── CAP.BSP.003.NOT — Notification prescripteur ──────────────────────────────
+  # ── CAP.BSP.003.NOT — Prescriber notification ───────────────────────────────
 
   - id: EVT.BSP.003.PRESCRIPTEUR_ALERTE
-    name: Prescripteur alerté
+    name: Prescriber alerted
     version: 1.0.0
     definition: >-
-      Un ou plusieurs prescripteurs ont reçu une alerte relative à un dossier bénéficiaire :
-      signal comportemental, changement de palier, inactivité, ou demande d'override.
+      One or more prescribers have received an alert regarding a beneficiary case:
+      behavioural signal, tier change, inactivity, or override request.
     emitting_capability: CAP.BSP.003.NOT
     carried_business_object: OBJ.BSP.003.ALERTE_PRESCRIPTEUR
     scope: public
@@ -344,14 +344,14 @@ business_events:
       - multi-actor
       - notification
 
-  # ── CAP.BSP.003.COD — Co-décision inter-prescripteurs ───────────────────────
+  # ── CAP.BSP.003.COD — Inter-prescriber co-decision ──────────────────────────
 
   - id: EVT.BSP.003.OVERRIDE_DEMANDE
-    name: Override demandé
+    name: Override requested
     version: 1.0.0
     definition: >-
-      Un prescripteur a initié une demande de surcharge algorithmique nécessitant
-      la co-validation d'au moins un autre prescripteur. La délibération est ouverte.
+      A prescriber has initiated an algorithmic override request requiring
+      co-validation from at least one other prescriber. The deliberation is open.
     emitting_capability: CAP.BSP.003.COD
     carried_business_object: OBJ.BSP.003.DECISION_CONCERTEE
     scope: public
@@ -362,11 +362,11 @@ business_events:
       - human-override
 
   - id: EVT.BSP.003.OVERRIDE_COVALIDÉ
-    name: Override co-validé
+    name: Override co-validated
     version: 1.0.0
     definition: >-
-      Une demande de surcharge algorithmique a obtenu la co-validation des prescripteurs
-      requis. La décision est transmise à CAP.BSP.001.PAL ou CAP.BSP.001.ARB pour application.
+      An algorithmic override request has obtained co-validation from the required
+      prescribers. The decision is forwarded to CAP.BSP.001.PAL or CAP.BSP.001.ARB for application.
     emitting_capability: CAP.BSP.003.COD
     carried_business_object: OBJ.BSP.003.DECISION_CONCERTEE
     scope: public
@@ -378,11 +378,11 @@ business_events:
       - audit
 
   - id: EVT.BSP.003.OVERRIDE_REFUSE
-    name: Override refusé
+    name: Override refused
     version: 1.0.0
     definition: >-
-      Une demande de surcharge algorithmique a été rejetée par les prescripteurs co-décideurs.
-      L'algorithme conserve le contrôle du palier.
+      An algorithmic override request has been rejected by the co-deciding prescribers.
+      The algorithm retains control of the tier.
     emitting_capability: CAP.BSP.003.COD
     carried_business_object: OBJ.BSP.003.DECISION_CONCERTEE
     scope: public
@@ -392,14 +392,14 @@ business_events:
       - multi-actor
       - audit
 
-  # ── CAP.BSP.004.AUT — Autorisation de paiement ──────────────────────────────
+  # ── CAP.BSP.004.AUT — Payment authorisation ─────────────────────────────────
 
   - id: EVT.BSP.004.TRANSACTION_AUTORISEE
-    name: Transaction autorisée
+    name: Transaction authorised
     version: 1.0.0
     definition: >-
-      Une tentative de paiement à la carte dédiée a été autorisée en temps réel,
-      conformément aux règles du palier courant du bénéficiaire.
+      A payment attempt on the dedicated card has been authorised in real time,
+      in accordance with the beneficiary's current tier rules.
     emitting_capability: CAP.BSP.004.AUT
     carried_business_object: OBJ.BSP.004.DECISION_PAIEMENT
     scope: public
@@ -410,11 +410,11 @@ business_events:
       - core-domain
 
   - id: EVT.BSP.004.TRANSACTION_REFUSEE
-    name: Transaction refusée
+    name: Transaction declined
     version: 1.0.0
     definition: >-
-      Une tentative de paiement à la carte dédiée a été refusée en temps réel.
-      Le refus est un signal comportemental exploitable par CAP.BSP.001.SIG.
+      A payment attempt on the dedicated card has been declined in real time.
+      The decline is an actionable behavioural signal for CAP.BSP.001.SIG.
     emitting_capability: CAP.BSP.004.AUT
     carried_business_object: OBJ.BSP.004.DECISION_PAIEMENT
     scope: public
@@ -425,14 +425,14 @@ business_events:
       - core-domain
       - behavioral-signal
 
-  # ── CAP.BSP.004.ENV — Gestion des enveloppes budgétaires ────────────────────
+  # ── CAP.BSP.004.ENV — Budget envelope management ────────────────────────────
 
   - id: EVT.BSP.004.ENVELOPPE_ALLOUEE
-    name: Enveloppe budgétaire allouée
+    name: Budget envelope allocated
     version: 1.0.0
     definition: >-
-      Une nouvelle enveloppe budgétaire catégorisée a été allouée à un bénéficiaire
-      pour la période courante, selon la définition de son palier.
+      A new categorised budget envelope has been allocated to a beneficiary
+      for the current period, according to their tier definition.
     emitting_capability: CAP.BSP.004.ENV
     carried_business_object: OBJ.BSP.004.ALLOCATION
     scope: public
@@ -443,11 +443,11 @@ business_events:
       - core-domain
 
   - id: EVT.BSP.004.ENVELOPPE_CONSOMMEE
-    name: Enveloppe budgétaire consommée
+    name: Budget envelope consumed
     version: 1.0.0
     definition: >-
-      Une enveloppe budgétaire a été partiellement ou totalement consommée dans
-      les limites de la période. Signal neutre de comportement normal.
+      A budget envelope has been partially or fully consumed within
+      the period limits. Neutral signal of normal behaviour.
     emitting_capability: CAP.BSP.004.ENV
     carried_business_object: OBJ.BSP.004.ALLOCATION
     scope: public
@@ -457,12 +457,12 @@ business_events:
       - budget
 
   - id: EVT.BSP.004.ENVELOPPE_NON_CONSOMMEE
-    name: Enveloppe non consommée en fin de période
+    name: Envelope unconsumed at period end
     version: 1.0.0
     definition: >-
-      Une enveloppe budgétaire s'est clôturée sans consommation ou avec une
-      consommation marginale. Signal de rechute contre-intuitif : l'absence
-      d'utilisation indique un contournement du canal contrôlé.
+      A budget envelope closed without consumption or with marginal
+      consumption. Counter-intuitive relapse signal: the absence
+      of usage indicates a bypass of the controlled channel.
     emitting_capability: CAP.BSP.004.ENV
     carried_business_object: OBJ.BSP.004.ALLOCATION
     scope: public
@@ -475,12 +475,12 @@ business_events:
       - relapse-signal
 
   - id: EVT.BSP.004.ENVELOPPE_EPUISEE
-    name: Enveloppe budgétaire épuisée
+    name: Budget envelope depleted
     version: 1.0.0
     definition: >-
-      Le plafond d'une enveloppe budgétaire a été atteint avant la fin de la période.
-      Ce n'est pas un signal de rechute — c'est un signal de consommation normale
-      dans les limites autorisées.
+      A budget envelope's limit has been reached before the end of the period.
+      This is not a relapse signal — it is a signal of normal consumption
+      within authorised limits.
     emitting_capability: CAP.BSP.004.ENV
     carried_business_object: OBJ.BSP.004.ALLOCATION
     scope: public
@@ -490,15 +490,15 @@ business_events:
       - budget
       - core-domain
 
-  # ── CAP.BSP.004.ALT — Alternatives d'achat ──────────────────────────────────
+  # ── CAP.BSP.004.ALT — Purchase alternatives ─────────────────────────────────
 
   - id: EVT.BSP.004.ALTERNATIVE_PROPOSEE
-    name: Alternative d'achat proposée
+    name: Purchase alternative proposed
     version: 1.0.0
     definition: >-
-      Suite à un refus de transaction, une alternative de consommation compatible
-      avec le palier courant a été proposée au bénéficiaire. Garantit la dignité
-      fonctionnelle du dispositif.
+      Following a declined transaction, a consumption alternative compatible
+      with the current tier has been proposed to the beneficiary. Upholds the
+      functional dignity of the programme.
     emitting_capability: CAP.BSP.004.ALT
     carried_business_object: OBJ.BSP.004.ALTERNATIVE_ACHAT
     scope: public
@@ -508,14 +508,14 @@ business_events:
       - dignity
       - channel
 
-  # ── CAP.CAN.001 — Interface bénéficiaire ────────────────────────────────────
+  # ── CAP.CAN.001 — Beneficiary interface ─────────────────────────────────────
 
   - id: EVT.CAN.001.TABLEAU_BORD_CONSULTE
-    name: Tableau de bord consulté
+    name: Dashboard consulted
     version: 1.0.0
     definition: >-
-      Un bénéficiaire a consulté son tableau de bord dans l'application mobile :
-      solde des enveloppes, palier courant, progression.
+      A beneficiary has consulted their dashboard in the mobile application:
+      envelope balances, current tier, progression.
     emitting_capability: CAP.CAN.001.TAB
     carried_business_object: OBJ.BSP.002.PARTICIPATION
     scope: internal
@@ -525,11 +525,11 @@ business_events:
       - channel
 
   - id: EVT.CAN.001.SCAN_PRODUIT_LANCE
-    name: Scan produit lancé
+    name: Product scan initiated
     version: 1.0.0
     definition: >-
-      Un bénéficiaire a scanné un produit en magasin pour vérifier sa compatibilité
-      avec les règles de son palier courant avant achat.
+      A beneficiary has scanned a product in store to check its compatibility
+      with their current tier rules before purchase.
     emitting_capability: CAP.CAN.001.ACH
     carried_business_object: OBJ.BSP.004.DECISION_PAIEMENT
     scope: public
@@ -540,11 +540,11 @@ business_events:
       - real-time
 
   - id: EVT.CAN.001.ALTERNATIVE_ACCEPTEE
-    name: Alternative d'achat acceptée
+    name: Purchase alternative accepted
     version: 1.0.0
     definition: >-
-      Un bénéficiaire a accepté et sélectionné une alternative d'achat proposée
-      suite à un refus de transaction.
+      A beneficiary has accepted and selected a purchase alternative proposed
+      following a declined transaction.
     emitting_capability: CAP.CAN.001.ACH
     carried_business_object: OBJ.BSP.004.ALTERNATIVE_ACHAT
     scope: public
@@ -555,11 +555,11 @@ business_events:
       - dignity
 
   - id: EVT.CAN.001.NOTIFICATION_EMISE
-    name: Notification émise au bénéficiaire
+    name: Notification sent to beneficiary
     version: 1.0.0
     definition: >-
-      Une notification applicative a été envoyée au bénéficiaire — refus de paiement,
-      progression de palier, alerte d'enveloppe ou alternative proposée.
+      An in-app notification has been sent to the beneficiary — payment decline,
+      tier progression, envelope alert or proposed alternative.
     emitting_capability: CAP.CAN.001.NOT
     carried_business_object: OBJ.CAN.001.NOTIFICATION
     scope: public
@@ -569,15 +569,15 @@ business_events:
       - channel
       - notification
 
-  # ── CAP.CAN.002 — Interface prescripteur ────────────────────────────────────
+  # ── CAP.CAN.002 — Prescriber interface ──────────────────────────────────────
 
   - id: EVT.CAN.002.DOSSIER_CONSULTE
-    name: Dossier consulté par prescripteur
+    name: Case consulted by prescriber
     version: 1.0.0
     definition: >-
-      Un prescripteur a consulté le dossier d'un bénéficiaire. La consultation est
-      filtrée selon le type de rôle du prescripteur (bancaire, médical, social)
-      et tracée pour audit RGPD.
+      A prescriber has consulted a beneficiary's case. The consultation is
+      filtered according to the prescriber's role type (banking, medical, social)
+      and logged for GDPR audit.
     emitting_capability: CAP.CAN.002.VUE
     carried_business_object: OBJ.BSP.002.PARTICIPATION
     scope: public
@@ -589,12 +589,12 @@ business_events:
       - audit
 
   - id: EVT.CAN.002.OVERRIDE_UX_DECLENCHE
-    name: Override déclenché depuis l'interface prescripteur
+    name: Override triggered from prescriber interface
     version: 1.0.0
     definition: >-
-      Un prescripteur a initié une demande de surcharge algorithmique depuis
-      l'interface prescripteur. La demande est transmise à CAP.BSP.003.COD pour
-      traitement de la co-décision.
+      A prescriber has initiated an algorithmic override request from
+      the prescriber interface. The request is forwarded to CAP.BSP.003.COD for
+      co-decision processing.
     emitting_capability: CAP.CAN.002.ACT
     carried_business_object: OBJ.BSP.003.DECISION_CONCERTEE
     scope: public
@@ -605,11 +605,11 @@ business_events:
       - human-override
 
   - id: EVT.CAN.002.RAPPORT_GENERE
-    name: Rapport prescripteur généré
+    name: Prescriber report generated
     version: 1.0.0
     definition: >-
-      Un rapport de synthèse sur la progression d'un bénéficiaire a été généré
-      à la demande d'un prescripteur, couvrant une période donnée.
+      A summary report on a beneficiary's progress has been generated
+      at a prescriber's request, covering a given period.
     emitting_capability: CAP.CAN.002.RAP
     carried_business_object: OBJ.CAN.002.RAPPORT_PRESCRIPTEUR
     scope: public
@@ -619,14 +619,14 @@ business_events:
       - channel
       - reporting
 
-  # ── CAP.B2B.001.CRT — Gestion de la carte dédiée ────────────────────────────
+  # ── CAP.B2B.001.CRT — Dedicated card management ─────────────────────────────
 
   - id: EVT.B2B.001.CARTE_EMISE
-    name: Carte dédiée émise
+    name: Dedicated card issued
     version: 1.0.0
     definition: >-
-      Une carte de paiement dédiée a été émise par l'établissement partenaire
-      à l'enrôlement d'un bénéficiaire dans le programme Reliever.
+      A dedicated payment card has been issued by the partner institution
+      upon a beneficiary's enrolment in the Reliever programme.
     emitting_capability: CAP.B2B.001.CRT
     carried_business_object: OBJ.B2B.001.CARTE_DEDIEE
     scope: public
@@ -637,11 +637,11 @@ business_events:
       - lifecycle
 
   - id: EVT.B2B.001.CARTE_ACTIVEE
-    name: Carte dédiée activée
+    name: Dedicated card activated
     version: 1.0.0
     definition: >-
-      La carte dédiée d'un bénéficiaire a été activée avec les règles d'usage
-      correspondant à son palier courant.
+      The beneficiary's dedicated card has been activated with the usage rules
+      corresponding to their current tier.
     emitting_capability: CAP.B2B.001.CRT
     carried_business_object: OBJ.B2B.001.CARTE_DEDIEE
     scope: public
@@ -652,11 +652,11 @@ business_events:
       - lifecycle
 
   - id: EVT.B2B.001.CARTE_SUSPENDUE
-    name: Carte dédiée suspendue
+    name: Dedicated card suspended
     version: 1.0.0
     definition: >-
-      La carte dédiée d'un bénéficiaire a été temporairement bloquée suite à
-      un événement du dossier ou à une décision prescripteur. Réactivation possible.
+      The beneficiary's dedicated card has been temporarily blocked following
+      a case event or a prescriber decision. Reactivation is possible.
     emitting_capability: CAP.B2B.001.CRT
     carried_business_object: OBJ.B2B.001.CARTE_DEDIEE
     scope: public
@@ -667,11 +667,11 @@ business_events:
       - lifecycle
 
   - id: EVT.B2B.001.CARTE_RESILIEE
-    name: Carte dédiée résiliée
+    name: Dedicated card terminated
     version: 1.0.0
     definition: >-
-      La carte dédiée d'un bénéficiaire a été définitivement clôturée suite
-      à sa sortie du programme Reliever. Aucune réactivation possible.
+      The beneficiary's dedicated card has been permanently closed following
+      their exit from the Reliever programme. No reactivation is possible.
     emitting_capability: CAP.B2B.001.CRT
     carried_business_object: OBJ.B2B.001.CARTE_DEDIEE
     scope: public
@@ -682,14 +682,14 @@ business_events:
       - lifecycle
       - terminal
 
-  # ── CAP.B2B.001.OBK — Open banking DSP2 ────────────────────────────────────
+  # ── CAP.B2B.001.OBK — Open banking PSD2 ────────────────────────────────────
 
   - id: EVT.B2B.001.DONNEES_FINANCIERES_RAFRAICHIES
-    name: Données financières rafraîchies
+    name: Financial data refreshed
     version: 1.0.0
     definition: >-
-      Un nouveau snapshot des données financières open banking du bénéficiaire
-      a été obtenu via DSP2 et transmis à CAP.BSP.001.SCO pour alimenter le scoring.
+      A new open banking financial snapshot of the beneficiary has been
+      obtained via PSD2 and forwarded to CAP.BSP.001.SCO to feed the scoring.
     emitting_capability: CAP.B2B.001.OBK
     carried_business_object: OBJ.B2B.001.SNAPSHOT_FIN
     scope: public
@@ -699,14 +699,14 @@ business_events:
       - open-banking
       - DSP2
 
-  # ── CAP.B2B.001.FLX — Flux financiers vers la carte ─────────────────────────
+  # ── CAP.B2B.001.FLX — Financial flows to card ───────────────────────────────
 
   - id: EVT.B2B.001.ALIMENTATION_EFFECTUEE
-    name: Alimentation carte effectuée
+    name: Card funding completed
     version: 1.0.0
     definition: >-
-      Un transfert de fonds du compte principal vers la carte dédiée a été réalisé
-      par l'établissement partenaire pour alimenter les enveloppes budgétaires de la période.
+      A fund transfer from the main account to the dedicated card has been carried out
+      by the partner institution to fund the budget envelopes for the period.
     emitting_capability: CAP.B2B.001.FLX
     carried_business_object: OBJ.B2B.001.FLUX_FINANCIER
     scope: public
@@ -716,15 +716,15 @@ business_events:
       - financial-flow
       - B2B
 
-  # ── CAP.SUP.001.CON — Gestion du consentement RGPD ──────────────────────────
+  # ── CAP.SUP.001.CON — GDPR consent management ───────────────────────────────
 
   - id: EVT.SUP.001.CONSENTEMENT_ACCORDE
-    name: Consentement RGPD accordé
+    name: GDPR consent granted
     version: 1.0.0
     definition: >-
-      Un bénéficiaire a accordé son consentement pour le traitement et le partage
-      de ses données sensibles. Précondition obligatoire à l'enrôlement, à l'open
-      banking et à toute consultation prescripteur.
+      A beneficiary has granted consent for the processing and sharing
+      of their sensitive data. Mandatory precondition to enrolment, open
+      banking and any prescriber consultation.
     emitting_capability: CAP.SUP.001.CON
     carried_business_object: OBJ.SUP.001.CONSENTEMENT_RGPD
     scope: public
@@ -736,11 +736,11 @@ business_events:
       - blocking-precondition
 
   - id: EVT.SUP.001.CONSENTEMENT_REVOQUE
-    name: Consentement RGPD révoqué
+    name: GDPR consent revoked
     version: 1.0.0
     definition: >-
-      Un bénéficiaire a révoqué son consentement RGPD. Tous les accès à ses données
-      par les capacités consommatrices sont immédiatement suspendus.
+      A beneficiary has revoked their GDPR consent. All access to their data
+      by consuming capabilities is immediately suspended.
     emitting_capability: CAP.SUP.001.CON
     carried_business_object: OBJ.SUP.001.CONSENTEMENT_RGPD
     scope: public
@@ -750,14 +750,14 @@ business_events:
       - RGPD
       - compliance
 
-  # ── CAP.SUP.001.AUD — Audit et traçabilité ──────────────────────────────────
+  # ── CAP.SUP.001.AUD — Audit and traceability ────────────────────────────────
 
   - id: EVT.SUP.001.ACCES_JOURNALISE
-    name: Accès aux données journalisé
+    name: Data access logged
     version: 1.0.0
     definition: >-
-      Un accès aux données sensibles d'un bénéficiaire a été enregistré dans le
-      journal d'audit RGPD, avec vérification du consentement couvrant.
+      An access to a beneficiary's sensitive data has been recorded in the
+      GDPR audit log, with verification of the covering consent.
     emitting_capability: CAP.SUP.001.AUD
     carried_business_object: OBJ.SUP.001.TRACE_ACCES
     scope: public
@@ -767,14 +767,14 @@ business_events:
       - RGPD
       - audit
 
-  # ── CAP.SUP.001.RET — Droits des personnes RGPD ─────────────────────────────
+  # ── CAP.SUP.001.RET — GDPR data subject rights ──────────────────────────────
 
   - id: EVT.SUP.001.DROIT_TRAITE
-    name: Droit RGPD traité
+    name: GDPR right processed
     version: 1.0.0
     definition: >-
-      Une demande d'exercice de droit RGPD (accès, rectification, effacement,
-      portabilité) a été traitée dans les délais légaux.
+      A GDPR rights request (access, rectification, erasure,
+      portability) has been processed within the legal timeframe.
     emitting_capability: CAP.SUP.001.RET
     carried_business_object: OBJ.SUP.001.DROIT_EXERCE
     scope: public
@@ -784,15 +784,15 @@ business_events:
       - RGPD
       - compliance
 
-  # ── CAP.REF.001 — Référentiels ───────────────────────────────────────────────
+  # ── CAP.REF.001 — Referentials ───────────────────────────────────────────────
 
   - id: EVT.REF.001.BENEFICIAIRE_REF_MAJ
-    name: Référentiel bénéficiaire mis à jour
+    name: Beneficiary referential updated
     version: 1.0.0
     definition: >-
-      La fiche de référence d'un bénéficiaire a été créée ou mise à jour dans
-      le référentiel canonique. Toutes les capacités consommant l'identité
-      bénéficiaire doivent se synchroniser.
+      The reference record of a beneficiary has been created or updated in
+      the canonical referential. All capabilities consuming the beneficiary
+      identity must synchronise.
     emitting_capability: CAP.REF.001.BEN
     carried_business_object: OBJ.REF.001.FICHE_BENEFICIAIRE
     scope: public
@@ -803,12 +803,12 @@ business_events:
       - canonical
 
   - id: EVT.REF.001.PRESCRIPTEUR_REF_MAJ
-    name: Référentiel prescripteur mis à jour
+    name: Prescriber referential updated
     version: 1.0.0
     definition: >-
-      La fiche de référence d'un prescripteur a été créée ou mise à jour dans
-      le référentiel canonique. Les habilitations associées sont mises à jour
-      dans CAP.BSP.003.ROL.
+      The reference record of a prescriber has been created or updated in
+      the canonical referential. Associated authorisations are updated
+      in CAP.BSP.003.ROL.
     emitting_capability: CAP.REF.001.PRE
     carried_business_object: OBJ.REF.001.FICHE_PRESCRIPTEUR
     scope: public
@@ -819,11 +819,11 @@ business_events:
       - canonical
 
   - id: EVT.REF.001.PALIER_DEF_MAJ
-    name: Définition de palier mise à jour
+    name: Tier definition updated
     version: 1.0.0
     definition: >-
-      La définition normative d'un palier a été mise à jour dans le référentiel.
-      Déclenche une mise à jour en cascade sur BSP.001.PAL, BSP.004.AUT et B2B.001.CRT.
+      The normative definition of a tier has been updated in the referential.
+      Triggers a cascading update on BSP.001.PAL, BSP.004.AUT and B2B.001.CRT.
     emitting_capability: CAP.REF.001.PAL
     carried_business_object: OBJ.REF.001.DEFINITION_PALIER
     scope: public
@@ -833,15 +833,15 @@ business_events:
       - referential
       - cascade
 
-  # ── CAP.DAT.001 — Analytique ─────────────────────────────────────────────────
+  # ── CAP.DAT.001 — Analytics ──────────────────────────────────────────────────
 
   - id: EVT.DAT.001.DONNEES_COMPORTEMENTALES_INGEREES
-    name: Données comportementales ingérées
+    name: Behavioural data ingested
     version: 1.0.0
     definition: >-
-      Un lot de données transactionnelles et comportementales agrégées et anonymisées
-      a été ingéré dans la plateforme analytique pour alimenter l'entraînement du modèle.
-      Ces données ne sont jamais connectées directement au scoring opérationnel.
+      A batch of aggregated and anonymised transactional and behavioural data
+      has been ingested into the analytics platform to feed model training.
+      This data is never directly connected to the operational scoring pipeline.
     emitting_capability: CAP.DAT.001.ING
     carried_business_object: OBJ.DAT.001.DONNEES_COMPORTEMENTALES
     scope: internal
@@ -852,12 +852,12 @@ business_events:
       - anonymized
 
   - id: EVT.DAT.001.MODELE_SCORE_MAJ
-    name: Modèle de scoring mis à jour
+    name: Scoring model updated
     version: 1.0.0
     definition: >-
-      Un nouveau modèle de scoring comportemental a été produit par DAT.001.MOD
-      et soumis à PIL.001.GOV pour validation. Aucun déploiement en production
-      sans PolitiqueGouvernance.MisÀJour de PIL.001.GOV.
+      A new behavioural scoring model has been produced by DAT.001.MOD
+      and submitted to PIL.001.GOV for validation. No production deployment
+      without GovernancePolicy.Updated from PIL.001.GOV.
     emitting_capability: CAP.DAT.001.MOD
     carried_business_object: OBJ.DAT.001.MODELE_SCORE
     scope: public
@@ -869,11 +869,11 @@ business_events:
       - governance
 
   - id: EVT.DAT.001.RAPPORT_PROGRAMME_GENERE
-    name: Rapport programme généré
+    name: Programme report generated
     version: 1.0.0
     definition: >-
-      Un rapport analytique de performance globale du programme Reliever a été
-      généré et transmis aux instances de pilotage (PIL.001.KPI).
+      An analytical global performance report of the Reliever programme has been
+      generated and forwarded to the steering instances (PIL.001.KPI).
     emitting_capability: CAP.DAT.001.REP
     carried_business_object: OBJ.DAT.001.RAPPORT_PROGRAMME
     scope: public
@@ -883,15 +883,15 @@ business_events:
       - analytics
       - reporting
 
-  # ── CAP.PIL.001 — Pilotage ────────────────────────────────────────────────────
+  # ── CAP.PIL.001 — Steering ───────────────────────────────────────────────────
 
   - id: EVT.PIL.001.POLITIQUE_GOUVERNANCE_MAJ
-    name: Politique de gouvernance mise à jour
+    name: Governance policy updated
     version: 1.0.0
     definition: >-
-      Une politique de gouvernance du programme Reliever a été validée et activée
-      par PIL.001.GOV. Elle s'impose immédiatement à toutes les capacités du BCM
-      dans son domaine de couverture.
+      A Reliever programme governance policy has been validated and activated
+      by PIL.001.GOV. It immediately applies to all BCM capabilities
+      within its coverage domain.
     emitting_capability: CAP.PIL.001.GOV
     carried_business_object: OBJ.PIL.001.POLITIQUE_GOUVERNANCE
     scope: public
@@ -902,11 +902,11 @@ business_events:
       - steering
 
   - id: EVT.PIL.001.PERFORMANCE_EVALUEE
-    name: Performance programme évaluée
+    name: Programme performance evaluated
     version: 1.0.0
     definition: >-
-      Les indicateurs de performance du programme Reliever ont été calculés et
-      publiés pour la période de référence par PIL.001.KPI.
+      The Reliever programme performance indicators have been computed and
+      published for the reference period by PIL.001.KPI.
     emitting_capability: CAP.PIL.001.KPI
     carried_business_object: OBJ.PIL.001.PERFORMANCE_PROGRAMME
     scope: public
@@ -917,12 +917,12 @@ business_events:
       - KPI
 
   - id: EVT.PIL.001.CONFORMITE_VERIFIEE
-    name: Conformité programme vérifiée
+    name: Programme compliance verified
     version: 1.0.0
     definition: >-
-      Un audit de conformité réglementaire et programmatique a été réalisé par
-      PIL.001.AUD. Les constats sont publiés et les éventuelles non-conformités
-      font l'objet d'un plan de remédiation.
+      A regulatory and programmatic compliance audit has been carried out by
+      PIL.001.AUD. Findings are published and any non-conformities
+      are subject to a remediation plan.
     emitting_capability: CAP.PIL.001.AUD
     carried_business_object: OBJ.PIL.001.CONFORMITE_PROGRAMME
     scope: public
