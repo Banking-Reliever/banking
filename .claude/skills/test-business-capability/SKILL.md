@@ -2,7 +2,7 @@
 name: test-business-capability
 description: >
   Tests a web frontend (produced by code-web-frontend), a backend microservice (.NET,
-  produced by implement-capability), or a BFF (produced by create-bff) against the task
+  produced by the implement-capability agent), or a BFF (produced by create-bff) against the task
   criteria, plan rules, FUNC ADRs, product vision, and strategic vision. Tests run in a
   temporary local environment: the frontend is copied to /tmp/, an ephemeral HTTP server
   is launched, API calls are intercepted by Playwright. No modification of the original
@@ -16,7 +16,7 @@ description: >
   "test-business-capability", "test CAP.", "run the tests", "verify DoD criteria",
   "validate business rules", "test on branch X", "test on env X", or any phrasing
   requesting automated validation of a task or capability. Also trigger proactively after
-  a code-web-frontend, implement-capability, or create-bff skill has finished and the
+  a code-web-frontend or create-bff skill, or the implement-capability agent, has finished and the
   user wants to validate the result.
 ---
 

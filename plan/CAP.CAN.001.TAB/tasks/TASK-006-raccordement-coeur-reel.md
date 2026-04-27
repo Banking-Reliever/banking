@@ -74,5 +74,5 @@ A real beneficiary enrolled in the program views their dashboard and sees their 
 - **CAP.BSP.004.AUT** — operational and publishing `Transaction.Authorized` / `Transaction.Declined`
 
 ## Open Questions
-- In case of schema divergence between the contract (TASK-001) and the real CORE production, what is the arbitration process (who decides, what timeline)?
-- Is there a dual-feed period (stub + CORE in parallel) to validate before cutting the stub?
+- [ ] In case of schema divergence between the contract (TASK-001) and the real CORE production, what is the arbitration process (who decides, what timeline)?
+- [ ] Is there a dual-feed period (stub + CORE in parallel) to validate before cutting the stub?

@@ -1,9 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/FoodarooExperience.ClaimsProcessing.Application/FoodarooExperience.ClaimsProcessing.Application.csproj" />
-    <Project Path="src/FoodarooExperience.ClaimsProcessing.Contracts/FoodarooExperience.ClaimsProcessing.Contracts.csproj" />
-    <Project Path="src/FoodarooExperience.ClaimsProcessing.Domain/FoodarooExperience.ClaimsProcessing.Domain.csproj" />
-    <Project Path="src/FoodarooExperience.ClaimsProcessing.Infrastructure/FoodarooExperience.ClaimsProcessing.Infrastructure.csproj" />
-    <Project Path="src/FoodarooExperience.ClaimsProcessing.Presentation/FoodarooExperience.ClaimsProcessing.Presentation.csproj" />
-  </Folder>
-</Solution>

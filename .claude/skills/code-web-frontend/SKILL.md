@@ -2,7 +2,7 @@
 name: code-web-frontend
 description: >
   Generates a vanilla web frontend (HTML5 + CSS3 + pure JavaScript, no framework) for a
-  business capability, from a TASK-NNN task and the API produced by the implement-capability skill.
+  business capability, from a TASK-NNN task and the API produced by the implement-capability agent.
   Uses the plan, FUNC ADRs, product vision, and strategic vision as business context
   to produce an interface consistent with dignity rules and urbanization constraints.
   

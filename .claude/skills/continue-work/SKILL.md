@@ -103,11 +103,11 @@ Write the updated frontmatter. Do not touch any other field (preserves `depends_
 
 ---
 
-## Step 4 — Notify the Kanban
+## Step 4 — Notify the Board
 
-Update `/plan/BOARD.md` immediately to reflect the `todo` (→ will transition to
-`in_progress` once the code agent starts) status change. The kanban will pick it up
-reactively when Step 9 fires.
+Invoke `/sort-task` to refresh `/plan/BOARD.md` and reflect the `todo` status
+(→ will transition to `in_progress` once the code agent starts). `/launch-task`
+will pick it up reactively when its Step 6 fires.
 
 Report:
 ```

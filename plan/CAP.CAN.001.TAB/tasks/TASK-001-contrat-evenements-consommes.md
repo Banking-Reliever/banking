@@ -65,6 +65,6 @@ A TASK-002 developer can build the stub without asking any questions about the e
 No upstream dependencies. This task must be completed before TASK-002.
 
 ## Open Questions
-- Who is the contact on the BSP.001 side (SCO and PAL) to validate the contract?
-- Who is the contact on the BSP.004 side (ENV) to validate the contract?
-- Is the beneficiary identifier the same across all events (golden record of CAP.REF.001.BEN)?
+- [ ] Who is the contact on the BSP.001 side (SCO and PAL) to validate the contract?
+- [ ] Who is the contact on the BSP.004 side (ENV) to validate the contract?
+- [ ] Is the beneficiary identifier the same across all events (golden record of CAP.REF.001.BEN)?

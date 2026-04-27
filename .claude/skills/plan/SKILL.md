@@ -167,4 +167,4 @@ For the full plan, identify:
 After writing, tell the user:
 > "The plan for [capability] is committed to `/plan/[capability-id]/plan.md`. 
 > When you're ready, the task skill will break each epic into concrete tasks for 
-> the implement-capability workflow."
+> the implement-capability agent."

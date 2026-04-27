@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /home/yoann/banking/.claude/hooks/kanban-watch-write.sh 2>/dev/null || true",
+            "command": "python3 /home/yoann/sources/banking/.claude/hooks/kanban-watch-write.sh 2>/dev/null || true",
             "statusMessage": "Checking kanban..."
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /home/yoann/banking/.claude/hooks/kanban-watch-bash.sh 2>/dev/null || true",
+            "command": "python3 /home/yoann/sources/banking/.claude/hooks/kanban-watch-bash.sh 2>/dev/null || true",
             "statusMessage": "Checking kanban..."
           }
         ]

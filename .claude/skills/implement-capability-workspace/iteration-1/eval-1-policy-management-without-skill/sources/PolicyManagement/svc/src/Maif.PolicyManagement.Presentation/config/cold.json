@@ -1,5 +1,0 @@
-{
-  "ServiceName": "Maif-PolicyManagement",
-  "SerilogMinimumLevelDefault": "Debug",
-  "SerilogMinimumLevelOverrideMicrosoft": "Warning"
-}

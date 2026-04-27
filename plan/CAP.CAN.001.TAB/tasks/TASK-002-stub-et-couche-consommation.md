@@ -73,5 +73,5 @@ A developer working on TASK-003 can display a test beneficiary's data without wa
 - **TASK-001**: the event contract must be frozen before implementing the stub and the consumption layer
 
 ## Open Questions
-- Has the event bus technology already been chosen for the Reliever project, or is it left to the implement-capability skill?
-- Should the stub simulate multiple distinct beneficiaries or is a single test beneficiary sufficient for Epics 2-4?
+- [ ] Has the event bus technology already been chosen for the Reliever project, or is it left to the implement-capability skill?
+- [ ] Should the stub simulate multiple distinct beneficiaries or is a single test beneficiary sufficient for Epics 2-4?

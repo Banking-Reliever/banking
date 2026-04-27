@@ -24,10 +24,10 @@ repeating until the Definition of Done is fully satisfied.
 ## Before You Begin
 
 > **Note:** For orchestrated multi-task workflows (board view, prioritization, dependency
-> tracking), use the `/kanban` skill instead — it calls this skill at the right moment.
+> tracking), use the `/launch-task` skill instead — it calls this skill at the right moment.
 
 1. **Identify the task.** The user should specify a task ID (e.g., `TASK-001`) or a capability
-   name. If ambiguous, redirect to `/kanban` to get the prioritized list.
+   name. If ambiguous, redirect to `/launch-task` to get the prioritized list.
 
 2. **Read the task file.** Find it at `/plan/{capability-id}/tasks/TASK-NNN-*.md`.
 
@@ -155,12 +155,12 @@ Wait for the user's confirmation before proceeding.
 
 ---
 
-## Step 2 — Invoke the Implementation Skill(s)
+## Step 2 — Invoke the Implementation Component(s)
 
 ### Path A — Non-CHANNEL zones (BUSINESS_SERVICE_PRODUCTION, SUPPORT, REFERENTIAL, EXCHANGE_B2B, DATA_ANALYTIQUE, STEERING)
 
-Invoke the `implement-capability` skill with the full task context assembled as input.
-The context to pass includes:
+Spawn the `implement-capability` agent via the `Agent` tool with the full task context
+assembled as input. The context to pass includes:
 
 - The capability ID, name, zone, and level
 - The governing FUNC ADR(s)
@@ -169,12 +169,24 @@ The context to pass includes:
 - The event subscriptions required
 - The Definition of Done
 
-Say:
-> "Invoking implement-capability for [capability name] with task TASK-[NNN]..."
+Use:
+```
+Agent({
+  subagent_type: "implement-capability",
+  description: "Scaffold [capability name]",
+  prompt: <full context block as described above>
+})
+```
 
-The implement-capability skill handles all architectural and implementation decisions —
-Clean Architecture, DDD, microservice scaffolding, .NET patterns. Your job is to feed it
-the right business context from the task file.
+Say:
+> "Spawning implement-capability agent for [capability name] with task TASK-[NNN]..."
+
+The implement-capability agent handles all architectural and implementation decisions —
+Clean Architecture, DDD, microservice scaffolding, .NET patterns — and exercises judgment
+on aggregates, ports, and bus topology from the FUNC/tactical ADRs. Your job is to feed it
+the right business context from the task file. The agent may push back if the context is
+incoherent (missing FUNC ADR, cross-zone task, stack mismatch); surface that to the user
+as the gap to resolve.
 
 ---
 
@@ -280,7 +292,7 @@ Triggered when `loop_count >= max_loops` and tests still fail.
      Last test run: [DATE]
    ```
 
-2. **Refresh `/plan/BOARD.md`** so the kanban reflects the `stalled` status immediately.
+2. **Refresh `/plan/BOARD.md`** by invoking `/sort-task` so the board reflects the `stalled` status immediately.
 
 3. **Report to the user** — this is a **mandatory human checkpoint**:
    ```
@@ -314,7 +326,7 @@ After all tests pass (or after the remediation loop concludes):
 
 1. **Update the task status** in the task file:
    - Change `status: in_progress` (or `status: todo` if invoked directly) to `status: in_review`.
-   - Add the PR URL as a new frontmatter field `pr_url:` so the kanban can display it.
+   - Add the PR URL as a new frontmatter field `pr_url:` so `/sort-task` can display it.
    - If the remediation loop ended with remaining failures, add `draft: true`.
 
    Example resulting frontmatter:
@@ -343,7 +355,7 @@ After all tests pass (or after the remediation loop concludes):
 
 5. **Push the branch** and open a PR:
 
-   Retrieve the `LOCAL_PORT` value that implement-capability printed in its summary
+   Retrieve the `LOCAL_PORT` value that the implement-capability agent printed in its summary
    (or the BFF port for CHANNEL zone).
    Derive the infrastructure ports: `MONGO_PORT = LOCAL_PORT + 100`,
    `RABBIT_PORT = LOCAL_PORT + 200`, `RABBIT_MGMT_PORT = LOCAL_PORT + 201`.
@@ -458,14 +470,14 @@ After all tests pass (or after the remediation loop concludes):
 
 ## Important Boundaries
 
-- **This skill does not write application code directly** — it delegates to implement-capability,
+- **This skill does not write application code directly** — it delegates to the implement-capability agent,
   create-bff, and code-web-frontend.
 - **This skill does not re-open design decisions** — the task file is the source of truth.
   If something in the task is wrong, the fix is to update the task file (via the task skill)
   before running code.
 - **One task at a time** — do not batch multiple tasks in one invocation. Each TASK-NNN
   is an independent unit of work.
-- **Zone detection is mandatory** — never invoke implement-capability for a CHANNEL task,
+- **Zone detection is mandatory** — never spawn the implement-capability agent for a CHANNEL task,
   and never invoke create-bff or code-web-frontend for a non-CHANNEL task.
 - **Tests are not optional** — test-business-capability always runs after implementation.
   The only exception is when Playwright cannot be installed (fallback to manual checklist).
