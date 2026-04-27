@@ -1,4 +1,9 @@
 {
+  "statusLine": {
+    "type": "command",
+    "command": "bash /home/yoann/sources/banking/.claude/scripts/statusline.sh",
+    "padding": 0
+  },
   "hooks": {
     "PostToolUse": [
       {
@@ -18,6 +23,15 @@
             "type": "command",
             "command": "python3 /home/yoann/sources/banking/.claude/hooks/kanban-watch-bash.sh 2>/dev/null || true",
             "statusMessage": "Checking kanban..."
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/yoann/sources/banking/.claude/hooks/agent-log.py 2>/dev/null || true"
           }
         ]
       }
