@@ -1,9 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/Naive.PolicyManagement.Application/Naive.PolicyManagement.Application.csproj" />
-    <Project Path="src/Naive.PolicyManagement.Contracts/Naive.PolicyManagement.Contracts.csproj" />
-    <Project Path="src/Naive.PolicyManagement.Domain/Naive.PolicyManagement.Domain.csproj" />
-    <Project Path="src/Naive.PolicyManagement.Infrastructure/Naive.PolicyManagement.Infrastructure.csproj" />
-    <Project Path="src/Naive.PolicyManagement.Presentation/Naive.PolicyManagement.Presentation.csproj" />
-  </Folder>
-</Solution>

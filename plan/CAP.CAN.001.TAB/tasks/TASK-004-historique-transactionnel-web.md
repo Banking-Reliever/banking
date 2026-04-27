@@ -69,5 +69,5 @@ A test beneficiary can filter their transactions by category and period, sort by
 - **CAP.BSP.004.AUT**: source of `Transaction.Authorized` and `Transaction.Declined` — stub mandatory for isolated development
 
 ## Open Questions
-- What is the retention period for the displayed transaction history (30 days? duration of the full program)?
-- Is the decline reason a fixed enumeration (dictated by CAP.REF.001.PAL tiers) or free text produced by BSP.004.AUT?
+- [ ] What is the retention period for the displayed transaction history (30 days? duration of the full program)?
+- [ ] Is the decline reason a fixed enumeration (dictated by CAP.REF.001.PAL tiers) or free text produced by BSP.004.AUT?

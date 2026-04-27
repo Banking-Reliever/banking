@@ -2,7 +2,7 @@
 name: task
 description: >
   Generates concrete implementation tasks for a planned business capability, ready to be 
-  executed by the implement-capability skill. Tasks are written to /plan/{capability-id}/tasks/. 
+  executed by the implement-capability agent. Tasks are written to /plan/{capability-id}/tasks/. 
   Use this skill whenever the user wants to generate tasks from a plan, break epics into 
   implementation work, create the task list for a capability, or prepare work for coding. 
   Trigger on: "generate tasks", "create tasks", "break down the plan", "tasks for capability", 
@@ -14,8 +14,8 @@ description: >
 # Task Skill
 
 You are generating **implementation task files** for a business capability, based on its plan. 
-Each task will be picked up by the implement-capability skill for execution. Tasks must contain 
-enough context for a developer (or the implement-capability skill) to work independently — 
+Each task will be picked up by the implement-capability agent for execution. Tasks must contain 
+enough context for a developer (or the implement-capability agent) to work independently — 
 without needing to ask questions.
 
 ---
@@ -33,7 +33,7 @@ without needing to ask questions.
    - `/product-vision/product.md` — service offer context
    - Existing tasks in `/plan/{capability-id}/tasks/` — to avoid duplication
 
-3. **Check the implement-capability skill** at `.claude/skills/implement-capability/SKILL.md` 
+3. **Check the implement-capability agent** at `.claude/agents/implement-capability.md` 
    to understand what input format it expects, so tasks are written in a compatible structure.
 
 ---
@@ -53,7 +53,7 @@ A good task:
 - Names the **business events** to produce (by name, as in the BCM)
 - Specifies the **business objects** involved
 - Lists its **dependencies** on other tasks (by TASK-NNN ID)
-- Does not specify implementation technology (that's the implement-capability skill's job)
+- Does not specify implementation technology (that's the implement-capability agent's job)
 
 ### Task file format
 
@@ -108,8 +108,10 @@ capability must be able to do when this task is done]
 - [CAP.ZONE.NNN]: [External capability dependency]
 
 ## Open Questions
-- [Any unresolved question that must be answered before starting]
+- [ ] [Any unresolved question that must be answered before starting]
 ```
+
+> **Important — Open Questions format:** every entry in `## Open Questions` MUST be written as a Markdown checkbox `- [ ]`. The `/sort-task` skill detects unresolved questions by counting unchecked checkboxes in this section. A plain bullet `-` will NOT be detected and the task will be wrongly classified as `ready`. When a question is resolved, tick it (`- [x]`) instead of deleting it, to preserve the audit trail.
 
 ---
 
@@ -171,5 +173,5 @@ TASK-001 → TASK-002 → TASK-003
 
 After writing all tasks, tell the user:
 > "Tasks for [capability] are committed to `/plan/[capability-id]/tasks/`. 
-> To implement a task, use the implement-capability skill and reference the task file.
+> To implement a task, use the implement-capability agent and reference the task file.
 > Start with TASK-001 (or any task with no dependencies)."

@@ -91,7 +91,7 @@ Capabilities are implemented using Claude Code skills in this order:
 /business-capabilities-brainstorming → /bcm-writer → /plan → /task → /code
 ```
 
-Implementation plans live in `plan/<CAP-ID>/plan.md`. Tasks are `plan/<CAP-ID>/tasks/TASK-NNN-*.md` with frontmatter fields `task_id`, `status`, `priority`, `depends_on`. The kanban board is at `plan/BOARD.md` (auto-refreshed by the `kanban-agent` whenever a TASK file changes).
+Implementation plans live in `plan/<CAP-ID>/plan.md`. Tasks are `plan/<CAP-ID>/tasks/TASK-NNN-*.md` with frontmatter fields `task_id`, `status`, `priority`, `depends_on`. The kanban board is at `plan/BOARD.md` (auto-refreshed by the `/sort-task` skill via PostToolUse hooks whenever a TASK file changes; `/launch-task` is the orchestrator that launches code agents).
 
 ### Build Output
 

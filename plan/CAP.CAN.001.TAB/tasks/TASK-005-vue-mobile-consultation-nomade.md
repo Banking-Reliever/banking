@@ -73,5 +73,5 @@ A beneficiary who opens the mobile interface immediately sees their tier and mai
 - **TASK-003**: the read model and the consent gate must exist — the mobile view reuses them without modification
 
 ## Open Questions
-- Which envelopes are considered "main" on mobile? Are they determined by the current tier (CAP.REF.001.PAL) or by the beneficiary's usage frequency?
-- Is the mobile interface a native application (iOS/Android) or a responsive webapp? This choice does not block the task but may impact interface sprints.
+- [ ] Which envelopes are considered "main" on mobile? Are they determined by the current tier (CAP.REF.001.PAL) or by the beneficiary's usage frequency?
+- [ ] Is the mobile interface a native application (iOS/Android) or a responsive webapp? This choice does not block the task but may impact interface sprints.

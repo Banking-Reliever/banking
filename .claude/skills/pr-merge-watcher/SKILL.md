@@ -86,7 +86,7 @@ Rebuild `/plan/BOARD.md` with the following structure:
 ```markdown
 # Task Board — YYYY-MM-DD HH:MM UTC
 
-> Auto-refreshed by pr-merge-watcher — manual update with `/kanban`
+> Auto-refreshed by pr-merge-watcher — manual update with `/sort-task`
 
 ## 🔵 In Progress
 | Task | Capability | Title | Epic |
