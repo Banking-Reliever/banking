@@ -4,11 +4,12 @@ capability_id: CAP.BSP.001.PAL
 capability_name: Tier Management
 epic: Epic 1 — Contract and Development Stub for Upward Tier Crossing
 task_type: contract-stub
-status: in_progress
+status: in_review
 priority: high
 depends_on: []
 loop_count: 0
 max_loops: 10
+pr_url: https://github.com/Banking-Reliever/banking/pull/1
 ---
 
 > **Started on:** 2026-04-28
