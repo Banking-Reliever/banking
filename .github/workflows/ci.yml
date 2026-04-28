@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  validators:
+    name: BCM Validators
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: 'pip'
+          cache-dependency-path: tools/requirements.txt
+
+      - name: Install validator deps
+        run: pip install -r tools/requirements.txt
+
+      - name: validate_repo.py (strict)
+        run: python3 tools/validate_repo.py --strict
+
+      - name: validate_events.py (advisory)
+        # validate_events.py currently reports 26 pre-existing BCM coherence
+        # errors on main (cross-events without an associated resource event,
+        # property mismatches in RES.REF.001 series). Treat as advisory until a
+        # dedicated BCM cleanup task lands; then flip this step to mandatory by
+        # removing `continue-on-error`.
+        continue-on-error: true
+        run: python3 tools/validate_events.py --bcm-dir bcm --events-dir bcm
+
+  dotnet:
+    name: .NET Build & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Discover .NET solutions under sources/
+        id: discover
+        shell: bash
+        run: |
+          mapfile -t SOLUTIONS < <(find sources -type f \( -name "*.sln" -o -name "*.slnx" \) 2>/dev/null | sort)
+          if [ ${#SOLUTIONS[@]} -eq 0 ]; then
+            echo "No .NET solutions found under sources/. Nothing to build or test."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "Found ${#SOLUTIONS[@]} solution(s):"
+          printf '  %s\n' "${SOLUTIONS[@]}"
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          {
+            echo "solutions<<SOLUTIONS_EOF"
+            printf '%s\n' "${SOLUTIONS[@]}"
+            echo "SOLUTIONS_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Restore, build, test each solution
+        if: steps.discover.outputs.found == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _ci/test-results
+          while IFS= read -r SLN; do
+            [ -z "$SLN" ] && continue
+            echo "::group::🔧 $SLN"
+            NAME=$(printf '%s' "$SLN" | sed 's|/|_|g; s|^sources_||; s|\.[a-z]*$||')
+
+            dotnet restore "$SLN"
+            dotnet build   "$SLN" --no-restore --configuration Release
+            dotnet test    "$SLN" \
+              --no-build --configuration Release \
+              --logger "trx;LogFileName=${NAME}.trx" \
+              --logger "console;verbosity=normal" \
+              --results-directory _ci/test-results
+            echo "::endgroup::"
+          done <<< "${{ steps.discover.outputs.solutions }}"
+
+      - name: Upload test results (.trx)
+        if: always() && steps.discover.outputs.found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-test-results
+          path: _ci/test-results/**/*.trx
+          if-no-files-found: warn
+          retention-days: 30
