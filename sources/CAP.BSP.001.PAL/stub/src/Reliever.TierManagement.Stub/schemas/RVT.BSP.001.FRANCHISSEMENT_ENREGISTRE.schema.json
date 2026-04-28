@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://reliever.example.com/contracts/CAP.BSP.001.PAL/RVT.BSP.001.FRANCHISSEMENT_ENREGISTRE/1.0.0/schema.json",
+  "x-bcm-version": "1.0.0",
+  "x-bcm-resource-event": "RVT.BSP.001.FRANCHISSEMENT_ENREGISTRE",
+  "x-bcm-business-event": "EVT.BSP.001.PALIER_HAUSSE",
+  "x-bcm-carried-resource": "RES.BSP.001.FRANCHISSEMENT",
+  "x-bcm-carried-business-object": "OBJ.BSP.001.CHANGEMENT_PALIER",
+  "x-bcm-emitting-capability": "CAP.BSP.001.PAL",
+  "x-bcm-routing-key": "EVT.BSP.001.PALIER_HAUSSE.RVT.BSP.001.FRANCHISSEMENT_ENREGISTRE",
+  "x-bcm-payload-form": "domain-event-DDD",
+  "title": "RVT.BSP.001.FRANCHISSEMENT_ENREGISTRE — Tier upgrade recorded",
+  "description": "RUNTIME CONTRACT. Every payload published on the bus by CAP.BSP.001.PAL with routing key 'EVT.BSP.001.PALIER_HAUSSE.RVT.BSP.001.FRANCHISSEMENT_ENREGISTRE' MUST validate against this schema. Per ADR-TECH-STRAT-001 Rule 3, the payload is a domain event DDD: data of the upward tier transition (a coherent atomic state-change of the OBJ.BSP.001.CHANGEMENT_PALIER aggregate). It is NOT a snapshot of the read model RES.BSP.001.FRANCHISSEMENT and NOT a field patch. The 'sens' field is constrained to FRANCHISSEMENT (upward direction) for Epic 1 scope; downward crossings (RETROGRADATION) are out of scope and will be contracted in a future epic via RVT.BSP.001.RETROGRADATION_ENREGISTREE. Correlation key: 'identifiant_dossier'. Resolution path: consumers wishing to obtain the canonical beneficiary identifier (OBJ.REF.001.FICHE_BENEFICIAIRE.identifiant_interne) MUST query CAP.REF.001.BEN with 'identifiant_dossier'. The producer does NOT carry the canonical beneficiary identifier on the bus.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "identifiant_transition",
+    "identifiant_dossier",
+    "palier_precedent",
+    "nouveau_palier",
+    "sens",
+    "declencheur",
+    "score_au_moment",
+    "timestamp_transition",
+    "est_sortie_programme"
+  ],
+  "properties": {
+    "identifiant_transition": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier of the upward tier transition. Stable across replays; suitable for idempotency keys at the consumer side."
+    },
+    "identifiant_dossier": {
+      "type": "string",
+      "minLength": 1,
+      "description": "CORRELATION KEY. Reference to the participation case (dossier). Resolution path to OBJ.REF.001.FICHE_BENEFICIAIRE.identifiant_interne is the consumer's responsibility — query CAP.REF.001.BEN with this value. The producer never carries 'identifiant_interne' on the wire (privacy + decoupling per ADR-BCM-URBA-0009)."
+    },
+    "palier_precedent": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Tier code BEFORE the upward transition (e.g. 'T0', 'T1'). Domain rule: must be strictly lower than 'nouveau_palier' (upward direction)."
+    },
+    "nouveau_palier": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Tier code AFTER the upward transition (e.g. 'T1', 'T2', 'T3'). Domain rule: must be strictly higher than 'palier_precedent' for sens=FRANCHISSEMENT."
+    },
+    "sens": {
+      "type": "string",
+      "const": "FRANCHISSEMENT",
+      "enum": ["FRANCHISSEMENT"],
+      "description": "Transition direction. CONSTRAINED to 'FRANCHISSEMENT' (upward) for Epic 1. Downward transitions (RETROGRADATION) belong to a separate resource event RVT.BSP.001.RETROGRADATION_ENREGISTREE in a future epic. Both 'const' and single-value 'enum' are declared for cross-validator compatibility (Draft 2020-12 'const' + Draft-7-compatible 'enum' fallback)."
+    },
+    "declencheur": {
+      "type": "string",
+      "enum": ["ALGORITHME", "SURCHARGE_PRESCRIPTEUR"],
+      "description": "Trigger source of the transition. ALGORITHME = computed by the autonomy-tier engine from behavioural signals. SURCHARGE_PRESCRIPTEUR = forced by a prescriber override (CAP.BSP.001.ARB)."
+    },
+    "score_au_moment": {
+      "type": "number",
+      "description": "Behavioural score value at the time the transition was recorded. Snapshotted from CAP.BSP.001.SCO at the transition timestamp (out-of-band correlation; not re-queried by consumers)."
+    },
+    "timestamp_transition": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp at which the upward transition was recorded by CAP.BSP.001.PAL."
+    },
+    "est_sortie_programme": {
+      "type": "boolean",
+      "description": "True if this upgrade reaches the FINAL tier — triggers the programme exit procedure (transfer to standard banking app via CAP.BSP.002.SOR). False otherwise."
+    }
+  }
+}

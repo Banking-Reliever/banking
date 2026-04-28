@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Reliever.TierManagement.Stub/Reliever.TierManagement.Stub.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Reliever.TierManagement.Stub.Tests/Reliever.TierManagement.Stub.Tests.csproj" />
+  </Folder>
+</Solution>
