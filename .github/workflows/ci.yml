@@ -14,6 +14,59 @@ permissions:
   pull-requests: read
 
 jobs:
+  forbidden-paths:
+    name: Forbidden Paths (PR governance gate)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reject changes to governance / model folders
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          git fetch --no-tags --depth=1 origin "$BASE_SHA" 2>/dev/null || true
+
+          # Folders whose content cannot be modified through a regular PR. Those
+          # are governance, BCM, vision, ADR and tooling artefacts that must
+          # only evolve through their dedicated decision processes.
+          PROTECTED_REGEX='^(adr/|bcm/|externals-template/|[^/]+-vision/|plan/|[^/]+-adr/|templates/|tools/)'
+
+          mapfile -t CHANGED < <(git diff --name-only --diff-filter=ACMRTD "$BASE_SHA"..."$HEAD_SHA")
+          OFFENDERS=()
+          for f in "${CHANGED[@]:-}"; do
+            [ -z "$f" ] && continue
+            if [[ "$f" =~ $PROTECTED_REGEX ]]; then
+              OFFENDERS+=("$f")
+            fi
+          done
+
+          if [ ${#OFFENDERS[@]} -gt 0 ]; then
+            echo "❌ This PR modifies files in protected folders. These can only evolve through their governance process (ADR / BCM modelling / vision / templates / tools)."
+            printf '  - %s\n' "${OFFENDERS[@]}"
+            echo
+            echo "Protected roots: adr/, bcm/, externals-template/, *-vision/, plan/, *-adr/, templates/, tools/"
+            exit 1
+          fi
+          echo "✅ No protected paths modified."
+
+  language-check:
+    name: Code Language Matches BCM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Verify natural language consistency (BCM ↔ code)
+        run: python3 .github/scripts/check_language.py
+
   validators:
     name: BCM Validators
     runs-on: ubuntu-latest
