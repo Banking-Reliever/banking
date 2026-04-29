@@ -7,10 +7,13 @@ task_type: contract-stub
 status: in_review
 priority: high
 depends_on: []
+loop_count: 0
+max_loops: 10
 pr_url: https://github.com/Banking-Reliever/banking/pull/2
 ---
 
 > **Started on:** 2026-04-28
+> **Submitted for review on:** 2026-04-28
 
 # TASK-001 — Contract and development stub for `EVT.BSP.001.SCORE_RECALCULE`
 
