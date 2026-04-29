@@ -3,7 +3,8 @@ name: code
 description: >
   Triggers the implementation of a specific task by reading its task file and invoking the 
   right implementation skill(s) based on the capability zone, then validates the result 
-  with test-business-capability. Use this skill whenever the user wants to implement a 
+  with the matching test skill (test-business-capability for backend, test-app for 
+  frontend+BFF). Use this skill whenever the user wants to implement a 
   task, code a specific capability task, start development on a TASK-NNN, or execute an 
   implementation work item. Trigger on: "code TASK-NNN", "implement TASK-NNN", 
   "code this task", "start implementing", "build [capability]", or any time a task file 
@@ -56,18 +57,37 @@ repeating until the Definition of Done is fully satisfied.
    max_loops: 10
    ```
 
-6. **Detect the zone** from the YAML (`zoning` field in `bcm/capabilities-*.yaml`
-   or from the `decision_scope.zoning` in the FUNC ADR). Map it:
+6. **Detect the routing path.** Two signals are inspected, in order:
+
+   **6a — `task_type` frontmatter (highest priority)**
+
+   Read the `task_type` field from the TASK frontmatter. If set to
+   `contract-stub`, take **Path C** regardless of zone:
+
+   | `task_type` value | Routing path | Notes |
+   |-------------------|--------------|-------|
+   | `contract-stub`   | **Path C — Contract+Stub** | spawns `implement-capability` in **Mode B** (JSON Schemas + minimal RabbitMQ-publishing stub). See agent doc for the Mode A vs Mode B branching. |
+   | (absent) or `full-microservice` | Fall through to 6b | standard zone-aware routing |
+
+   **6b — Zone (when `task_type` does not force Path C)**
+
+   Detect the zone from the YAML (`zoning` field in `bcm/capabilities-*.yaml`
+   or `decision_scope.zoning` in the FUNC ADR) and map it:
 
    | YAML `zoning` value          | Zone family       | Implementation path |
    |------------------------------|-------------------|---------------------|
-   | `BUSINESS_SERVICE_PRODUCTION`| Core domain       | `implement-capability` |
-   | `SUPPORT`                    | Transverse IT     | `implement-capability` |
-   | `REFERENTIAL`                | Master data       | `implement-capability` |
-   | `EXCHANGE_B2B`               | Ecosystem B2B     | `implement-capability` |
-   | `DATA_ANALYTIQUE`            | Data / BI / AI    | `implement-capability` |
-   | `STEERING`                   | Pilotage          | `implement-capability` |
-   | `CHANNEL`                    | Omnichannel       | `create-bff` + `code-web-frontend` (parallel) |
+   | `BUSINESS_SERVICE_PRODUCTION`| Core domain       | **Path A** — `implement-capability` (Mode A — full microservice) |
+   | `SUPPORT`                    | Transverse IT     | Path A — `implement-capability` (Mode A) |
+   | `REFERENTIAL`                | Master data       | Path A — `implement-capability` (Mode A) |
+   | `EXCHANGE_B2B`               | Ecosystem B2B     | Path A — `implement-capability` (Mode A) |
+   | `DATA_ANALYTIQUE`            | Data / BI / AI    | Path A — `implement-capability` (Mode A) |
+   | `STEERING`                   | Pilotage          | Path A — `implement-capability` (Mode A) |
+   | `CHANNEL`                    | Omnichannel       | **Path B** — `create-bff` + `code-web-frontend` (parallel) |
+
+   **Summary** — three routing paths:
+   - **Path C** (Contract+Stub) — triggered by `task_type: contract-stub`, any zone
+   - **Path A** (Full microservice) — non-CHANNEL zone, `task_type` unset / `full-microservice`
+   - **Path B** (BFF + Frontend) — CHANNEL zone, `task_type` unset / `full-microservice`
 
 ---
 
@@ -146,7 +166,7 @@ Definition of Done:
 - [ ] [condition 2]
 
 Implementation path: create-bff + code-web-frontend (launched in parallel)
-After implementation: test-business-capability will validate all DoD criteria.
+After implementation: test-app will validate all DoD criteria.
 
 Shall I proceed?
 ```
@@ -157,7 +177,55 @@ Wait for the user's confirmation before proceeding.
 
 ## Step 2 — Invoke the Implementation Component(s)
 
+### Path C — Contract+Stub (`task_type: contract-stub`, any zone)
+
+Spawn the `implement-capability` agent in **Mode B** via the `Agent` tool.
+The agent itself reads the `task_type` from the TASK file and switches to
+Mode B accordingly — your job here is just to feed it the right context.
+
+The context to pass includes:
+
+- The capability ID, name, zone, and level
+- An explicit mention that `task_type: contract-stub` is set (so the agent
+  knows which mode to take, even before reading the file)
+- The governing FUNC ADR(s)
+- The events to contract (the EVT/RVT pairs named in the task)
+- The carried business objects / resources
+- `ADR-TECH-STRAT-001` content (or pointer + summary) — the agent needs the
+  bus topology rules to scaffold the stub correctly
+- The DoD with its versioning encoding, cadence range, and validation site
+  conventions
+
+Use:
+```
+Agent({
+  subagent_type: "implement-capability",
+  description: "Contract+stub for [capability name]",
+  prompt: <full context block including the task_type signal,
+           BCM YAML excerpts for the events to contract,
+           ADR-TECH-STRAT-001 rules, DoD>
+})
+```
+
+Say:
+> "Spawning implement-capability agent in Mode B (contract+stub) for [capability name] with task TASK-[NNN]..."
+
+The agent produces:
+- JSON Schemas under `plan/{capability-id}/contracts/`
+- A minimal .NET worker stub under `sources/{capability-name}/stub/`
+- No full microservice scaffold (Domain / Application / Infrastructure / Presentation / Contracts projects), no MongoDB, no REST API
+
+The agent may push back if the BCM does not declare any business or
+resource event for the target capability, if `ADR-TECH-STRAT-001` is
+missing, or if the FUNC ADR contradicts the task. Surface that to the
+user as the gap to resolve.
+
+---
+
 ### Path A — Non-CHANNEL zones (BUSINESS_SERVICE_PRODUCTION, SUPPORT, REFERENTIAL, EXCHANGE_B2B, DATA_ANALYTIQUE, STEERING)
+
+> Use this path **only** when `task_type` is absent or `full-microservice`.
+> If `task_type: contract-stub`, use **Path C** above instead, regardless of zone.
 
 Spawn the `implement-capability` agent via the `Agent` tool with the full task context
 assembled as input. The context to pass includes:
@@ -192,45 +260,84 @@ as the gap to resolve.
 
 ### Path B — CHANNEL zone
 
-Invoke **both** skills in parallel (two independent agents):
+> Use this path **only** when `task_type` is absent or `full-microservice`
+> and the zone is `CHANNEL`. If `task_type: contract-stub`, use **Path C**
+> above instead.
 
-1. **`create-bff`** — scaffolds the .NET 10 BFF that aggregates upstream events from RabbitMQ
-   and exposes REST endpoints per L3 sub-capability. Pass:
-   - The L2 capability ID (e.g., `CAP.CAN.001`)
-   - The FUNC ADR content (L3 list, events consumed, events produced, dignity rules)
-   - Available tactical ADRs from `tech-adr/`
+Spawn **both** the `create-bff` and `code-web-frontend` agents **in parallel**
+(send both `Agent` tool calls in a single message — they are independent and
+run concurrently in the same isolated worktree):
 
-2. **`code-web-frontend`** — generates the vanilla HTML/CSS/JS frontend from the task plan,
-   FUNC ADRs, and the BFF API contract (or inferred contract if the BFF is not yet compiled).
-   Pass:
-   - The task identifier and the task file content
-   - The FUNC ADR content and product vision
-   - Instruction to infer the BFF API contract from endpoint paths derived from Step 1 of
-     create-bff (or to read `src/{zone-abbrev}/{capability-id}-bff/` if already written)
+1. **`create-bff` agent** — senior backend engineer that scaffolds the .NET 10 BFF
+   aggregating upstream events from RabbitMQ and exposing REST endpoints per L3
+   sub-capability. The agent reasons from the FUNC ADR + tactical ADRs and makes
+   explicit decisions on L3 endpoints, event topology, ports, and ETag strategy.
+
+   Use:
+   ```
+   Agent({
+     subagent_type: "create-bff",
+     description: "Scaffold BFF for [capability name]",
+     prompt: <full context block: L2 capability ID, FUNC ADR content (L3 list,
+              events consumed with emitting L2, events produced, dignity rules),
+              tactical ADRs from tech-adr/, Definition of Done, task identifier>
+   })
+   ```
+
+2. **`code-web-frontend` agent** — senior frontend engineer that generates the
+   vanilla HTML/CSS/JS web view from the task plan, FUNC ADRs, product vision,
+   and the BFF API contract (or inferred contract if the BFF is not yet compiled).
+   The agent decides on views, sections, stub data, dignity-rule DOM order, and
+   testability hooks.
+
+   Use:
+   ```
+   Agent({
+     subagent_type: "code-web-frontend",
+     description: "Scaffold frontend for [capability name]",
+     prompt: <full context block: task identifier and task file content,
+              capability ID, FUNC ADR content, product vision excerpts,
+              instruction to read src/{zone-abbrev}/{capability-id}-bff/ for the
+              API contract — or to infer it from endpoint paths derived by the
+              create-bff agent if the BFF is not yet written, Definition of Done>
+   })
+   ```
 
 Say:
-> "Invoking create-bff and code-web-frontend in parallel for [capability name] — CHANNEL zone..."
+> "Spawning create-bff and code-web-frontend agents in parallel for [capability name] — CHANNEL zone..."
 
-Wait for **both** agents to complete before proceeding to Step 3.
+Wait for **both** agents to complete before proceeding to Step 3. Either agent
+may push back if its context is incoherent (capability not in CHANNEL zone,
+missing FUNC ADR, output dir already populated, unsupported stack); surface
+that to the user as the gap to resolve.
 
 ---
 
-## Step 3 — Validate with test-business-capability
+## Step 3 — Validate with the matching test skill (zone-aware)
 
-After all implementation agents complete (regardless of zone), invoke the
-`test-business-capability` skill to validate that the delivered artifacts satisfy the
-Definition of Done, FUNC ADR rules, and the product vision.
+After all implementation agents complete, invoke the test skill that matches
+the capability zone:
+
+| Zone | Test skill | Test agent | Targets |
+|------|-----------|-----------|---------|
+| Non-CHANNEL (BUSINESS_SERVICE_PRODUCTION, SUPPORT, REFERENTIAL, EXCHANGE_B2B, DATA_ANALYTIQUE, STEERING) | `/test-business-capability` | `test-business-capability` | .NET microservice under `sources/{cap-name}/backend/` |
+| CHANNEL | `/test-app` | `test-app` | Frontend under `sources/{cap-id}/frontend/` and BFF under `src/{zone-abbrev}/{cap-id}-bff/` |
+
+The test skill spawns its agent (senior test engineer) to validate that the
+delivered artifacts satisfy the Definition of Done, FUNC ADR rules, and the
+product/strategic vision.
 
 Pass to the test skill:
 - The task identifier (`TASK-NNN`)
 - The capability ID and zone
-- A flag indicating which artifacts were produced:
-  - Non-CHANNEL: `backend-only` (no frontend unless the task explicitly includes a web view)
-  - CHANNEL: `bff + frontend`
-- Any port or path information printed by the implementation skills
+- Any port or path information printed by the implementation skills (e.g.,
+  `LOCAL_PORT` for backend, `BFF_PORT` for CHANNEL)
 
-Say:
+Say (non-CHANNEL):
 > "Running test-business-capability for TASK-[NNN] (loop [loop_count+1]/[max_loops])..."
+
+Say (CHANNEL):
+> "Running test-app for TASK-[NNN] (loop [loop_count+1]/[max_loops])..."
 
 ### If all tests pass
 
@@ -269,7 +376,7 @@ For each remediation iteration within budget:
    ── END REMEDIATION CONTEXT ──
    ```
 
-3. **After the fix is applied**, re-invoke `test-business-capability` for the same task.
+3. **After the fix is applied**, re-invoke the matching test skill (`/test-business-capability` for non-CHANNEL or `/test-app` for CHANNEL) for the same task — it will spawn a fresh test agent run.
 
 4. **Repeat** from the budget check until all criteria pass or the budget is exhausted.
 
@@ -382,7 +489,7 @@ After all tests pass (or after the remediation loop concludes):
 
    ## Test Results
 
-   All Definition of Done criteria validated by `test-business-capability`.
+   All Definition of Done criteria validated by `test-business-capability` (non-CHANNEL) or `test-app` (CHANNEL).
    Report: `tests/{capability-id}/TASK-NNN-{slug}/report.html`
 
    ## Local Test Environment
@@ -470,14 +577,14 @@ After all tests pass (or after the remediation loop concludes):
 
 ## Important Boundaries
 
-- **This skill does not write application code directly** — it delegates to the implement-capability agent,
-  create-bff, and code-web-frontend.
+- **This skill does not write application code directly** — it delegates to the
+  `implement-capability`, `create-bff`, and `code-web-frontend` agents.
 - **This skill does not re-open design decisions** — the task file is the source of truth.
   If something in the task is wrong, the fix is to update the task file (via the task skill)
   before running code.
 - **One task at a time** — do not batch multiple tasks in one invocation. Each TASK-NNN
   is an independent unit of work.
-- **Zone detection is mandatory** — never spawn the implement-capability agent for a CHANNEL task,
-  and never invoke create-bff or code-web-frontend for a non-CHANNEL task.
-- **Tests are not optional** — test-business-capability always runs after implementation.
+- **Zone detection is mandatory** — never spawn the `implement-capability` agent for a CHANNEL task,
+  and never spawn the `create-bff` or `code-web-frontend` agents for a non-CHANNEL task.
+- **Tests are not optional** — the matching test agent (test-business-capability for non-CHANNEL, test-app for CHANNEL) always runs after implementation.
   The only exception is when Playwright cannot be installed (fallback to manual checklist).
