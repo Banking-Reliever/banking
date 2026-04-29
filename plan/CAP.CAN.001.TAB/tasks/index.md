@@ -2,10 +2,16 @@
 
 ## Epic 1 — Event Feed Infrastructure
 
+> **Restructuring (2026-04-27):** Per `ADR-BCM-URBA-0009` (producer ownership),
+> the contracts and the development stubs of the consumed events live in the
+> producer plans, not here. The original `TASK-001` of this capability has
+> been removed; it is replaced by three producer-side tasks
+> (`CAP.BSP.001.SCO/TASK-001`, `CAP.BSP.001.PAL/TASK-001`,
+> `CAP.BSP.004.ENV/TASK-001`).
+
 | ID | Title | Priority | Status | Depends on |
 |----|-------|----------|--------|------------|
-| TASK-001 | Freeze the consumed events contract | high | todo | — |
-| TASK-002 | Feed stub and event consumption layer | high | todo | TASK-001 |
+| TASK-002 | Subscription point and consumption layer | high | todo | CAP.BSP.001.SCO/TASK-001, CAP.BSP.001.PAL/TASK-001, CAP.BSP.004.ENV/TASK-001 |
 
 ## Epic 2 — Web Dashboard — Current Situation
 
@@ -29,24 +35,25 @@
 
 | ID | Title | Priority | Status | Depends on |
 |----|-------|----------|--------|------------|
-| TASK-006 | Real CORE connection and stub decommissioning | low | todo | TASK-002, TASK-003, TASK-004, TASK-005 |
+| TASK-006 | Consumer-side validation against the real CORE event stream | low | todo | TASK-002, TASK-003, TASK-004, TASK-005 |
 
 ---
 
 ## Dependency Graph
 
 ```
-TASK-001
-  └─► TASK-002
-        └─► TASK-003
-              ├─► TASK-004 (parallel)
-              └─► TASK-005 (parallel)
-                    └─► TASK-006 (triggered by CORE operational)
+CAP.BSP.001.SCO/TASK-001 ─┐
+CAP.BSP.001.PAL/TASK-001 ─┼─► TASK-002
+CAP.BSP.004.ENV/TASK-001 ─┘     └─► TASK-003
+                                       ├─► TASK-004 (parallel)
+                                       └─► TASK-005 (parallel)
+                                             └─► TASK-006 (consumer-side validation
+                                                  triggered by producer cutovers)
 ```
 
-**Critical path**: TASK-001 → TASK-002 → TASK-003 → TASK-004  
-**Parallelizable**: TASK-004 and TASK-005 run in parallel once TASK-003 is complete  
-**TASK-006**: outside the internal cadence — triggered by the availability of CORE capabilities (BSP.001, BSP.004)
+**Critical path**: 3 producer-side tasks (in parallel) → TASK-002 → TASK-003 → TASK-004
+**Parallelizable**: the 3 producer-side tasks can run concurrently; TASK-004 and TASK-005 run in parallel once TASK-003 is complete
+**TASK-006**: outside the internal cadence — exercised when the producer plans cut their stubs over to real implementations
 
 ---
 
@@ -59,4 +66,7 @@ TASK-001
 
 ## Recommended Starting Point
 
-Start with **TASK-001** — the event contract definition requires coordination with the BSP.001 and BSP.004 teams and is a precondition for everything else.
+The three producer-side tasks (`CAP.BSP.001.SCO/TASK-001`, `CAP.BSP.001.PAL/TASK-001`,
+`CAP.BSP.004.ENV/TASK-001`) are now the heads of the chain. They can be developed in
+parallel by the respective producer plans. Once they are `done`, this capability's
+TASK-002 becomes ready, then the rest of this plan unblocks normally.
