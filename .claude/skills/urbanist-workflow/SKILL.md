@@ -6,8 +6,11 @@ description: >
   → tactical tech brainstorming (per L2) → BCM writer → plan → task → sort-task /
   launch-task → code → test. The code stage is zone-aware: non-CHANNEL capabilities go
   to the implement-capability agent (.NET microservice), CHANNEL capabilities go to create-bff +
-  code-web-frontend in parallel. test-business-capability validates the result against
-  the Definition of Done, with an automatic remediation loop bounded by a loop budget.
+  code-web-frontend in parallel. The matching test agent then validates the result
+  against the Definition of Done — test-business-capability (entry point:
+  /test-business-capability) for non-CHANNEL backend microservices, test-app
+  (entry point: /test-app) for CHANNEL frontend + BFF — with an automatic
+  remediation loop bounded by a loop budget.
   The /sort-task skill keeps `/plan/BOARD.md` fresh (read-only); /launch-task is the
   task scheduler for stages 9-11 — it tracks readiness, prioritizes by critical path,
   and spawns autonomous code agents in isolated worktrees.
@@ -88,7 +91,7 @@ before it is executed, and traceable from the service offer down to the deployed
         ↓ detects:  capability `zoning` → routes to the correct path
         ↓ Path A — non-CHANNEL: spawns the implement-capability agent
         ↓ Path B — CHANNEL:     invokes create-bff + code-web-frontend in parallel
-        ↓ then:    invokes test-business-capability + remediation loop
+        ↓ then:    invokes test-business-capability (non-CHANNEL) or test-app (CHANNEL) + remediation loop
         ↓ ends:    PR opened, status: in_review, loop_count tracked, stall on budget exhaust
 
 [10a] implement-capability agent   (.NET 10 microservice, Clean Architecture + DDD)
@@ -97,25 +100,31 @@ before it is executed, and traceable from the service offer down to the deployed
          creates Domain / Application / Infrastructure / Presentation / Contracts projects
          writes /health endpoint for readiness probing
 
-[10b] create-bff                   (.NET 10 ASP.NET Core BFF — CHANNEL zone only)
+[10b] create-bff agent             (.NET 10 ASP.NET Core BFF — CHANNEL zone only)
          output: src/{zone-abbrev}/{capability-id}-bff/
          allocates BFF_PORT + RabbitMQ ports, writes .env.local with branch slug
          per L3: dedicated endpoints, ETag/304, Cache-Control: no-store
          per consumed event: RabbitMQ consumer + state cache update
          OTel mandatory dimensions: capability_id, zone, deployable, environment={branch}
 
-[10c] code-web-frontend            (vanilla HTML5/CSS3/JS — CHANNEL zone only)
+[10c] code-web-frontend agent      (vanilla HTML5/CSS3/JS — CHANNEL zone only)
          output: sources/{capability-id}/frontend/  (index.html, styles.css, api.js, app.js)
          follows frontend-baseline pattern; STUB_DATA in api.js is the test contract
          branch badge in header, dignity rule in DOM order, French vocabulary
          test injection points: ?beneficiaireId= and ?consentement=refuse
 
-[11] Test Business Capability      (test-business-capability skill)
-        ↓ reads:    TASK file (DoD), plan, FUNC ADRs, product/strategic vision
-        ↓ runs in:  ephemeral /tmp/ environment with isolated HTTP/Playwright/.NET stack
-        ↓ generates: tests/{cap-id}/TASK-NNN-{slug}/{conftest.py, test_dod.py,
-                     test_business_rules.py, test_strategic.py, test_bff.py?}
-        ↓ modes:   full-mock | frontend+bff | backend-only | full-stack
+[11] Test (zone-aware)             (test-business-capability OR test-app agent)
+        Path A — non-CHANNEL (entry: /test-business-capability)
+          ↓ runs in:  ephemeral environment (.NET service + MongoDB + RabbitMQ via docker-compose)
+          ↓ generates: tests/{cap-id}/TASK-NNN-{slug}/{conftest.py, test_dod.py,
+                       test_business_rules.py, test_strategic.py, test_backend.py}
+          ↓ asserts: REST endpoints, persistence, RabbitMQ event emission, OTel tags
+        Path B — CHANNEL (entry: /test-app)
+          ↓ runs in:  ephemeral environment (static HTTP server + BFF + RabbitMQ)
+          ↓ generates: tests/{cap-id}/TASK-NNN-{slug}/{conftest.py, test_dod.py,
+                       test_business_rules.py, test_strategic.py, test_bff.py?}
+          ↓ modes:   full-mock | frontend+bff | bff-only
+          ↓ asserts: DOM order (dignity rule), Playwright DoD checks, BFF /health + ETag/304
         ↓ reports: report.html + run.log; failures feed code's remediation loop
 ```
 
@@ -326,17 +335,18 @@ When `/launch-task` (or the user via `/code TASK-NNN`) launches a task, the code
      - Generates Domain / Application / Infrastructure / Presentation / Contracts projects
        wired into a `.sln`, with `nuget.config`, `docker-compose.yml`, MongoDB repository,
        command/read controllers, factory, DTO, and a `GET /health` endpoint required by
-       test-business-capability for readiness.
+       the test-business-capability agent for readiness.
      - All bus channels and queues are scoped by `{branch}-{ns-kebab}-{cap-kebab}-channel`
        to prevent cross-branch contamination.
 
-   - **Path B (CHANNEL)** — `create-bff` + `code-web-frontend` run in **parallel** as two
-     independent agents:
+   - **Path B (CHANNEL)** — the `create-bff` agent (senior backend engineer, BFF
+     specialist) and the `code-web-frontend` agent (senior frontend engineer,
+     vanilla web specialist) run in **parallel**:
      - `create-bff` produces `src/{zone-abbrev}/{capability-id}-bff/`: ASP.NET Core Minimal
        API, one endpoint file per L3, one consumer per consumed event, an in-memory state
        cache with ETag/`If-None-Match`/`Cache-Control: no-store`, OTel instrumentation
        carrying `capability_id`, `zone`, `deployable`, `environment={branch}`. Allocates
-       `BFF_PORT` and writes `.env.local` (gitignored) so test-business-capability can
+       `BFF_PORT` and writes `.env.local` (gitignored) so the test-app agent can
        discover the port.
      - `code-web-frontend` produces `sources/{capability-id}/frontend/`: vanilla HTML5 +
        CSS3 + JS following the `frontend-baseline` pattern. Branch badge in `<header>`,
@@ -345,9 +355,12 @@ When `/launch-task` (or the user via `/code TASK-NNN`) launches a task, the code
        (`#section-progression`, `#consent-gate`, `#table-historique`, `[data-filtre]`,
        etc.). URL injection points: `?beneficiaireId=` and `?consentement=refuse`.
 
-7. **Invokes `test-business-capability`** (Stage 11 — see below). All artifacts are tested
-   regardless of zone — backend-only for Path A, BFF + frontend for Path B (and the
-   stack is auto-detected: full-mock / frontend+bff / backend-only / full-stack).
+7. **Invokes the matching test skill** (Stage 11 — see below):
+   - **Path A (non-CHANNEL)** — `/test-business-capability`, spawning the
+     `test-business-capability` agent against the .NET microservice
+     (`backend-only` mode).
+   - **Path B (CHANNEL)** — `/test-app`, spawning the `test-app` agent against the
+     frontend + BFF (mode auto-detected: `full-mock`, `frontend+bff`, or `bff-only`).
 
 8. **Remediation loop** — if any test fails, the code skill increments `loop_count` and
    re-invokes the failing implementation skill with a `── REMEDIATION CONTEXT ──` block
@@ -373,15 +386,34 @@ When `/launch-task` (or the user via `/code TASK-NNN`) launches a task, the code
       `RABBIT_MGMT_PORT`, `BFF_PORT`), and the manual test plan.
     - Report next available tasks (newly unblocked).
 
-### Stage 11: Test Business Capability (invoked by code; can be invoked manually)
+### Stage 11: Test (zone-aware, invoked by code; can be invoked manually)
 
-The test skill runs in a **temporary, isolated `/tmp/test-{cap-id}-XXXXXX` directory**:
+Two distinct skills, picked by the `/code` skill from the capability zone:
+
+**Path A — non-CHANNEL (`/test-business-capability`, agent: `test-business-capability`)**
+
+Runs in a **temporary, isolated `/tmp/test-{cap-id}-XXXXXX` directory**:
+1. Brings up MongoDB + RabbitMQ via the agent-generated `docker-compose.yml`,
+   then starts the .NET microservice on its `LOCAL_PORT` and probes `/health`.
+2. Generates `tests/{capability-id}/TASK-NNN-{slug}/`:
+   - `conftest.py` — `requests.Session`, `pika.BlockingConnection` to RabbitMQ
+     on `RABBIT_PORT`, `pymongo.MongoClient` on `MONGO_PORT`.
+   - `test_dod.py` — one test per `[ ]` item in the task's "Definition of Done"
+     (REST endpoint, persistence assertion, event emission).
+   - `test_business_rules.py` — aggregate invariants and plan scoping rules.
+   - `test_strategic.py` — vocabulary heuristics on event payloads / errors.
+   - `test_backend.py` — `/health`, OTel `environment` tag, branch-scoped exchange
+     existence in RabbitMQ.
+3. Tears down the .NET process and `docker compose down -v` on exit.
+
+**Path B — CHANNEL (`/test-app`, agent: `test-app`)**
+
+Runs in a **temporary, isolated `/tmp/test-app-{cap-id}-XXXXXX` directory**:
 1. Copies frontend artifacts (originals are never touched).
 2. Picks a free HTTP port and launches `python -m http.server` for the static frontend.
 3. If `src/{zone-abbrev}/{capability-id}-bff/.env.local` exists, starts the BFF on its
    recorded `BFF_PORT` and waits up to 15s for `/health` to return 200.
-4. If a backend microservice is built, optionally launches it.
-5. Generates `tests/{capability-id}/TASK-NNN-{slug}/`:
+4. Generates `tests/{capability-id}/TASK-NNN-{slug}/`:
    - `conftest.py` — Playwright fixtures, mocked routes derived from `STUB_DATA`,
      `?beneficiaireId=` and `?consentement=refuse` URL injection.
    - `test_dod.py` — one test per `[ ]` item in the task's "Definition of Done".
@@ -391,13 +423,15 @@ The test skill runs in a **temporary, isolated `/tmp/test-{cap-id}-XXXXXX` direc
      vocabulary).
    - `test_bff.py` (when a BFF is running) — `/health`, snapshot endpoints, ETag/304
      behavior, `environment` tag matches `{branch}`.
-6. Runs `pytest -v --tb=short --html=…/report.html`.
-7. Translates results into business language (✅/❌ per DoD criterion + per ADR rule),
-   writes `report.html` and `run.log`, then **kills all spawned processes and removes
+
+Both paths then:
+5. Run `pytest -v --tb=short --html=…/report.html`.
+6. Translate results into business language (✅/❌ per DoD criterion + per ADR rule),
+   write `report.html` and `run.log`, then **kill all spawned processes and remove
    the temporary directory**. The originals are never modified.
-8. If tests fail and the code skill called test-business-capability, the failure list
-   feeds the code skill's remediation loop. If tests fail and the user invoked the
-   skill directly, the report is the deliverable.
+7. If tests fail and the code skill called the test agent, the
+   failure list feeds the code skill's remediation loop. If tests fail and the user
+   invoked the skill directly, the report is the deliverable.
 
 If Playwright cannot be installed, the skill falls back to a `manual-checklist.md`
 under the same `tests/{capability-id}/TASK-NNN-{slug}/` directory.
@@ -460,15 +494,16 @@ Any stage that cannot establish this chain must stop and surface the gap to the 
 
 - **The `/sort-task` skill runs on every TASK file change** (via PostToolUse hook). It
   refreshes `/plan/BOARD.md` automatically — do not regenerate it from this skill.
-- **Branch / environment isolation is end-to-end.** Every implementation skill
-  (implement-capability, create-bff, code-web-frontend) reads the current git branch slug
-  and embeds it in artefact names: bus channels, RabbitMQ exchanges/queues, OTel
-  `environment` tag, frontend branch badge. test-business-capability reads `.env.local`
-  to find the BFF port for the active branch. This guarantees that concurrent
-  worktrees launched by `/launch-task auto` never collide on infrastructure.
-- **Port allocation is per-component, not per-pipeline.** The implement-capability agent allocates
-  `LOCAL_PORT` 10000–59999 + 100/200/201 offsets. create-bff allocates `BFF_PORT` +
-  100/101 offsets. The PR body assembled by the code skill must include all relevant
+- **Branch / environment isolation is end-to-end.** Every implementation component
+  (implement-capability agent, create-bff agent, code-web-frontend agent) reads the
+  current git branch slug and embeds it in artefact names: bus channels, RabbitMQ
+  exchanges/queues, OTel `environment` tag, frontend branch badge. The
+  test-app agent reads `.env.local` to find the BFF port for the active
+  branch. This guarantees that concurrent worktrees launched by `/launch-task auto` never
+  collide on infrastructure.
+- **Port allocation is per-component, not per-pipeline.** The implement-capability agent
+  allocates `LOCAL_PORT` 10000–59999 + 100/200/201 offsets. The create-bff agent allocates
+  `BFF_PORT` + 100/101 offsets. The PR body assembled by the code skill must include all relevant
   ports in the local-test instructions.
 - **Loop counters live on the TASK file**, not on the board. The code skill is the
   sole writer of `loop_count`, `max_loops`, `stalled_reason`, and `pr_url`. `/sort-task`

@@ -198,9 +198,14 @@ capability [CAPABILITY_NAME] ([CAPABILITY_ID]) using the `code` skill.
    `[WORKTREE_PATH]` as the current directory.
 
 2. **Invoke the `code` skill** with the complete context extracted from the task file.
-   The `code` skill is zone-aware and will automatically route to the right implementation:
-   - Non-CHANNEL zones → spawn the `implement-capability` agent (.NET microservice)
-   - CHANNEL zone → `create-bff` + `code-web-frontend` in parallel
+   The `code` skill routes on `task_type` first, then on zone:
+   - `task_type: contract-stub` (any zone) → spawn `implement-capability` in
+     **Mode B** (JSON Schemas + minimal RabbitMQ-publishing stub, no full
+     microservice scaffold) — Path C
+   - `task_type` absent / `full-microservice`, non-CHANNEL zone → spawn
+     `implement-capability` in **Mode A** (.NET microservice) — Path A
+   - `task_type` absent / `full-microservice`, CHANNEL zone → spawn `create-bff`
+     + `code-web-frontend` in parallel — Path B
 
    Pass to the code skill:
    - task_id, capability_id, capability_name, zone, level
@@ -211,8 +216,10 @@ capability [CAPABILITY_NAME] ([CAPABILITY_ID]) using the `code` skill.
    - Definition of Done
    - Instruction: skip the "Shall I proceed?" confirmation step and execute autonomously.
 
-   The `code` skill will also run `test-business-capability` after implementation and
-   handle any remediation loop automatically — do not duplicate this step.
+   The `code` skill will also invoke the matching test skill after implementation
+   (`/test-business-capability` for non-CHANNEL → test-business-capability agent;
+   `/test-app` for CHANNEL → test-app agent) and handle any remediation loop
+   automatically — do not duplicate this step.
 
 3. **After the code skill completes** (implementation + tests passing):
    a. Validate coherence with BCM if scripts exist:

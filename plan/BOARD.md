@@ -12,13 +12,14 @@ _No tasks in progress_
 
 | Task | Capability | Title | PR |
 |------|-----------|-------|----|
-| TASK-001 `[contract-stub]` | CAP.BSP.001.PAL | Contract and development stub for `EVT.BSP.001.PALIER_HAUSSE` | [#1](https://github.com/Banking-Reliever/banking/pull/1) |
+| TASK-001 `contract-stub` | CAP.BSP.001.SCO | Contract and development stub for `EVT.BSP.001.SCORE_RECALCULE` | [#2](https://github.com/Banking-Reliever/banking/pull/2) |
+| TASK-001 `contract-stub` | CAP.BSP.001.PAL | Contract and development stub for `EVT.BSP.001.PALIER_HAUSSE` | [#1](https://github.com/Banking-Reliever/banking/pull/1) |
 
 ---
 
 ## 🟢 Ready to Start (by priority)
 
-_No ready tasks — all `todo` tasks have unresolved open questions or unmet dependencies (see 🟠 and 🔴 below)_
+_No ready tasks_
 
 ---
 
@@ -29,11 +30,11 @@ _No ready tasks — all `todo` tasks have unresolved open questions or unmet dep
 
 | Task | Capability | Title | Open Questions |
 |------|-----------|-------|----------------|
-| TASK-001 | CAP.CAN.001.TAB | Freeze the consumed events contract for CAP.CAN.001.TAB | 3 pending question(s) |
-| TASK-002 | CAP.CAN.001.TAB | Feed stub and event consumption layer | 2 pending question(s) |
-| TASK-004 | CAP.CAN.001.TAB | BSP.004.AUT stub and transaction history web view | 2 pending question(s) |
-| TASK-005 | CAP.CAN.001.TAB | Mobile view — nomadic dashboard consultation | 2 pending question(s) |
-| TASK-006 | CAP.CAN.001.TAB | Connection to real CORE capabilities and stub decommissioning | 2 pending question(s) |
+| TASK-001 `contract-stub` | CAP.BSP.004.ENV | Contract and development stub for `EVT.BSP.004.ENVELOPPE_CONSOMMEE` | 1 pending — category vocabulary (referential vs illustrative) |
+| TASK-002 | CAP.CAN.001.TAB | Subscription point and consumption layer | 1 pending — identity resolution toward `CAP.REF.001.BEN` |
+| TASK-004 | CAP.CAN.001.TAB | BSP.004.AUT stub and transaction history web view | 2 pending |
+| TASK-005 | CAP.CAN.001.TAB | Mobile view — nomadic dashboard consultation | 2 pending |
+| TASK-006 | CAP.CAN.001.TAB | Consumer-side validation against the real CORE event stream | 2 pending |
 
 ---
 
@@ -49,7 +50,7 @@ _No stalled tasks_
 |------|-----------|-------|------------|
 | TASK-003 | CAP.CAN.001.TAB | Consent gate and current situation web view | TASK-002 |
 
-> _All other dependent tasks live in 🟠 Awaiting Information._
+> Note: TASK-002, TASK-004, TASK-005, TASK-006 of CAP.CAN.001.TAB are also dependency-blocked, but `needs_info` takes precedence in the derived state (see 🟠 section above).
 
 ---
 
@@ -62,18 +63,10 @@ _No completed tasks_
 ## Critical Path
 
 ```
-CAP.CAN.001.TAB:
-  TASK-001 (needs_info) → TASK-002 (needs_info) → TASK-003 (blocked) ──┬──► TASK-004 (needs_info)
-                                                                       ├──► TASK-005 (needs_info)
-                                                                       └──► TASK-006 (needs_info)
-
-CAP.BSP.001.PAL:
-  TASK-001 (in_review, PR #1)  — independent producer-side contract+stub.
-                                  Not yet referenced as a dependency by any
-                                  task in this worktree (CAN.001.TAB tasks
-                                  in this branch use bare TASK-NNN refs and
-                                  do not yet declare cross-cap dependencies
-                                  on the producer-side stubs).
+CAP.BSP.001.SCO/TASK-001 (🟡 PR #2) ┐
+CAP.BSP.001.PAL/TASK-001 (🟡 PR #1) ┼─→ CAP.CAN.001.TAB/TASK-002 → TASK-003 ┬─→ TASK-004 ─┐
+CAP.BSP.004.ENV/TASK-001 (🟠 needs_info) ┘                                  └─→ TASK-005 ─┼─→ TASK-006
+                                                                                          ┘
 ```
 
-**Next action**: clarify the open questions on `CAP.CAN.001.TAB/TASK-001` (3 pending) — that single resolution unblocks the whole CAN.001.TAB chain. Once `CAP.BSP.001.PAL/TASK-001` PR #1 merges, it transitions to ✅ Done.
+**Next to launch:** none. PR #1 (PAL) and PR #2 (SCO) await merge. Merging both **will not** unblock CAN.001.TAB tasks alone — they depend on all three producer stubs (SCO, PAL, ENV) AND most have their own open questions. Resolve `CAP.BSP.004.ENV/TASK-001`'s category-vocabulary question via `/task-refinement` to make the third producer launchable in parallel.
