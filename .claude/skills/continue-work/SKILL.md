@@ -141,7 +141,7 @@ The code skill will:
 - Detect the zone and route to the correct implementation path
 - Skip the initial implementation step if artifacts already exist and only re-run tests +
   remediation (the code skill handles this via the Stall Procedure check in Step 3)
-- Run `test-business-capability` and loop up to `new_max_loops` times
+- Run the matching test skill — `/test-business-capability` for non-CHANNEL tasks (test-business-capability agent) or `/test-app` for CHANNEL tasks (test-app agent) — and loop up to `new_max_loops` times
 
 Say:
 > "Relaunching code skill for TASK-[NNN] with [new_max_loops] loop(s) available..."
