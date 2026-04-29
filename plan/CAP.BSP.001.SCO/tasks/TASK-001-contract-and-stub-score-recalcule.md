@@ -4,7 +4,7 @@ capability_id: CAP.BSP.001.SCO
 capability_name: Behavioural Score
 epic: Epic 1 — Contract and Development Stub
 task_type: contract-stub
-status: in_review
+status: done
 priority: high
 depends_on: []
 loop_count: 0
