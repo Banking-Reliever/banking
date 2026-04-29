@@ -4,7 +4,7 @@ capability_id: CAP.BSP.001.PAL
 capability_name: Tier Management
 epic: Epic 1 — Contract and Development Stub for Upward Tier Crossing
 task_type: contract-stub
-status: in_review
+status: done
 priority: high
 depends_on: []
 loop_count: 0
