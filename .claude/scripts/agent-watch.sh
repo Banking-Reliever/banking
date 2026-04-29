@@ -26,7 +26,20 @@ fi
 
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 
-worktree=$(find /tmp/kanban-worktrees -maxdepth 1 -name "${TASK_ID}-*" -type d 2>/dev/null | head -1)
+# Accept either the bare TASK-NNN prefix or the full slug (TASK-NNN-some-slug).
+if [ -d "/tmp/kanban-worktrees/${TASK_ID}" ]; then
+    worktree="/tmp/kanban-worktrees/${TASK_ID}"
+else
+    matches=$(find /tmp/kanban-worktrees -maxdepth 1 -name "${TASK_ID}-*" -type d 2>/dev/null)
+    count=$(printf '%s\n' "$matches" | grep -c .)
+    if [ "$count" -gt 1 ]; then
+        echo "❌ Plusieurs worktrees correspondent au préfixe ${TASK_ID} :" >&2
+        printf '%s\n' "$matches" | sed 's|/tmp/kanban-worktrees/|     |' >&2
+        echo "   Précise le slug complet (ex: TASK-001-bsp-sco-score-recalcule)." >&2
+        exit 1
+    fi
+    worktree=$(printf '%s' "$matches" | head -1)
+fi
 if [ -z "$worktree" ]; then
     echo "❌ Worktree introuvable pour ${TASK_ID} sous /tmp/kanban-worktrees/" >&2
     echo "   Worktrees disponibles :" >&2
