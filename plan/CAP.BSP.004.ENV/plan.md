@@ -11,9 +11,9 @@
 
 ## Framing Decisions
 
-- **Contract-first delivery**: per `ADR-BCM-URBA-0009`, this capability owns the contract of every event it emits. The first deliverable is the JSON Schemas of `EVT.BSP.004.ENVELOPPE_CONSOMMEE` and `RVT.BSP.004.CONSOMMATION_ENREGISTREE` plus a development stub publishing them. Consumers (`CAP.CAN.001.TAB`, future `CAP.CAN.001.NOT`, scoring feedback loops) develop against these artifacts without waiting for the real envelope engine.
+- **Contract-first delivery**: per `ADR-BCM-URBA-0009`, this capability owns the contract of every event it emits. The first deliverable is the JSON Schemas of `EVT.BSP.004.ENVELOPE_CONSUMED` and `RVT.BSP.004.CONSUMPTION_RECORDED` plus a development stub publishing them. Consumers (`CAP.CHN.001.DSH`, future `CAP.CHN.001.NOT`, scoring feedback loops) develop against these artifacts without waiting for the real envelope engine.
 - **Producer-owned stub**: the development stub belongs to this plan. It is decommissioned by this capability when the real envelope engine is ready, transparently for consumers.
-- **Scope of Epic 1 = consumption only**: only `EVT.BSP.004.ENVELOPPE_CONSOMMEE` is contracted in Epic 1, because that is what `CAP.CAN.001.TAB` consumes today (per ADR-BCM-FUNC-0009). The other envelope events (`ENVELOPPE_ALLOUEE`, `ENVELOPPE_NON_CONSOMMEE`) will get their own contract+stub epics when their consumers begin development.
+- **Scope of Epic 1 = consumption only**: only `EVT.BSP.004.ENVELOPE_CONSUMED` is contracted in Epic 1, because that is what `CAP.CHN.001.DSH` consumes today (per ADR-BCM-FUNC-0009). The other envelope events (`ENVELOPE_ALLOCATED`, `ENVELOPE_UNCONSUMED`) will get their own contract+stub epics when their consumers begin development.
 - **Real implementation deferred**: the actual envelope allocation logic, transactional consumption tracking, and persistence are out of scope for the current horizon and will be added when the BSP.004 implementation cycle begins.
 
 ---
@@ -21,7 +21,7 @@
 ## Implementation Epics
 
 ### Epic 1 — Contract and Development Stub for Envelope Consumption
-**Objective**: Produce the JSON Schemas for `EVT.BSP.004.ENVELOPPE_CONSOMMEE` and `RVT.BSP.004.CONSOMMATION_ENREGISTREE`, plus a runnable development stub publishing them, so consumer capabilities can develop in isolation.
+**Objective**: Produce the JSON Schemas for `EVT.BSP.004.ENVELOPE_CONSUMED` and `RVT.BSP.004.CONSUMPTION_RECORDED`, plus a runnable development stub publishing them, so consumer capabilities can develop in isolation.
 
 **Entry condition**: The two events are declared in the BCM (`bcm/business-event-reliever.yaml`, `bcm/resource-event-reliever.yaml`) — already the case.
 
@@ -33,17 +33,17 @@
 
 **Complexity**: S
 
-**Unlocked**: development of `CAP.CAN.001.TAB` (and any future consumer of envelope-consumption events) without dependency on the real envelope engine.
+**Unlocked**: development of `CAP.CHN.001.DSH` (and any future consumer of envelope-consumption events) without dependency on the real envelope engine.
 
 **Dependencies**: none.
 
 ---
 
 ### Epic 2 — Contract and Stub for Allocation and Non-Consumption Events (deferred)
-> Out of scope for the current planning horizon. Triggered when the first consumer of `EVT.BSP.004.ENVELOPPE_ALLOUEE` or `EVT.BSP.004.ENVELOPPE_NON_CONSOMMEE` begins development.
+> Out of scope for the current planning horizon. Triggered when the first consumer of `EVT.BSP.004.ENVELOPE_ALLOCATED` or `EVT.BSP.004.ENVELOPE_UNCONSUMED` begins development.
 
 ### Epic 3 — Real Envelope Engine (deferred)
-> Out of scope for the current planning horizon. Captures the actual allocation rules, transactional consumption tracking, period closure, and orchestration of all ENVELOPPE_* events. Will be expanded when the BSP.004 implementation cycle begins.
+> Out of scope for the current planning horizon. Captures the actual allocation rules, transactional consumption tracking, period closure, and orchestration of all ENVELOPE_* events. Will be expanded when the BSP.004 implementation cycle begins.
 
 ---
 
@@ -68,4 +68,4 @@
 ## Open Questions
 
 - The L3 sub-decomposition of `CAP.BSP.004` (ENV, ALT, AUT, etc.) — is `CAP.BSP.004.ENV` an L2 or an L3 under `CAP.BSP.004`? Consolidate with the BCM L2/L3 conventions before Epic 3.
-- Should `ENVELOPPE_NON_CONSOMMEE` be contracted alongside `ENVELOPPE_CONSOMMEE` even if no consumer needs it yet? It is a counter-intuitive but functionally critical signal (relapse detection); deferring it may block scoring-feedback loops later.
+- Should `ENVELOPE_UNCONSUMED` be contracted alongside `ENVELOPE_CONSUMED` even if no consumer needs it yet? It is a counter-intuitive but functionally critical signal (relapse detection); deferring it may block scoring-feedback loops later.

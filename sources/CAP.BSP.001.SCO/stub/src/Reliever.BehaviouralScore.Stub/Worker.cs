@@ -12,7 +12,7 @@ namespace Reliever.BehaviouralScore.Stub;
 
 /// <summary>
 /// Background service publishing simulated
-/// <c>RVT.BSP.001.SCORE_COURANT_RECALCULE</c> payloads on the RabbitMQ
+/// <c>RVT.BSP.001.CURRENT_SCORE_RECOMPUTED</c> payloads on the RabbitMQ
 /// topic exchange owned by CAP.BSP.001.SCO.
 ///
 /// Bus topology — ADR-TECH-STRAT-001:
@@ -162,8 +162,8 @@ public sealed class Worker : BackgroundService
         props.DeliveryMode = 2; // persistent
         props.Headers = new System.Collections.Generic.Dictionary<string, object>
         {
-            ["x-bcm-resource-event"] = "RVT.BSP.001.SCORE_COURANT_RECALCULE",
-            ["x-bcm-business-event"] = "EVT.BSP.001.SCORE_RECALCULE",
+            ["x-bcm-resource-event"] = "RVT.BSP.001.CURRENT_SCORE_RECOMPUTED",
+            ["x-bcm-business-event"] = "EVT.BSP.001.SCORE_RECOMPUTED",
             ["x-bcm-version"] = "1.0.0",
             ["x-bcm-capability"] = "CAP.BSP.001.SCO",
         };
@@ -176,8 +176,8 @@ public sealed class Worker : BackgroundService
             body: body);
 
         _logger.LogInformation(
-            "Published RVT.BSP.001.SCORE_COURANT_RECALCULE on routingKey={RoutingKey} dossier={Dossier}",
+            "Published RVT.BSP.001.CURRENT_SCORE_RECOMPUTED on routingKey={RoutingKey} dossier={Case}",
             _stubOptions.RoutingKey,
-            payload["identifiant_dossier"]?.GetValue<string>());
+            payload["case_id"]?.GetValue<string>());
     }
 }

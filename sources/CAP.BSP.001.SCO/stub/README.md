@@ -1,6 +1,6 @@
 # CAP.BSP.001.SCO — Development Stub
 
-A minimal .NET 10 worker service that publishes simulated `RVT.BSP.001.SCORE_COURANT_RECALCULE` events on a RabbitMQ topic exchange owned by `CAP.BSP.001.SCO`. The stub honors the runtime JSON Schema at [`/plan/CAP.BSP.001.SCO/contracts/RVT.BSP.001.SCORE_COURANT_RECALCULE.schema.json`](../../../plan/CAP.BSP.001.SCO/contracts/RVT.BSP.001.SCORE_COURANT_RECALCULE.schema.json) — every outgoing payload is validated **before** publication; an invalid payload is never put on the wire.
+A minimal .NET 10 worker service that publishes simulated `RVT.BSP.001.CURRENT_SCORE_RECOMPUTED` events on a RabbitMQ topic exchange owned by `CAP.BSP.001.SCO`. The stub honors the runtime JSON Schema at [`/plan/CAP.BSP.001.SCO/contracts/RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json`](../../../plan/CAP.BSP.001.SCO/contracts/RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json) — every outgoing payload is validated **before** publication; an invalid payload is never put on the wire.
 
 > **Mode B (Contract + Stub) — not the real microservice.** This stub will be decommissioned when Epic 2 of `CAP.BSP.001.SCO`'s plan delivers the real scoring algorithm under `sources/CAP.BSP.001.SCO/backend/`.
 
@@ -10,7 +10,7 @@ A minimal .NET 10 worker service that publishes simulated `RVT.BSP.001.SCORE_COU
 |---|---|---|
 | Broker | RabbitMQ (operational rail) | Rule 1 |
 | Exchange (topic) | `bsp.001.sco-events` (owned by `CAP.BSP.001.SCO`) | Rules 1, 5 |
-| Routing key | `EVT.BSP.001.SCORE_RECALCULE.RVT.BSP.001.SCORE_COURANT_RECALCULE` | Rule 4 |
+| Routing key | `EVT.BSP.001.SCORE_RECOMPUTED.RVT.BSP.001.CURRENT_SCORE_RECOMPUTED` | Rule 4 |
 | Wire-level event | `RVT.*` only — no autonomous `EVT.*` message | Rule 2 |
 | Payload form | Domain event DDD (transition data; not a snapshot, not a field patch) | Rule 3 |
 | Schema source of truth | BCM YAML; runtime JSON Schema validates each payload | Rule 6 |
@@ -31,7 +31,7 @@ STUB__ACTIVE=true dotnet run
 | RabbitMQ AMQP | `localhost:47656` |
 | RabbitMQ Management UI | http://localhost:47657 (guest / guest) |
 
-To observe published messages, in the management UI bind a queue to exchange `bsp.001.sco-events` with routing key `EVT.BSP.001.SCORE_RECALCULE.#` and inspect messages.
+To observe published messages, in the management UI bind a queue to exchange `bsp.001.sco-events` with routing key `EVT.BSP.001.SCORE_RECOMPUTED.#` and inspect messages.
 
 ## Configuration
 
@@ -43,11 +43,11 @@ To observe published messages, in the management UI bind a queue to exchange `bs
 | `Stub:CadencePerMinute` | `6` | Default cadence. Allowed range: `[1, 10]`. |
 | `Stub:CadenceOutsideRangeOverride` | `false` | Required `true` to allow values outside `[1, 10]`. Justify in your deployment notes. |
 | `Stub:ExchangeName` | `bsp.001.sco-events` | Topic exchange owned by this capability. |
-| `Stub:RoutingKey` | `EVT.BSP.001.SCORE_RECALCULE.RVT.BSP.001.SCORE_COURANT_RECALCULE` | Routing-key convention from ADR-TECH-STRAT-001 Rule 4. |
-| `Stub:SchemaPath` | `../../../../plan/CAP.BSP.001.SCO/contracts/RVT.BSP.001.SCORE_COURANT_RECALCULE.schema.json` | Runtime schema loaded at startup. |
-| `Stub:ModelVersion` | `stub-1.0.0` | `version_modele` written into every payload. |
-| `Stub:SimulatedDossiers` | `[ "DOS-RELIEVER-2026-000001", … ]` | Pool of `identifiant_dossier` values picked at random. |
-| `Stub:TypeEvaluationMix` | `{ INITIAL: 0.2, COURANT: 0.8 }` | Probability mix for `type_evaluation`. |
+| `Stub:RoutingKey` | `EVT.BSP.001.SCORE_RECOMPUTED.RVT.BSP.001.CURRENT_SCORE_RECOMPUTED` | Routing-key convention from ADR-TECH-STRAT-001 Rule 4. |
+| `Stub:SchemaPath` | `../../../../plan/CAP.BSP.001.SCO/contracts/RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json` | Runtime schema loaded at startup. |
+| `Stub:ModelVersion` | `stub-1.0.0` | `model_version` written into every payload. |
+| `Stub:SimulatedCases` | `[ "CASE-RELIEVER-2026-000001", … ]` | Pool of `case_id` values picked at random. |
+| `Stub:EvaluationTypeMix` | `{ INITIAL: 0.2, CURRENT: 0.8 }` | Probability mix for `evaluation_type`. |
 
 ## CI test
 

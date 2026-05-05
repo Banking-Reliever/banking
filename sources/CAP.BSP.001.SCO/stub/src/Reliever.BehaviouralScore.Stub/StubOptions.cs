@@ -39,15 +39,15 @@ public sealed class StubOptions
     /// ({BusinessEventName}.{ResourceEventName}).
     /// </summary>
     public string RoutingKey { get; set; } =
-        "EVT.BSP.001.SCORE_RECALCULE.RVT.BSP.001.SCORE_COURANT_RECALCULE";
+        "EVT.BSP.001.SCORE_RECOMPUTED.RVT.BSP.001.CURRENT_SCORE_RECOMPUTED";
 
     /// <summary>
     /// Path to the runtime JSON Schema
-    /// (RVT.BSP.001.SCORE_COURANT_RECALCULE.schema.json).
+    /// (RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json).
     /// Resolved relative to AppContext.BaseDirectory.
     /// </summary>
     public string SchemaPath { get; set; } =
-        "../../../../plan/CAP.BSP.001.SCO/contracts/RVT.BSP.001.SCORE_COURANT_RECALCULE.schema.json";
+        "../../../../plan/CAP.BSP.001.SCO/contracts/RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json";
 
     /// <summary>
     /// Scoring-model version label written into every payload.
@@ -55,22 +55,22 @@ public sealed class StubOptions
     public string ModelVersion { get; set; } = "stub-1.0.0";
 
     /// <summary>
-    /// Simulated case IDs (identifiant_dossier values) chosen at random
+    /// Simulated case IDs (case_id values) chosen at random
     /// for each generated payload. At least one default must be present.
     /// </summary>
-    public List<string> SimulatedDossiers { get; set; } = new()
+    public List<string> SimulatedCases { get; set; } = new()
     {
-        "DOS-RELIEVER-2026-000001"
+        "CASE-RELIEVER-2026-000001"
     };
 
     /// <summary>
-    /// Probability mix for type_evaluation field. Keys must be in
-    /// {"INITIAL", "COURANT"}. Values are normalised at runtime.
+    /// Probability mix for evaluation_type field. Keys must be in
+    /// {"INITIAL", "CURRENT"}. Values are normalised at runtime.
     /// </summary>
-    public Dictionary<string, double> TypeEvaluationMix { get; set; } = new()
+    public Dictionary<string, double> EvaluationTypeMix { get; set; } = new()
     {
         ["INITIAL"] = 0.2,
-        ["COURANT"] = 0.8,
+        ["CURRENT"] = 0.8,
     };
 }
 

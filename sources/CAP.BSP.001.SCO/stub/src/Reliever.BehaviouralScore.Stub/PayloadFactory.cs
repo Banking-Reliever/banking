@@ -6,11 +6,11 @@ using System.Text.Json.Nodes;
 namespace Reliever.BehaviouralScore.Stub;
 
 /// <summary>
-/// Generates simulated <c>RVT.BSP.001.SCORE_COURANT_RECALCULE</c> payloads.
+/// Generates simulated <c>RVT.BSP.001.CURRENT_SCORE_RECOMPUTED</c> payloads.
 /// Payload form: domain event DDD (ADR-TECH-STRAT-001 Rule 3) — the data of
 /// the score recomputation transition (new value, delta, factors,
 /// triggering event, timestamp, model version, evaluation type), keyed
-/// by the <c>identifiant_dossier</c> correlation key.
+/// by the <c>case_id</c> correlation key.
 /// </summary>
 public sealed class PayloadFactory
 {
@@ -45,8 +45,8 @@ public sealed class PayloadFactory
     /// </summary>
     public JsonObject BuildOne()
     {
-        var dossier = PickDossier();
-        var typeEvaluation = PickTypeEvaluation();
+        var dossier = PickCase();
+        var evaluationType = PickEvaluationType();
         var newScore = Math.Round(_random.NextDouble() * 1000.0, 2);
 
         // delta_score is the transition delta — domain-event-DDD field
@@ -68,36 +68,36 @@ public sealed class PayloadFactory
 
         return new JsonObject
         {
-            ["identifiant_evaluation"] = $"EVAL-{Guid.NewGuid():N}",
-            ["identifiant_dossier"] = dossier,
-            ["valeur_score"] = newScore,
+            ["evaluation_id"] = $"EVAL-{Guid.NewGuid():N}",
+            ["case_id"] = dossier,
+            ["score_value"] = newScore,
             ["delta_score"] = delta,
-            ["facteurs_contributifs"] = factors,
-            ["type_evaluation"] = typeEvaluation,
+            ["contributing_factors"] = factors,
+            ["evaluation_type"] = evaluationType,
             ["evenement_declencheur"] = $"TXN-{Guid.NewGuid():N}",
-            ["timestamp_calcul"] = DateTime.UtcNow.ToString("o"),
-            ["version_modele"] = _options.ModelVersion,
+            ["computation_timestamp"] = DateTime.UtcNow.ToString("o"),
+            ["model_version"] = _options.ModelVersion,
         };
     }
 
-    private string PickDossier()
+    private string PickCase()
     {
-        if (_options.SimulatedDossiers is null || _options.SimulatedDossiers.Count == 0)
+        if (_options.SimulatedCases is null || _options.SimulatedCases.Count == 0)
         {
             throw new InvalidOperationException(
-                "StubOptions.SimulatedDossiers must contain at least one entry.");
+                "StubOptions.SimulatedCases must contain at least one entry.");
         }
-        return _options.SimulatedDossiers[_random.Next(_options.SimulatedDossiers.Count)];
+        return _options.SimulatedCases[_random.Next(_options.SimulatedCases.Count)];
     }
 
-    private string PickTypeEvaluation()
+    private string PickEvaluationType()
     {
-        // Fall back to COURANT if mix is malformed — the stub still produces valid payloads.
-        var mix = _options.TypeEvaluationMix ?? new Dictionary<string, double>();
+        // Fall back to CURRENT if mix is malformed — the stub still produces valid payloads.
+        var mix = _options.EvaluationTypeMix ?? new Dictionary<string, double>();
         var pInitial = mix.TryGetValue("INITIAL", out var v) ? Math.Max(0.0, v) : 0.2;
-        var pCourant = mix.TryGetValue("COURANT", out var w) ? Math.Max(0.0, w) : 0.8;
-        var total = pInitial + pCourant;
-        if (total <= 0) return "COURANT";
-        return _random.NextDouble() * total < pInitial ? "INITIAL" : "COURANT";
+        var pCurrent = mix.TryGetValue("CURRENT", out var w) ? Math.Max(0.0, w) : 0.8;
+        var total = pInitial + pCurrent;
+        if (total <= 0) return "CURRENT";
+        return _random.NextDouble() * total < pInitial ? "INITIAL" : "CURRENT";
     }
 }

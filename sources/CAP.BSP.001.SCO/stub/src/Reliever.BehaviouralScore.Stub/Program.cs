@@ -5,7 +5,7 @@ using Reliever.BehaviouralScore.Stub;
 
 // CAP.BSP.001.SCO — development stub host.
 //
-// This .NET 10 worker publishes simulated RVT.BSP.001.SCORE_COURANT_RECALCULE
+// This .NET 10 worker publishes simulated RVT.BSP.001.CURRENT_SCORE_RECOMPUTED
 // payloads on a RabbitMQ topic exchange owned by CAP.BSP.001.SCO, honoring
 // the runtime contract under plan/CAP.BSP.001.SCO/contracts/. The whole
 // stub is governed by:
