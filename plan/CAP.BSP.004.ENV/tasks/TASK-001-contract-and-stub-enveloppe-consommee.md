@@ -9,6 +9,7 @@ priority: high
 depends_on: []
 loop_count: 0
 max_loops: 10
+pr_url: https://github.com/Banking-Reliever/banking/pull/3
 ---
 
 # TASK-001 — Contract and development stub for `EVT.BSP.004.ENVELOPPE_CONSOMMEE`
