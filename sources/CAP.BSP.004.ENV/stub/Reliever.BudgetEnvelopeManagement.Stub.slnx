@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Reliever.BudgetEnvelopeManagement.Stub/Reliever.BudgetEnvelopeManagement.Stub.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Reliever.BudgetEnvelopeManagement.Stub.Tests/Reliever.BudgetEnvelopeManagement.Stub.Tests.csproj" />
+  </Folder>
+</Solution>

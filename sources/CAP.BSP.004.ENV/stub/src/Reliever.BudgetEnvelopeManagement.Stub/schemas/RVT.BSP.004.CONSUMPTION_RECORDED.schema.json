@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://reliever.example.com/contracts/CAP.BSP.004.ENV/RVT.BSP.004.CONSUMPTION_RECORDED/1.0.0/schema.json",
+  "x-bcm-version": "1.0.0",
+  "x-bcm-role": "runtime-contract",
+  "x-bcm-capability": "CAP.BSP.004.ENV",
+  "x-bcm-business-event": "EVT.BSP.004.ENVELOPE_CONSUMED",
+  "x-bcm-resource-event": "RVT.BSP.004.CONSUMPTION_RECORDED",
+  "x-bcm-carried-resource": "RES.BSP.004.OPEN_ENVELOPE",
+  "x-bcm-carried-business-object": "OBJ.BSP.004.ALLOCATION",
+  "x-bcm-emitting-capability": "CAP.BSP.004.ENV",
+  "x-bcm-routing-key": "EVT.BSP.004.ENVELOPE_CONSUMED.RVT.BSP.004.CONSUMPTION_RECORDED",
+  "x-bcm-correlation-key": "identifiant_dossier",
+  "x-bcm-payload-form": "domain-event-DDD",
+  "title": "RVT.BSP.004.CONSUMPTION_RECORDED — Envelope consumption recorded",
+  "description": "RUNTIME CONTRACT. Every payload published on the operational RabbitMQ topic exchange owned by CAP.BSP.004.ENV with routing key 'EVT.BSP.004.ENVELOPE_CONSUMED.RVT.BSP.004.CONSUMPTION_RECORDED' MUST validate against this schema (ADR-TECH-STRAT-001 Rules 1, 2, 3, 4, 5, 6). Per Rule 3, the payload is a *domain event DDD*: it carries the coherent atomic transition data of an envelope consumption — the data of the OBJ.BSP.004.ALLOCATION aggregate state-change. It is NOT a snapshot of the read model RES.BSP.004.OPEN_ENVELOPE, and NOT a technical patch of fields. The available balance ('solde_disponible') is derivable on the consumer side via the formula 'solde_disponible = montant_plafond - montant_consomme' (post-transition); it is intentionally NOT a transported field — consumers compute it locally to keep the wire surface minimal and authoritative. Beneficiary identity resolution: the payload carries 'identifiant_dossier' as the CORRELATION KEY. Consumers wishing to obtain the canonical beneficiary identifier (OBJ.REF.001.BENEFICIARY_RECORD.identifiant_interne) MUST query CAP.REF.001.BEN with this 'identifiant_dossier'. The producer (CAP.BSP.004.ENV) NEVER carries the canonical 'identifiant_interne' on the wire (privacy + decoupling per ADR-BCM-URBA-0009).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "identifiant_allocation",
+    "identifiant_dossier",
+    "categorie",
+    "montant_plafond",
+    "montant_consomme",
+    "periode_debut",
+    "periode_fin",
+    "timestamp_consommation"
+  ],
+  "properties": {
+    "identifiant_allocation": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier of the budget envelope allocation that has been consumed. Mirrors OBJ.BSP.004.ALLOCATION.identifiant_allocation. Stable across replays; suitable for idempotency keys at the consumer side."
+    },
+    "identifiant_dossier": {
+      "type": "string",
+      "minLength": 1,
+      "description": "CORRELATION KEY. Reference to the participation case (dossier) that owns this envelope. Mirrors OBJ.BSP.004.ALLOCATION.identifiant_dossier. Identity resolution: consumers resolve 'identifiant_dossier' toward OBJ.REF.001.BENEFICIARY_RECORD.identifiant_interne via a CAP.REF.001.BEN (Beneficiary Reference) lookup. The producer (CAP.BSP.004.ENV) NEVER carries the canonical 'identifiant_interne' on the bus."
+    },
+    "categorie": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Spending category covered by this envelope (e.g. 'ALIMENTATION', 'TRANSPORT', 'SANTE', 'LOGEMENT'). Mirrors OBJ.BSP.004.ALLOCATION.categorie. The canonical authoritative source of the category set per tier is CAP.REF.001.PAL (Tier Catalogue). Free-form string at the contract level — no enum constraint here, to avoid coupling consumers to the current tier vocabulary; consumers needing an authoritative list MUST query CAP.REF.001.PAL."
+    },
+    "montant_plafond": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Maximum amount authorised for the envelope over the period (post-allocation, immutable for this allocation cycle). Mirrors OBJ.BSP.004.ALLOCATION.montant_plafond. Currency is implicit (system base currency); no multi-currency support in this version."
+    },
+    "montant_consomme": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Amount actually spent against the envelope AFTER the consumption transition (post-state of the aggregate). Mirrors OBJ.BSP.004.ALLOCATION.montant_consomme. Domain rule: 0 <= montant_consomme <= montant_plafond at the contract level — the producer guarantees post-transition coherence. Note: 'solde_disponible' is intentionally NOT carried; consumers derive it locally as 'montant_plafond - montant_consomme'."
+    },
+    "periode_debut": {
+      "type": "string",
+      "format": "date",
+      "description": "Start date of the allocation period in ISO-8601 format (YYYY-MM-DD). Mirrors OBJ.BSP.004.ALLOCATION.periode_debut."
+    },
+    "periode_fin": {
+      "type": "string",
+      "format": "date",
+      "description": "End date of the allocation period in ISO-8601 format (YYYY-MM-DD). Mirrors OBJ.BSP.004.ALLOCATION.periode_fin. Domain rule: 'periode_fin' >= 'periode_debut'."
+    },
+    "timestamp_consommation": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp at which the consumption transition was recorded by CAP.BSP.004.ENV. Domain-event-DDD-only field — anchors the transition in time independently of the period boundaries."
+    }
+  }
+}

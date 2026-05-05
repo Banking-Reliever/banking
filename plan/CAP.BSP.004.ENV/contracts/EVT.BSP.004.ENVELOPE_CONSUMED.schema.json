@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://reliever.example.com/contracts/CAP.BSP.004.ENV/EVT.BSP.004.ENVELOPE_CONSUMED/1.0.0/schema.json",
+  "x-bcm-version": "1.0.0",
+  "x-bcm-role": "design-time-documentation-only",
+  "x-bcm-capability": "CAP.BSP.004.ENV",
+  "x-bcm-business-event": "EVT.BSP.004.ENVELOPE_CONSUMED",
+  "x-bcm-carried-business-object": "OBJ.BSP.004.ALLOCATION",
+  "x-bcm-emitting-capability": "CAP.BSP.004.ENV",
+  "x-bcm-correlation-key": "identifiant_dossier",
+  "x-bcm-payload-form": "design-time-documentation-only",
+  "x-bcm-runtime-counterpart": "RVT.BSP.004.CONSUMPTION_RECORDED",
+  "title": "EVT.BSP.004.ENVELOPE_CONSUMED — Budget envelope consumed (design-time documentation)",
+  "description": "DESIGN-TIME DOCUMENTATION ONLY. This schema describes the abstract business fact 'a budget envelope has been partially or fully consumed within the period limits' at the meta-model level (business event, per ADR-BCM-URBA-0007). PER ADR-TECH-STRAT-001 RULE 2, NO AUTONOMOUS BUS MESSAGE CORRESPONDS TO THIS SCHEMA. Only the paired resource event RVT.BSP.004.CONSUMPTION_RECORDED generates wire-level messages on RabbitMQ. This file exists for: (a) traceability of the BCM business-event meta-model into a machine-readable artifact, (b) governance review, (c) consumer documentation describing the abstract fact independently of its wire-level projection. DO NOT publish payloads validated against this schema on the bus. The wire-level contract is RVT.BSP.004.CONSUMPTION_RECORDED.schema.json. The business event name 'EVT.BSP.004.ENVELOPE_CONSUMED' appears exclusively as the prefix of the routing key (Rule 4): 'EVT.BSP.004.ENVELOPE_CONSUMED.RVT.BSP.004.CONSUMPTION_RECORDED'. Correlation key: 'identifiant_dossier' — resolution toward OBJ.REF.001.BENEFICIARY_RECORD.identifiant_interne is the consumer's responsibility via CAP.REF.001.BEN.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "identifiant_allocation",
+    "identifiant_dossier",
+    "categorie",
+    "montant_plafond",
+    "montant_consomme",
+    "periode_debut",
+    "periode_fin",
+    "statut"
+  ],
+  "properties": {
+    "identifiant_allocation": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier for this allocation (OBJ.BSP.004.ALLOCATION.identifiant_allocation)."
+    },
+    "identifiant_dossier": {
+      "type": "string",
+      "minLength": 1,
+      "description": "CORRELATION KEY. Reference to the relevant participation case. Resolution path to OBJ.REF.001.BENEFICIARY_RECORD.identifiant_interne via CAP.REF.001.BEN is the consumer's concern."
+    },
+    "categorie": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Spending category covered by this envelope (OBJ.BSP.004.ALLOCATION.categorie). Canonical source per tier: CAP.REF.001.PAL."
+    },
+    "montant_plafond": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Maximum amount authorised for the period (OBJ.BSP.004.ALLOCATION.montant_plafond)."
+    },
+    "montant_consomme": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Amount actually spent to date (OBJ.BSP.004.ALLOCATION.montant_consomme). Domain rule: 0 <= montant_consomme <= montant_plafond."
+    },
+    "periode_debut": {
+      "type": "string",
+      "format": "date",
+      "description": "Start of the allocation period in ISO-8601 format (OBJ.BSP.004.ALLOCATION.periode_debut)."
+    },
+    "periode_fin": {
+      "type": "string",
+      "format": "date",
+      "description": "End of the allocation period in ISO-8601 format (OBJ.BSP.004.ALLOCATION.periode_fin)."
+    },
+    "statut": {
+      "type": "string",
+      "enum": ["OUVERTE", "EPUISEE", "NON_CONSOMMEE"],
+      "description": "Status of the allocation (OBJ.BSP.004.ALLOCATION.statut). OUVERTE = open and accepting consumptions; EPUISEE = cap reached; NON_CONSOMMEE = period ended without consumption."
+    }
+  }
+}

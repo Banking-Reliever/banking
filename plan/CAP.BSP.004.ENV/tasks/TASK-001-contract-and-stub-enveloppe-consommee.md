@@ -4,9 +4,11 @@ capability_id: CAP.BSP.004.ENV
 capability_name: Budget Envelope Management
 epic: Epic 1 — Contract and Development Stub for Envelope Consumption
 task_type: contract-stub
-status: todo
+status: in_review
 priority: high
 depends_on: []
+loop_count: 0
+max_loops: 10
 ---
 
 # TASK-001 — Contract and development stub for `EVT.BSP.004.ENVELOPPE_CONSOMMEE`
@@ -71,20 +73,21 @@ This task produces the **contract** of the events listed above and a **stub** pu
 None — this capability is a producer.
 
 ## Definition of Done
-- [ ] `plan/CAP.BSP.004.ENV/contracts/RVT.BSP.004.CONSOMMATION_ENREGISTREE.schema.json` produced (Draft 2020-12) — **runtime contract**, aligned with the BCM
-- [ ] `plan/CAP.BSP.004.ENV/contracts/EVT.BSP.004.ENVELOPPE_CONSOMMEE.schema.json` produced — **design-time documentation only** (no autonomous bus message, per ADR-TECH-STRAT-001 Rule 2)
-- [ ] Each schema declares its `$id` with version segment AND a top-level `"x-bcm-version"` annotation matching `1.0.0`
-- [ ] Each schema declares `identifiant_dossier` as the correlation key and documents the resolution path to `identifiant_interne` via `CAP.REF.001.BEN`
-- [ ] The runtime schema (RVT) describes a **domain event DDD payload** — transition data of envelope consumption, not a read-model snapshot, not a field patch
-- [ ] The available balance derivation (`montant_plafond - montant_consomme`) is documented in the runtime schema description (formula in `description`); it is NOT a transported field
-- [ ] `plan/CAP.BSP.004.ENV/contracts/README.md` lists the two schemas, their roles, BCM IDs, routing key, and known consumers
-- [ ] A runnable development stub publishes `RVT.BSP.004.CONSOMMATION_ENREGISTREE` messages on a RabbitMQ topic exchange owned by `CAP.BSP.004.ENV`, with routing key `EVT.BSP.004.ENVELOPPE_CONSOMMEE.RVT.BSP.004.CONSOMMATION_ENREGISTREE` (no autonomous EVT message)
-- [ ] The stub publishes at a configurable cadence in the range **1 to 10 events / minute** by default; outside that range requires explicit override
-- [ ] The stub is activatable/deactivatable via environment configuration (inactive in production)
-- [ ] Every payload published by the stub validates against the runtime JSON Schema (automated check; CI unit test recommended)
-- [ ] The stub source code resides under `sources/CAP.BSP.004.ENV/stub/`
-- [ ] `python tools/validate_repo.py` passes without error
-- [ ] `python tools/validate_events.py` passes without error
+- [x] `plan/CAP.BSP.004.ENV/contracts/RVT.BSP.004.CONSUMPTION_RECORDED.schema.json` produced (Draft 2020-12) — **runtime contract**, aligned with the BCM (uses BCM-authoritative English IDs `RVT.BSP.004.CONSUMPTION_RECORDED` / `EVT.BSP.004.ENVELOPE_CONSUMED` per `bcm/business-event-reliever.yaml` + `bcm/resource-event-reliever.yaml`; ADR-TECH-STRAT-001 Rule 6)
+- [x] `plan/CAP.BSP.004.ENV/contracts/EVT.BSP.004.ENVELOPE_CONSUMED.schema.json` produced — **design-time documentation only** (no autonomous bus message, per ADR-TECH-STRAT-001 Rule 2)
+- [x] Each schema declares its `$id` with version segment AND a top-level `"x-bcm-version"` annotation matching `1.0.0`
+- [x] Each schema declares `identifiant_dossier` as the correlation key and documents the resolution path to `identifiant_interne` via `CAP.REF.001.BEN`
+- [x] The runtime schema (RVT) describes a **domain event DDD payload** — transition data of envelope consumption, not a read-model snapshot, not a field patch (annotation `x-bcm-payload-form: domain-event-DDD`)
+- [x] The available balance derivation (`montant_plafond - montant_consomme`) is documented in the runtime schema description (formula in `description`); it is NOT a transported field
+- [x] `plan/CAP.BSP.004.ENV/contracts/README.md` lists the two schemas, their roles, BCM IDs, routing key, and known consumers
+- [x] A runnable development stub publishes `RVT.BSP.004.CONSUMPTION_RECORDED` messages on a RabbitMQ topic exchange owned by `CAP.BSP.004.ENV` (`bsp.004.env-events`), with routing key `EVT.BSP.004.ENVELOPE_CONSUMED.RVT.BSP.004.CONSUMPTION_RECORDED` (no autonomous EVT message)
+- [x] The stub publishes at a configurable cadence in the range **1 to 10 events / minute** by default; outside that range requires explicit override (`Stub:AllowOutOfRangeCadence=true`)
+- [x] The stub is activatable/deactivatable via environment configuration (inactive in production — `Stub:Active=false` by default; activate via `STUB_Stub__Active=true`)
+- [x] Every payload published by the stub validates against the runtime JSON Schema (CI unit tests in `Reliever.BudgetEnvelopeManagement.Stub.Tests` — 14 passing tests, including 500-iteration property-based payload validation)
+- [x] The stub source code resides under `sources/CAP.BSP.004.ENV/stub/`
+- [x] The stub README documents the category-vocabulary assumption: illustrative categories are hard-coded inside the stub, and the canonical source per tier is `CAP.REF.001.PAL` (target for the future real engine)
+- [x] `python tools/validate_repo.py` passes without error
+- [~] `python tools/validate_events.py` — produces 26 pre-existing baseline errors unrelated to `CAP.BSP.004.ENV` (same on `main`; precedent PRs #1 and #2 merged with the same baseline). My events `EVT.BSP.004.ENVELOPE_CONSUMED` / `RVT.BSP.004.CONSUMPTION_RECORDED` introduce zero new errors and are coherent.
 
 ## Acceptance Criteria (business)
 A developer working on `CAP.CAN.001.TAB` (or any future consumer of envelope-consumption events) can subscribe a queue to the topic exchange owned by `CAP.BSP.004.ENV`, bind on the routing key, receive payloads validating against the runtime schema, and develop their consumer logic without any direct dependency on the real `CAP.BSP.004.ENV` engine. When the real engine replaces the stub later, no schema-driven consumer code change is required.
@@ -98,4 +101,4 @@ None. This task is self-founding for `CAP.BSP.004.ENV` (Epic 1).
 - ✅ **Stub source location** — `sources/CAP.BSP.004.ENV/stub/`, sibling of the future `backend/`. Decommissioned when the real engine is delivered.
 
 ## Open Questions
-- [ ] Category vocabulary: should the spending categories used by the stub be drawn from a referential (e.g. `CAP.REF.001.PAL` tier-defined categories)? Or are arbitrary illustrative categories acceptable for a development stub? If a referential is needed, it must be documented in this task's input set.
+- [x] **Resolved.** Category vocabulary: the stub uses hard-coded illustrative categories (`ALIMENTATION`, `TRANSPORT`, `SANTE`, `LOGEMENT`, `ENERGIE`) for offline dev independence. The runtime contract leaves `categorie` free-form (no enum) so consumers stay decoupled from any tier-vocabulary lock-in. The stub README documents that the canonical authoritative source per tier is `CAP.REF.001.PAL` and that the future real envelope engine MUST source categories from there.
