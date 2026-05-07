@@ -1,0 +1,116 @@
+meta:
+  capability: CAP.BSP.001.SCO
+  layer: process-modelling
+  version: 0.1.0
+  governing_adrs:
+    - ADR-TECH-STRAT-001  # Dual-rail event infrastructure — NORMATIVE
+
+# ──────────────────────────────────────────────────────────────
+# Bus topology — the operational rail (RabbitMQ topic exchange)
+# owned by this capability. Replaces the prose section formerly
+# in plan/CAP.BSP.001.SCO/contracts/README.md with a machine-
+# readable view that the create-bff / implement-capability agents
+# can ingest directly.
+# ──────────────────────────────────────────────────────────────
+
+publication:
+  broker: rabbitmq
+  exchange:
+    name: bsp.001.sco-events
+    type: topic
+    durable: true
+    owned_by: CAP.BSP.001.SCO
+    rule_reference: ADR-TECH-STRAT-001 Rules 1, 5
+
+  # Per ADR-TECH-STRAT-001 Rule 2, only resource events generate autonomous
+  # bus messages. Business events appear ONLY as the prefix of the routing key
+  # (Rule 4) — never as standalone messages.
+
+  routing_keys:
+    - resource_event: RVT.BSP.001.ENTRY_SCORE_COMPUTED
+      paired_business_event: EVT.BSP.001.SCORE_RECOMPUTED
+      routing_key: EVT.BSP.001.SCORE_RECOMPUTED.RVT.BSP.001.ENTRY_SCORE_COMPUTED
+      schema: schemas/RVT.BSP.001.ENTRY_SCORE_COMPUTED.schema.json  # to produce
+      payload_form: domain-event-ddd
+
+    - resource_event: RVT.BSP.001.CURRENT_SCORE_RECOMPUTED
+      paired_business_event: EVT.BSP.001.SCORE_RECOMPUTED
+      routing_key: EVT.BSP.001.SCORE_RECOMPUTED.RVT.BSP.001.CURRENT_SCORE_RECOMPUTED
+      schema: schemas/RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json  # exists today
+      payload_form: domain-event-ddd
+
+    - resource_event: RVT.BSP.001.SCORE_THRESHOLD_REACHED
+      paired_business_event: EVT.BSP.001.SCORE_THRESHOLD_REACHED
+      routing_key: EVT.BSP.001.SCORE_THRESHOLD_REACHED.RVT.BSP.001.SCORE_THRESHOLD_REACHED
+      schema: schemas/RVT.BSP.001.SCORE_THRESHOLD_REACHED.schema.json  # to produce
+      payload_form: domain-event-ddd
+
+  correlation_key: case_id
+  identity_resolution: >-
+    Consumers resolve case_id → OBJ.REF.001.BENEFICIARY_RECORD.internal_id via
+    a CAP.REF.001.BEN lookup. The producer NEVER carries the canonical internal_id.
+
+# ──────────────────────────────────────────────────────────────
+# Subscription side — events consumed from upstream capabilities.
+# The producing exchange is owned by the upstream capability;
+# this capability declares queues bound to it.
+# ──────────────────────────────────────────────────────────────
+
+subscriptions:
+  - source_capability: CAP.BSP.004.AUT
+    source_exchange: bsp.004.aut-events
+    binding_pattern: EVT.BSP.004.TRANSACTION_AUTHORIZED.RVT.BSP.004.PAYMENT_GRANTED
+    queue: bsp.001.sco.q.transaction-authorized
+    business_subscription: SUB.BUSINESS.BSP.001.001
+    resource_subscription: SUB.RESOURCE.BSP.001.001
+    consumed_by: POL.BSP.001.SCO.ON_BEHAVIOURAL_TRIGGER
+
+  - source_capability: CAP.BSP.004.AUT
+    source_exchange: bsp.004.aut-events
+    binding_pattern: EVT.BSP.004.TRANSACTION_REFUSED.RVT.BSP.004.PAYMENT_BLOCKED
+    queue: bsp.001.sco.q.transaction-refused
+    business_subscription: SUB.BUSINESS.BSP.001.002
+    resource_subscription: SUB.RESOURCE.BSP.001.002
+    consumed_by: POL.BSP.001.SCO.ON_BEHAVIOURAL_TRIGGER
+
+  - source_capability: CAP.BSP.001.SIG
+    source_exchange: bsp.001.sig-events
+    binding_pattern: EVT.BSP.001.RELAPSE_SIGNAL_DETECTED.RVT.BSP.001.RELAPSE_SIGNAL_QUALIFIED
+    queue: bsp.001.sco.q.relapse-signal
+    business_subscription: SUB.BUSINESS.BSP.001.003
+    resource_subscription: SUB.RESOURCE.BSP.001.003
+    consumed_by: POL.BSP.001.SCO.ON_BEHAVIOURAL_TRIGGER
+
+  - source_capability: CAP.BSP.001.SIG
+    source_exchange: bsp.001.sig-events
+    binding_pattern: EVT.BSP.001.PROGRESSION_SIGNAL_DETECTED.RVT.BSP.001.PROGRESSION_SIGNAL_QUALIFIED
+    queue: bsp.001.sco.q.progression-signal
+    business_subscription: SUB.BUSINESS.BSP.001.004
+    resource_subscription: SUB.RESOURCE.BSP.001.004
+    consumed_by: POL.BSP.001.SCO.ON_BEHAVIOURAL_TRIGGER
+
+# ──────────────────────────────────────────────────────────────
+# Known consumers of THIS capability's events. Sourced from
+# bcm/business-subscription-reliever.yaml + resource-subscription-reliever.yaml.
+# ──────────────────────────────────────────────────────────────
+
+consumers:
+  - capability: CAP.BSP.001.ARB
+    binds_to:
+      - EVT.BSP.001.SCORE_RECOMPUTED.RVT.BSP.001.CURRENT_SCORE_RECOMPUTED
+    rationale: Algorithmic vs prescriber-override arbitration on each recomputation.
+
+  - capability: CAP.BSP.001.TIE
+    binds_to:
+      - EVT.BSP.001.SCORE_THRESHOLD_REACHED.#
+    rationale: Tier transition is triggered by threshold crossing.
+
+  - capability: CAP.CHN.001.DSH
+    binds_to:
+      - EVT.BSP.001.SCORE_RECOMPUTED.#
+    rationale: Beneficiary dashboard progression bar.
+
+  - capability: CAP.CHN.002.VUE
+    binds_to:
+      - EVT.BSP.001.SCORE_RECOMPUTED.RVT.BSP.001.CURRENT_SCORE_RECOMPUTED
+    rationale: Prescriber view — current score and history.

@@ -1,0 +1,79 @@
+meta:
+  capability: CAP.BSP.001.SCO
+  layer: process-modelling
+  version: 0.1.0
+  governing_adrs:
+    - ADR-BCM-FUNC-0005
+
+# ──────────────────────────────────────────────────────────────
+# Policies — reactive rules. A policy listens to one or more
+# events and issues a command. Policies are the only place in
+# the model where consumed events become commands; aggregates
+# never subscribe to events directly.
+# Identifier: POL.<ZONE>.<L1>.<L2>.<NAME>
+# ──────────────────────────────────────────────────────────────
+
+policies:
+
+  - id: POL.BSP.001.SCO.ON_BEHAVIOURAL_TRIGGER
+    name: Recompute score on any behavioural trigger
+    intent: >-
+      Translate every upstream behavioural event into a single homogeneous
+      RECOMPUTE_SCORE command, with the trigger kind discriminating polarity
+      and weighting downstream.
+    listens_to:
+      # Backed by SUB.BUSINESS.BSP.001.001..004 + SUB.RESOURCE.BSP.001.001..004
+      - resource_event: RVT.BSP.004.PAYMENT_GRANTED
+        business_subscription: SUB.BUSINESS.BSP.001.001
+        resource_subscription: SUB.RESOURCE.BSP.001.001
+        trigger_kind: TRANSACTION_AUTHORIZED
+      - resource_event: RVT.BSP.004.PAYMENT_BLOCKED
+        business_subscription: SUB.BUSINESS.BSP.001.002
+        resource_subscription: SUB.RESOURCE.BSP.001.002
+        trigger_kind: TRANSACTION_REFUSED
+      - resource_event: RVT.BSP.001.RELAPSE_SIGNAL_QUALIFIED
+        business_subscription: SUB.BUSINESS.BSP.001.003
+        resource_subscription: SUB.RESOURCE.BSP.001.003
+        trigger_kind: RELAPSE_SIGNAL
+      - resource_event: RVT.BSP.001.PROGRESSION_SIGNAL_QUALIFIED
+        business_subscription: SUB.BUSINESS.BSP.001.004
+        resource_subscription: SUB.RESOURCE.BSP.001.004
+        trigger_kind: PROGRESSION_SIGNAL
+    issues: CMD.BSP.001.SCO.RECOMPUTE_SCORE
+    mapping_rule: >-
+      Build CMD payload from the upstream resource event:
+        case_id              <- upstream.case_id
+        trigger.event_id     <- upstream.event_id (used for idempotency)
+        trigger.kind         <- one of TRANSACTION_AUTHORIZED|TRANSACTION_REFUSED|
+                                       RELAPSE_SIGNAL|PROGRESSION_SIGNAL
+        trigger.amount       <- upstream.amount (for transaction triggers)
+        trigger.category     <- upstream.category
+        trigger.impact_score <- upstream.impact_score (for signal triggers)
+    error_handling:
+      - on: TRIGGER_ALREADY_PROCESSED
+        action: ack-and-drop
+      - on: AGGREGATE_NOT_INITIALISED
+        action: dlq
+        rationale: Indicates a missing entry score — operational anomaly.
+      - on: BENEFICIARY_UNKNOWN
+        action: dlq
+        rationale: Upstream emitted for a case unknown to the reference — investigate.
+    delivery: at-least-once
+
+  - id: POL.BSP.001.SCO.ON_ENROLMENT_COMPLETED
+    name: Compute entry score on enrolment completion
+    status: placeholder
+    intent: >-
+      When a beneficiary completes enrolment, compute the baseline behavioural
+      score as the reference point for subsequent recomputations.
+    listens_to:
+      - resource_event: TBD  # see README open question on enrolment trigger
+    issues: CMD.BSP.001.SCO.COMPUTE_ENTRY_SCORE
+    open_question: >-
+      ADR-BCM-FUNC-0005 lists no business subscription for enrolment in CAP.BSP.001.SCO.
+      Most likely upstream: EVT.BSP.002.ENROLMENT_COMPLETED from CAP.BSP.002.ENR
+      (FUNC-0006 access enrolment). To be confirmed before /code.
+    error_handling:
+      - on: ENTRY_SCORE_ALREADY_EXISTS
+        action: ack-and-drop  # idempotent re-enrolment notification
+    delivery: at-least-once

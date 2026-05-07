@@ -1,0 +1,74 @@
+meta:
+  capability: CAP.BSP.001.SCO
+  layer: process-modelling
+  version: 0.1.0
+
+# ──────────────────────────────────────────────────────────────
+# Read models — projections built from this capability's domain
+# events for query-time consumption. Read models are owned by
+# this capability; outside consumers do not query the aggregate
+# directly, they either subscribe to events or call a query.
+# Identifier: QRY.<ZONE>.<L1>.<L2>.<NAME>
+# ──────────────────────────────────────────────────────────────
+
+read_models:
+
+  - id: PRJ.BSP.001.SCO.CURRENT_SCORE_VIEW
+    name: Current score view
+    backs_resource: RES.BSP.001.CURRENT_SCORE
+    fed_by:
+      - RVT.BSP.001.ENTRY_SCORE_COMPUTED
+      - RVT.BSP.001.CURRENT_SCORE_RECOMPUTED
+    fields:
+      - case_id
+      - score_value
+      - delta_score
+      - computation_timestamp
+      - model_version
+      - last_evaluation_id
+    consistency: eventual
+
+  - id: PRJ.BSP.001.SCO.SCORE_HISTORY
+    name: Score history projection
+    fed_by:
+      - RVT.BSP.001.ENTRY_SCORE_COMPUTED
+      - RVT.BSP.001.CURRENT_SCORE_RECOMPUTED
+    fields:
+      - case_id
+      - evaluation_id
+      - score_value
+      - delta_score
+      - evenement_declencheur
+      - computation_timestamp
+    retention: 24m
+    consistency: eventual
+
+queries:
+
+  - id: QRY.BSP.001.SCO.GET_CURRENT_SCORE
+    served_by: PRJ.BSP.001.SCO.CURRENT_SCORE_VIEW
+    request:
+      case_id: string
+    response:
+      shape: object
+      fields: [case_id, score_value, delta_score, computation_timestamp, model_version]
+    consumers:
+      - CAP.CHN.001.DSH  # beneficiary dashboard
+      - CAP.CHN.002.VUE  # prescriber view
+      - CAP.BSP.001.ARB  # arbitration when checking algorithmic vs override
+    api_binding: { method: GET, path: /cases/{case_id}/score }
+    cache: { etag: true, max_age: PT5S }
+
+  - id: QRY.BSP.001.SCO.LIST_SCORE_HISTORY
+    served_by: PRJ.BSP.001.SCO.SCORE_HISTORY
+    request:
+      case_id: string
+      since: { type: date, optional: true }
+      limit: { type: integer, default: 50, max: 500 }
+    response:
+      shape: array
+      item_fields: [evaluation_id, score_value, delta_score, evenement_declencheur, computation_timestamp]
+    consumers:
+      - CAP.CHN.001.DSH  # progression bar
+      - CAP.CHN.002.VUE  # prescriber timeline
+    api_binding: { method: GET, path: /cases/{case_id}/score-history }
