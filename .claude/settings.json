@@ -5,6 +5,18 @@
     "padding": 0
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/yoann/sources/banking/.claude/hooks/process-folder-guard.py",
+            "statusMessage": "Vérification process/ (lecture seule)..."
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit",

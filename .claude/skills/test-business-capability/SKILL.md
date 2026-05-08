@@ -133,9 +133,14 @@ conversation. Include:
 - The capability ID and confirmed zone (non-CHANNEL)
 - The backend artifact path located in Step 4
 - Any flags the user passed (`--env`, etc.)
-- The path to the FUNC ADR(s) for the capability
-- The plan path: `/plan/{capability-id}/plan.md`
-- The tactical ADR path: `/tech-adr/ADR-TECH-TACT-*-{cap-id}.md`
+- The plan path: `/plan/{capability-id}/plan.md` (local artifact)
+- An explicit instruction to fetch BCM/ADR/vision context from `bcm-pack`:
+  `bcm-pack pack <CAPABILITY_ID> --deep --compact` — and to NOT read
+  `/bcm/`, `/func-adr/`, `/adr/`, `/tech-adr/`, `/tech-vision/`,
+  `/strategic-vision/`, or `/product-vision/` directly. The FUNC ADR is
+  in `slices.capability_definition`; the tactical ADR is in
+  `slices.tactical_stack`; vision narratives are in
+  `slices.product_vision` / `slices.business_vision` / `slices.tech_vision`.
 - Local stack metadata if the implement-capability agent persisted it
   (`LOCAL_PORT`, derived MongoDB / RabbitMQ ports)
 
@@ -154,7 +159,7 @@ Say to the user:
 > "Spawning test-business-capability agent for TASK-NNN (branch: {BRANCH})..."
 
 The agent handles everything from here:
-- Reads context (TASK, FUNC ADR, plan, tactical ADR, vision docs, BCM YAML)
+- Reads context: TASK file (local) + plan (local) + capability pack via `bcm-pack` (FUNC ADR, tactical ADR, vision narratives, BCM data)
 - States its test plan + assumptions
 - Brings up the ephemeral environment (.NET service + MongoDB + RabbitMQ)
 - Generates the test corpus under `tests/{capability-id}/TASK-NNN-{slug}/`

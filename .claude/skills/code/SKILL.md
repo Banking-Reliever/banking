@@ -22,6 +22,31 @@ repeating until the Definition of Done is fully satisfied.
 
 ---
 
+## Hard rule — `process/{capability-id}/` is read-only
+
+The `process/{capability-id}/` folder (aggregates, commands, policies, read-models,
+bus topology, JSON Schemas) is the **contract** that the implementation must
+satisfy. This skill, and every agent it spawns (`implement-capability`,
+`create-bff`, `code-web-frontend`), reads from it but **never writes to it**.
+
+A PreToolUse hook (`process-folder-guard.py`) enforces this in **both** the main
+checkout and any `/tmp/kanban-worktrees/TASK-NNN-*/` worktree spawned by
+`/launch-task`: Write/Edit/MultiEdit/NotebookEdit under `process/**` outside the
+`/process` skill is rejected. As a result, **PR branches opened by `/code` (and
+the CI/CD pipelines that run on them) must not contain any diff under
+`process/{capability-id}/`**. If a remediation iteration suggests changing a
+command shape, an aggregate invariant, or a routing key, stop the loop and tell
+the user to run `/process <CAPABILITY_ID>` to update the model — then re-run
+`/code TASK-NNN`.
+
+When forwarding context to `implement-capability`, `create-bff`, or
+`code-web-frontend`, instruct each agent to **read** the relevant
+`process/{capability-id}/*.yaml` files (and the `schemas/*.schema.json` files)
+as the source of truth on aggregates, commands, events, and routing keys —
+never to invent or reshape them.
+
+---
+
 ## Before You Begin
 
 > **Note:** For orchestrated multi-task workflows (board view, prioritization, dependency
@@ -41,10 +66,33 @@ repeating until the Definition of Done is fully satisfied.
    If any prerequisite fails, stop and explain:
    > "TASK-NNN cannot start because [reason]. Resolve this first."
 
-4. **Read supporting context:**
-   - The capability's FUNC ADR(s) in `/func-adr/`
-   - The capability's YAML in `/bcm/`
-   - The plan file at `/plan/{capability-id}/plan.md`
+4. **Read supporting context.** All BCM/ADR/vision knowledge comes from the `bcm-pack` 
+   CLI — never read `/bcm/`, `/func-adr/`, `/adr/`, `/strategic-vision/`, or `/product-vision/`
+   directly:
+
+   ```bash
+   bcm-pack pack <CAPABILITY_ID> --compact > /tmp/pack-code.json
+   ```
+
+   Selective slice usage at this layer (this skill is mostly a router — keep it light):
+
+   | Slice                       | Used by /code itself                          |
+   |-----------------------------|-----------------------------------------------|
+   | `capability_self`           | zone detection, capability_name, level        |
+   | `capability_definition`     | summarized to the user in Step 1, forwarded to the spawned agent |
+   | `emitted_business_events`   | "events that will become emittable" in Step 1 |
+   | `consumed_business_events`  | "events consumed (BFF subscriptions)" in Step 1 (CHANNEL only) |
+
+   The deeper slices (tactical_stack, governing_*, vision narratives) are forwarded to the
+   spawned agent via the prompt — that agent re-fetches them with `--deep` if it needs the
+   narratives.
+
+   Local artifacts (always read directly):
+   - the plan file at `/plan/{capability-id}/plan.md`
+   - the Process Modelling layer at `process/{capability-id}/` (read-only) —
+     `aggregates.yaml`, `commands.yaml`, `policies.yaml`, `read-models.yaml`,
+     `bus.yaml`, `api.yaml`, `schemas/*.schema.json`. The implementation agents
+     consume these files; they are forbidden from modifying them.
 
 5. **Read loop counters** from the task file frontmatter:
    - `loop_count`: number of remediation iterations already used (default `0` if absent)
@@ -71,8 +119,9 @@ repeating until the Definition of Done is fully satisfied.
 
    **6b — Zone (when `task_type` does not force Path C)**
 
-   Detect the zone from the YAML (`zoning` field in `bcm/capabilities-*.yaml`
-   or `decision_scope.zoning` in the FUNC ADR) and map it:
+   Detect the zone from the pack's `slices.capability_self[0].zoning` (or fall back to 
+   `slices.capability_definition[0].decision_scope.zoning` from the FUNC ADR if absent).
+   Never read `bcm/capabilities-*.yaml` directly. Map the value as follows:
 
    | YAML `zoning` value          | Zone family       | Implementation path |
    |------------------------------|-------------------|---------------------|
@@ -310,6 +359,69 @@ Wait for **both** agents to complete before proceeding to Step 3. Either agent
 may push back if its context is incoherent (capability not in CHANNEL zone,
 missing FUNC ADR, output dir already populated, unsupported stack); surface
 that to the user as the gap to resolve.
+
+---
+
+## Step 2.5 — Add the contract harness (Path A only)
+
+> **Skip this step for Path B (CHANNEL).** The BFF already enforces its own
+> contract surface via `create-bff`. A future `harness-bff` skill will extend
+> the same lineage pattern there.
+>
+> **Skip this step for Path C (contract-stub).** Mode B produces only JSON
+> schemas + a worker stub; the full OpenAPI/AsyncAPI harness is overkill for
+> that scaffold. Re-introduce when the contract-stub matures into a full
+> microservice (which will route back through Path A and trigger Step 2.5).
+
+After `implement-capability` succeeds for a non-CHANNEL task, invoke the
+`/harness-backend` skill to add the contract harness to the freshly-scaffolded
+microservice. The harness produces, under
+`sources/{capability-name}/backend/contracts/specs/`:
+
+- `openapi.yaml` (OpenAPI 3.1) — derived strictly from
+  `process/{capability-id}/api.yaml` + `commands.yaml` + `read-models.yaml` +
+  `schemas/CMD.*.schema.json` + `bcm-pack.carried_objects` (resource shapes).
+- `asyncapi.yaml` (AsyncAPI 2.6) — derived strictly from
+  `process/{capability-id}/bus.yaml` + `schemas/RVT.*.schema.json` +
+  `bcm-pack.emitted_resource_events` / `consumed_resource_events`.
+- `lineage.json` — top-level lineage (capability + bcm + process metadata).
+- `harness-report.md` — closure verdict.
+
+Both specs carry a top-level `x-lineage` block plus per-operation,
+per-message, per-channel `x-lineage` extensions so every entry traces back
+to its `process/` source AND its `bcm-pack` source. The harness also adds a
+`*.Contracts.Harness/` project to the .NET solution (which re-runs the
+validation on every `dotnet build`) and mounts `/openapi.yaml` and
+`/asyncapi.yaml` endpoints in the Presentation project.
+
+Invoke:
+
+```
+Skill: harness-backend
+Args:  CAPABILITY_ID = <from task>
+       (worktree is auto-detected from current branch)
+```
+
+Say:
+> "Running harness-backend for TASK-[NNN] — generating openapi.yaml + asyncapi.yaml with full process / bcm lineage..."
+
+If `/harness-backend` reports a closure failure (dangling
+`x-lineage.process.*`, missing controller, BCM warning), surface the report
+to the user and **do NOT proceed to Step 3**. The remediation depends on the
+gap:
+
+| Gap                                            | Resolution                                                  |
+|------------------------------------------------|-------------------------------------------------------------|
+| Dangling `x-lineage.process.*` reference       | run `/process <CAPABILITY_ID>` to amend the model           |
+| Dangling `x-lineage.bcm.*` reference           | fix BCM upstream in `banking-knowledge`                     |
+| Missing controller / consumer in microservice  | feed the gap into the remediation loop (Step 3)             |
+| Drift between generated and committed specs    | re-run the harness in default mode and commit the diff      |
+
+Only the third row is a remediation-loop case — the others require an
+upstream fix. Treat the first two as a **stall** (do not consume loop
+budget): record `stalled_reason: "harness closure failed: <gap>"` and stop.
+
+Once `/harness-backend` returns green, proceed to Step 3.
 
 ---
 

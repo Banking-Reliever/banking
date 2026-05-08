@@ -27,6 +27,36 @@ You **never** duplicate the board scan logic — that is the exclusive responsib
 
 ---
 
+## Hard rule — `process/{capability-id}/` is read-only
+
+Every worktree this skill creates under `/tmp/kanban-worktrees/TASK-NNN-*/`
+inherits a copy of `process/{capability-id}/`. The `code` agents you spawn in
+those worktrees, and the test agents that follow, treat that folder as a
+**read-only contract**. The `process-folder-guard.py` PreToolUse hook blocks
+every Write/Edit attempt under `process/**` outside the `/process` skill —
+this applies in both the main checkout and the worktrees.
+
+Concretely:
+
+- The `code` / `fix` agents you spawn must not commit any change under
+  `process/{capability-id}/` to their feature branch.
+- The PRs / CI-CD pipelines opened by those agents must not contain any diff
+  under `process/{capability-id}/`.
+- If a `code` agent reports that the model needs to change to satisfy the
+  task, treat it as a **stall** signal: stop the agent, tell the user to run
+  `/process <CAPABILITY_ID>` to amend the model in a separate session, then
+  reschedule the task once the model has been updated and merged.
+
+When you create a new worktree, propagate this constraint by including in the
+agent prompt:
+
+> "process/{capability-id}/ is the read-only contract for this task. Read it
+> for AGG / CMD / POL / PRJ / QRY / bus topology / JSON Schemas, but never
+> modify any file under process/. The PreToolUse hook
+> process-folder-guard.py will block any such attempt."
+
+---
+
 ## Usage Cycle
 
 The skill supports four main intents:
@@ -153,10 +183,29 @@ If the worktree already exists (same case): use it as-is without recreating.
 #### C.4 — Read the Task File Content
 
 Read the complete content of the `TASK-NNN-*.md` file to include in the sub-agent prompt.
-Also read:
-- The plan: `/plan/{capability-id}/plan.md`
-- The FUNC ADR: `/func-adr/FUNC-ADR-{id}.md` (if referenced in the task)
-- The BCM YAML: `/bcm/{capability-id}.yml` (if present)
+Read the local plan at `/plan/{capability-id}/plan.md`.
+
+For **all** BCM/ADR/vision context, fetch the capability pack from the `bcm-pack` CLI —
+do NOT read `/bcm/`, `/func-adr/`, `/adr/`, `/strategic-vision/`, or `/product-vision/`
+directly:
+
+```bash
+bcm-pack pack <CAPABILITY_ID> --compact > /tmp/pack-launch.json
+```
+
+Pass the parsed pack JSON (or just the capability ID + a note that the spawned agent will
+re-fetch with `--deep` itself) to the sub-agent prompt. Selective slice usage at this
+layer:
+
+| Slice                       | Used by /launch-task itself                       |
+|-----------------------------|---------------------------------------------------|
+| `capability_self`           | branch slug, capability_name (for worktree path), zone |
+| `capability_definition`     | included in the sub-agent prompt as context       |
+| `emitted_business_events`   | included in the sub-agent prompt                  |
+| `consumed_business_events`  | included in the sub-agent prompt                  |
+
+The sub-agent will issue its own `bcm-pack` calls — possibly with `--deep` — when it
+needs vision narratives or the rationale ADRs.
 
 ---
 
@@ -184,13 +233,19 @@ capability [CAPABILITY_NAME] ([CAPABILITY_ID]) using the `code` skill.
 
 [CONTENT OF PLAN.MD]
 
-## Functional ADR
+## Capability Pack (from `bcm-pack`)
 
-[CONTENT OF FUNC-ADR IF AVAILABLE]
+[Inline the relevant slices of `bcm-pack pack [CAPABILITY_ID] --compact` —
+ at minimum: `capability_self`, `capability_definition`, `emitted_business_events`,
+ `consumed_business_events`, `carried_objects`. Do NOT inline the full pack —
+ the spawned agent re-fetches with `--deep` if it needs vision narratives.]
 
-## BCM YAML
+## Knowledge access reminder
 
-[CONTENT OF BCM YAML IF AVAILABLE]
+The spawned agent MUST source any further BCM/ADR/vision context via the
+`bcm-pack` CLI, e.g. `bcm-pack pack [CAPABILITY_ID] --deep --compact`. It must
+NOT read `/bcm/`, `/func-adr/`, `/adr/`, `/strategic-vision/`, `/product-vision/`,
+or `/tech-vision/` directly — those paths are not authoritative in this checkout.
 
 ## Execution Instructions (WITHOUT user confirmation)
 

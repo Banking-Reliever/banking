@@ -62,6 +62,16 @@ by a `create-bff` BFF (CHANNEL zone) or directly by an
 `implement-capability` microservice. Your output is the web channel
 through which beneficiaries interact with the IS.
 
+> **Read-only contract — `process/{capability-id}/`.**
+> Read `process/{capability-id}/api.yaml` and `read-models.yaml` to ground
+> the endpoints and queries your frontend consumes (paths, response
+> shapes, ETag/`max_age`). Use the JSON Schemas under
+> `process/{capability-id}/schemas/` as the truth for any payload the
+> frontend sends to the BFF. **Never write under `process/`.** A
+> PreToolUse hook (`process-folder-guard.py`) blocks any such attempt —
+> both in the main repo and inside the kanban worktree where you run.
+> Your PR must not contain any diff under `process/`.
+
 You scaffold production-ready web views that can be opened directly in a
 browser or served by any static HTTP server. The reference graphical
 pattern is the **`frontend-baseline/CAP.CAN.001.TAB/`** folder (when
@@ -154,19 +164,33 @@ ID. Locate `/plan/{capability-id}/tasks/TASK-NNN-*.md` and verify:
 If a prerequisite fails, stop and explain:
 > "TASK-NNN cannot start because [reason]. Resolve this first."
 
-Then read every available source of truth, in this priority order:
+Then source the BCM/ADR/vision context from the `bcm-pack` CLI — never
+read `/bcm/`, `/func-adr/`, `/adr/`, `/strategic-vision/`,
+`/product-vision/`, `/tech-vision/`, or `/tech-adr/` directly:
 
-| Source | What you extract |
-|---|---|
-| **TASK file** (`/plan/{capability-id}/tasks/TASK-NNN-*.md`) | "What to Build" (views/sections), Definition of Done (each `[ ]` is a UI invariant), business objects displayed, business events to emit on user interaction, dignity / consent rules to honor, language posture |
-| **Plan** (`/plan/{capability-id}/plan.md`) | Epics, milestones, scoping rules ("V0 without gamification" — what NOT to render), constraints |
-| **FUNC ADR** (`/func-adr/ADR-BCM-FUNC-*.md`) | Business rules constraining UX, business vocabulary, displayed business objects, governance constraints inherited from URBA ADRs, language / consent posture |
-| **Product vision** (`/product-vision/product.md`) | Service offer, tone, voice, target audience |
-| **Strategic vision** (`/strategic-vision/strategic-vision.md`) | The strategic capability this view contributes to, used to calibrate copy and information density |
+```bash
+bcm-pack pack {capability_id} --deep --compact > /tmp/pack-frontend.json
+```
 
-If the TASK file or FUNC ADR is missing, **stop and report a context
-gap** — do not invent a UI for a capability that has no functional
-grounding.
+Use `--deep` here — the frontend agent specifically needs the **vision
+narratives** to calibrate tone, voice, copy, and information density.
+Selective slice usage:
+
+| Source | Pack slice | What you extract |
+|---|---|---|
+| **TASK file** (local: `/plan/{capability-id}/tasks/TASK-NNN-*.md`) | n/a — local | "What to Build" (views/sections), Definition of Done (each `[ ]` is a UI invariant), business objects displayed, business events to emit on user interaction, dignity / consent rules to honor, language posture |
+| **Plan** (local: `/plan/{capability-id}/plan.md`) | n/a — local | Epics, milestones, scoping rules ("V0 without gamification" — what NOT to render), constraints |
+| **Capability metadata** | `capability_self`, `capability_ancestors` | Capability name (used in `<title>` and `window.{Name}Api`), zoning, parent L1 |
+| **FUNC ADR** | `capability_definition` | Business rules constraining UX, business vocabulary, displayed business objects, governance constraints inherited from URBA ADRs, language / consent posture |
+| **URBA dignity / consent rules** | `governing_urba` | Hard rules on DOM order, consent gate, French vocabulary |
+| **Carried structures** | `carried_objects`, `carried_concepts` | Field names and business definitions that drive `STUB_DATA` |
+| **Product vision** | `product_vision` (deep mode) | Service offer, tone, voice, target audience |
+| **Business vision** | `business_vision` (deep mode) | The strategic capability this view contributes to, used to calibrate copy and information density |
+| **Tech vision** | `tech_vision` (deep mode) | Frontend architectural anchors that constrain layout/behavior |
+
+If `pack.warnings` is non-empty, or `capability_definition` is empty,
+**stop and report a context gap** — do not invent a UI for a capability
+that has no functional grounding.
 
 ### 2. Detect the git branch slug
 

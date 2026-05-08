@@ -56,12 +56,36 @@ deliberate.
    with open questions, propose it.
 
 2. **Read all relevant context** before opening the dialogue — do not ask questions you can 
-   answer yourself:
+   answer yourself.
+
+   Local artifacts (the working repo is authoritative for these):
    - The TASK file: `/plan/{capability-id}/tasks/TASK-NNN-*.md`
    - The plan: `/plan/{capability-id}/plan.md` — the epic this task belongs to and its exit condition
-   - The governing FUNC ADR(s) named in the task (in `/func-adr/`)
-   - The capability YAML in `/bcm/` — for business events and objects
-   - `/product-vision/product.md` — the service offer, to stay anchored on business value
+   - Sibling tasks in `/plan/{capability-id}/tasks/` — to spot collateral amendments (Rule 2)
+
+   Knowledge corpus — fetch via the `bcm-pack` CLI **only**, never read `/bcm/`, `/func-adr/`, 
+   `/adr/`, `/strategic-vision/`, or `/product-vision/` directly:
+
+   ```bash
+   bcm-pack pack <CAPABILITY_ID> --deep --compact > /tmp/pack-refine.json
+   ```
+
+   Use `--deep` here so the product/business/tech vision narratives are present — you may 
+   need them to settle scope-anchoring questions. Read selectively:
+
+   | Slice                       | Used in which movement                            |
+   |-----------------------------|---------------------------------------------------|
+   | `capability_self`           | grounding the task title and capability framing   |
+   | `capability_definition`     | Movement 1 (FUNC ADR rules), Movement 2 (sharper DoD), Movement 4 (rule conflicts) |
+   | `emitted_business_events`   | Movement 2 — making event-emission DoD precise    |
+   | `consumed_business_events`  | Movement 4 — challenging dependency assumptions   |
+   | `carried_objects`           | Movement 3 — scope boundary on object ownership   |
+   | `carried_concepts`          | Movement 4 — terminology gap probe                |
+   | `product_vision`            | keeps the dialogue anchored on business value     |
+   | `governance_adrs` / `governing_urba` | Movement 1 — escalation triggers          |
+
+   If `pack.warnings` lists missing items in the corpus, treat them as escalations 
+   (Movement 1) — the task cannot be refined past a missing FUNC ADR or BCM gap.
 
 3. **Extract, before speaking:**
    - The task's stated purpose and "What to Build"
@@ -150,8 +174,9 @@ Ask yourself (and surface one or two to the user only if they seem genuinely ris
   edge conditions?
 - Is the stub strategy (if this task depends on a capability implemented later) safe, or 
   could it mask a real interface mismatch?
-- Is there a terminology gap — where the task uses a concept that isn't defined in the BCM 
-  or FUNC ADR, and a developer might invent their own interpretation?
+- Is there a terminology gap — where the task uses a concept that isn't defined in the 
+  pack's `carried_concepts` slice or the FUNC ADR (`capability_definition`), and a developer 
+  might invent their own interpretation?
 
 Surface only the assumptions that, if wrong, would cause the task to fail silently. Don't 
 goldplate the task with hypothetical edge cases.

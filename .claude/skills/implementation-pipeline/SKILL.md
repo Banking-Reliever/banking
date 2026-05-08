@@ -1,91 +1,89 @@
 ---
-name: urbanist-workflow
+name: implementation-pipeline
 description: >
-  Orchestrates the full domain-driven urbanist workflow: product brainstorming → strategic
-  business brainstorming → strategic tech brainstorming → business capabilities brainstorming
-  → tactical tech brainstorming (per L2) → BCM writer → plan → task → sort-task /
-  launch-task → code → test. The code stage is zone-aware: non-CHANNEL capabilities go
-  to the implement-capability agent (.NET microservice), CHANNEL capabilities go to create-bff +
-  code-web-frontend in parallel. The matching test agent then validates the result
-  against the Definition of Done — test-business-capability (entry point:
+  Orchestrates the local implementation pipeline: process → plan → task →
+  sort-task / launch-task → code → test. Upstream knowledge (BCM YAML,
+  FUNC/URBA/GOV/TECH ADRs, product/business/tech visions) is fetched on demand
+  from the external `bcm-pack` CLI — this skill no longer drives any modeling
+  or brainstorming session. The first local stage is `/process`: it produces
+  the DDD tactical Process Modelling layer (`process/{capability-id}/`:
+  aggregates, commands, policies, read-models, bus topology, JSON Schemas),
+  which every downstream stage reads as a read-only contract. The code stage is
+  zone-aware: non-CHANNEL capabilities go to the implement-capability agent
+  (.NET microservice), CHANNEL capabilities go to create-bff + code-web-frontend
+  in parallel. The matching test agent then validates the result against the
+  Definition of Done — test-business-capability (entry point:
   /test-business-capability) for non-CHANNEL backend microservices, test-app
   (entry point: /test-app) for CHANNEL frontend + BFF — with an automatic
   remediation loop bounded by a loop budget.
-  The /sort-task skill keeps `/plan/BOARD.md` fresh (read-only); /launch-task is the
-  task scheduler for stages 9-11 — it tracks readiness, prioritizes by critical path,
-  and spawns autonomous code agents in isolated worktrees.
+  The /sort-task skill keeps `/plan/BOARD.md` fresh (read-only); /launch-task is
+  the task scheduler — it tracks readiness, prioritizes by critical path, and
+  spawns autonomous code agents in isolated worktrees.
 
-  Use this skill to run the full pipeline, resume a workflow at any stage, check pipeline
-  status, or coordinate the sequential modeling sessions. Also spawns parallel subagents
-  to run BCM writer, plan, task generation, and tactical tech ADRs concurrently across
-  multiple capabilities.
+  Use this skill to run the local pipeline, resume at any stage, check pipeline
+  status, or coordinate process/plan/task generation across multiple
+  capabilities. Spawns parallel subagents to run process / plan / task
+  generation concurrently across capabilities.
 
-  Trigger on: "run the full workflow", "start from the beginning", "where are we in the
-  workflow", "what's next in the pipeline", "urbanist workflow", "full pipeline", "resume
-  the workflow", "run all the plans", "generate all tasks", "run all tactical ADRs", or
-  any time the user wants to understand or advance through the complete
-  modeling-to-implementation journey.
+  Trigger on: "run the pipeline", "where are we in the pipeline", "what's next",
+  "resume the pipeline", "run all the plans", "generate all tasks",
+  "implementation pipeline", "full pipeline", or any time the user wants to
+  advance through the local process-to-runtime journey.
 ---
 
-# Urbanist Workflow Orchestrator
+# Implementation Pipeline Orchestrator
 
-You are orchestrating the **domain-driven urbanist workflow** — a sequential pipeline that
-takes a product idea all the way to running, validated implementation without writing a
-single line of code until the very last stages.
+You are orchestrating the **local implementation pipeline** — a sequential flow
+that takes a planned business capability all the way to a running, validated
+artifact.
 
-The workflow is designed so that every decision is made at the right level, documented
-before it is executed, and traceable from the service offer down to the deployed artifact.
+All upstream knowledge (BCM YAML, FUNC/URBA/GOV/TECH ADRs, product/business/tech
+visions) lives in the external `banking-knowledge` repository and is exposed
+read-only through the `bcm-pack` CLI. This skill never authors or modifies
+upstream artifacts — it consumes them.
 
 ---
 
 ## The Pipeline
 
 ```
-[1] Product Brainstorming           (product-brainstorming skill)
-        ↓ produces: /product-vision/product.md + ADR-PROD-*
+[0] Process                         (process skill)                           [PARALLELIZABLE per L2/L3 capability]
+        ↓ reads:    `bcm-pack pack <CAP_ID> --deep` (BCM + FUNC/URBA/TECH-STRAT ADRs + visions)
+        ↓ produces: process/{capability-id}/  (DDD tactical Process Modelling layer)
+        ↓           ├─ README.md                  (framing + scenarios + open questions)
+        ↓           ├─ aggregates.yaml            (AGG.* — consistency boundaries, invariants)
+        ↓           ├─ commands.yaml              (CMD.* — verbs accepted, preconditions, errors)
+        ↓           ├─ policies.yaml              (POL.* — reactive event→command rules)
+        ↓           ├─ read-models.yaml           (PRJ.* + QRY.* — projections and queries)
+        ↓           ├─ bus.yaml                   (exchange + routing keys + subscriptions)
+        ↓           ├─ api.yaml                   (derived REST surface)
+        ↓           └─ schemas/*.schema.json      (JSON Schemas for CMD and RVT payloads)
+        ↓ enforced by: process-folder-guard.py PreToolUse hook —
+        ↓              process/** is read-only outside the /process skill.
+        ↓              Stages 1–5 below are FORBIDDEN from writing to process/.
 
-[2] Strategic Business Brainstorming (strategic-business-brainstorming skill)
-        ↓ reads:    product.md
-        ↓ produces: /strategic-vision/strategic-vision.md (L1/L2/L3 strategic capabilities)
-
-[3] Strategic Tech Brainstorming    (strategic-tech-brainstorming skill)
-        ↓ reads:    strategic-vision.md + /adr/ADR-BCM-URBA-*.md
-        ↓ produces: /tech-vision/tech-vision.md
-                    /tech-vision/adr/ADR-TECH-STRAT-001..006
-
-[4] Business Capabilities           (business-capabilities-brainstorming skill)
-        ↓ reads:    strategic-vision.md + tech-vision.md + ADR-BCM-URBA-*
-        ↓ produces: /func-adr/ADR-BCM-FUNC-*.md  (one per L2)
-
-[5] Tactical Tech Brainstorming     (tactic-tech-brainstorming skill)         [PARALLELIZABLE per L2]
-        ↓ reads:    tech-vision.md + ADR-TECH-STRAT-* + FUNC ADRs + URBA ADRs
-        ↓ produces: /tech-adr/ADR-TECH-TACT-NNN-{cap-id-slug}.md  (one per L2)
-        ↓ may flag strategic overrides → PENDING_ARCHITECT_TEAM
-
-[6] BCM Writer                      (bcm-writer skill)                        [PARALLELIZABLE per zone/capability]
-        ↓ reads:    /func-adr/*.md + /templates/
-        ↓ produces: /bcm/*.yaml (validated by tools/validate_repo.py)
-
-[7] Plan                            (plan skill)                              [PARALLELIZABLE per L2 capability]
-        ↓ reads:    /bcm/*.yaml + FUNC ADR + tactical ADR + product/strategic vision
+[1] Plan                            (plan skill)                              [PARALLELIZABLE per L2 capability]
+        ↓ reads:    `bcm-pack pack <CAP_ID> --deep` + process/{capability-id}/ (read-only)
+        ↓           + local `/plan/{capability-id}/plan.md` if updating an existing plan
         ↓ produces: /plan/{capability-id}/plan.md  (epics, milestones, exit conditions)
 
-[8] Task                            (task skill)                              [PARALLELIZABLE per capability]
-        ↓ reads:    /plan/{capability-id}/plan.md + FUNC ADR + tactical ADR + BCM YAML
+[2] Task                            (task skill)                              [PARALLELIZABLE per capability]
+        ↓ reads:    /plan/{capability-id}/plan.md (local) + process/{capability-id}/ (read-only)
+        ↓           + `bcm-pack pack <CAP_ID>` (BCM + ADRs)
         ↓ produces: /plan/{capability-id}/tasks/TASK-NNN-*.md
                     (frontmatter: task_id, status, priority, depends_on, loop_count, max_loops)
 
-[9a] Sort-task                      (sort-task skill)                         [READ-ONLY BOARD GENERATOR]
+[3a] Sort-task                      (sort-task skill)                         [READ-ONLY BOARD GENERATOR]
         ↓ reads:    all /plan/**/TASK-*.md
         ↓ writes:   /plan/BOARD.md  (auto-refreshed on every TASK file change via hook)
         ↓ computes: ready / blocked / needs_info / stalled / in_progress / in_review / done
 
-[9b] Launch-task                    (launch-task skill)                       [SCHEDULER — drives stages 10-11]
+[3b] Launch-task                    (launch-task skill)                       [SCHEDULER — drives stages 4-5]
         ↓ invokes:  /sort-task first to obtain a fresh report
         ↓ launches: code agents (manual, reactive on `ready` transition, or fully autonomous)
         ↓ enforces: idempotency (one code agent per task), one active task per capability
 
-[10] Code                           (code skill)                              [PARALLELIZABLE per task — one agent per task]
+[4] Code                            (code skill)                              [PARALLELIZABLE per task — one agent per task]
         ↓ reads:    /plan/{capability-id}/tasks/TASK-NNN.md
         ↓ creates:  isolated git worktree on branch feat/TASK-NNN-{slug}
         ↓ detects:  capability `zoning` → routes to the correct path
@@ -94,26 +92,44 @@ before it is executed, and traceable from the service offer down to the deployed
         ↓ then:    invokes test-business-capability (non-CHANNEL) or test-app (CHANNEL) + remediation loop
         ↓ ends:    PR opened, status: in_review, loop_count tracked, stall on budget exhaust
 
-[10a] implement-capability agent   (.NET 10 microservice, Clean Architecture + DDD)
+[4a] implement-capability agent    (.NET 10 microservice, Clean Architecture + DDD)
          output: sources/{capability-name}/backend/
          allocates LOCAL_PORT (10000-59999) + MongoDB / RabbitMQ ports
          creates Domain / Application / Infrastructure / Presentation / Contracts projects
          writes /health endpoint for readiness probing
+         reserves Contracts.Harness/ + contracts/specs/ for the harness step
 
-[10b] create-bff agent             (.NET 10 ASP.NET Core BFF — CHANNEL zone only)
+[4a-bis] harness-backend agent     (contract harness — Path A only)
+         entry point: /harness-backend
+         input: process/{cap}/{api.yaml,commands.yaml,read-models.yaml,
+                 bus.yaml,schemas/} + bcm-pack pack <CAP_ID> --deep
+         output: sources/{capability-name}/backend/
+                   ├ src/{Namespace}.{CapabilityName}.Contracts.Harness/
+                   └ contracts/specs/{openapi.yaml,asyncapi.yaml,
+                                       lineage.json,harness-report.md}
+         OpenAPI 3.1 — strict from process/api.yaml + commands + read-models +
+                       schemas/CMD.* + bcm carried_objects
+         AsyncAPI 2.6 — strict from process/bus.yaml + schemas/RVT.* +
+                        bcm emitted/consumed_resource_events
+         every operation/channel/message carries x-lineage → process + bcm
+         wires /openapi.yaml + /asyncapi.yaml endpoints on Presentation
+         build target re-validates spec ↔ controllers ↔ consumers on every dotnet build
+         skipped for Path B (CHANNEL — create-bff owns its surface) and Path C (contract-stub)
+
+[4b] create-bff agent              (.NET 10 ASP.NET Core BFF — CHANNEL zone only)
          output: src/{zone-abbrev}/{capability-id}-bff/
          allocates BFF_PORT + RabbitMQ ports, writes .env.local with branch slug
          per L3: dedicated endpoints, ETag/304, Cache-Control: no-store
          per consumed event: RabbitMQ consumer + state cache update
          OTel mandatory dimensions: capability_id, zone, deployable, environment={branch}
 
-[10c] code-web-frontend agent      (vanilla HTML5/CSS3/JS — CHANNEL zone only)
+[4c] code-web-frontend agent       (vanilla HTML5/CSS3/JS — CHANNEL zone only)
          output: sources/{capability-id}/frontend/  (index.html, styles.css, api.js, app.js)
          follows frontend-baseline pattern; STUB_DATA in api.js is the test contract
          branch badge in header, dignity rule in DOM order, French vocabulary
          test injection points: ?beneficiaireId= and ?consentement=refuse
 
-[11] Test (zone-aware)             (test-business-capability OR test-app agent)
+[5] Test (zone-aware)              (test-business-capability OR test-app agent)
         Path A — non-CHANNEL (entry: /test-business-capability)
           ↓ runs in:  ephemeral environment (.NET service + MongoDB + RabbitMQ via docker-compose)
           ↓ generates: tests/{cap-id}/TASK-NNN-{slug}/{conftest.py, test_dod.py,
@@ -128,158 +144,171 @@ before it is executed, and traceable from the service offer down to the deployed
         ↓ reports: report.html + run.log; failures feed code's remediation loop
 ```
 
-**Stages 1–4 are sequential human sessions** — each requires Socratic dialogue and
-human decision-making.
-**Stage 5 is parallelizable per L2** but is itself a Socratic per-capability session
-(one ADR at a time, with explicit override gating).
-**Stages 6–8 can be fully parallelized** across capabilities (BCM YAML, plan, task generation).
-**Stages 9–11 are driven by `/sort-task` (read-only board) and `/launch-task`
-(orchestrator)** — the rest of the workflow does not launch implementation agents directly.
+**Stages 0–2 can be fully parallelized** across capabilities (process modelling,
+plan, task generation). **Stages 3–5 are driven by `/sort-task` (read-only
+board) and `/launch-task` (orchestrator)** — this skill does not launch
+implementation agents directly.
+
+> **Read-only contract.** `process/{capability-id}/` is the output of stage 0
+> and the **read-only input** of stages 1, 2, 4, 5 and any `/fix` /
+> `/continue-work` re-entry. The `process-folder-guard.py` PreToolUse hook
+> blocks every Write/Edit attempt under `process/**` outside the `/process`
+> skill, in both the main checkout and `/tmp/kanban-worktrees/...` worktrees.
+> Branches and PRs opened by stages 4 (`/code`) and the remediation skills
+> (`/fix`) MUST NOT contain any diff under `process/{capability-id}/`. If a
+> downstream stage discovers that the model is wrong, it must surface the gap
+> and stop, so the user can re-run `/process <CAPABILITY_ID>` in a separate
+> session.
 
 ---
 
 ## Step 1 — Assess Pipeline Status
 
-When invoked, first scan the repo to determine which stages are complete:
+The pipeline operates on a per-capability basis. For each capability the user
+wants to advance, query `bcm-pack` to verify upstream knowledge is complete,
+then check local artifacts. Do not `ls` `/bcm/`, `/func-adr/`, `/adr/`,
+`/strategic-vision/`, `/product-vision/`, `/tech-vision/`, or `/tech-adr/` —
+those paths are not authoritative locally and are typically absent.
 
 ```bash
-ls /product-vision/product.md                       # Stage 1
-ls /strategic-vision/strategic-vision.md            # Stage 2
-ls /tech-vision/tech-vision.md                      # Stage 3
-ls /tech-vision/adr/ADR-TECH-STRAT-*.md             # Stage 3 ADRs
-ls /func-adr/ADR-BCM-FUNC-*.md                      # Stage 4
-ls /tech-adr/ADR-TECH-TACT-*.md                     # Stage 5
-ls /bcm/*.yaml                                      # Stage 6
-ls /plan/*/plan.md                                  # Stage 7
-ls /plan/*/tasks/TASK-*.md                          # Stage 8
-ls /plan/BOARD.md                                   # Stage 9 (sort-task / launch-task)
-ls sources/*/backend/ src/*/*-bff/ sources/*/frontend/   # Stages 10a/b/c artifacts
-ls tests/*/TASK-*-*/report.html                     # Stage 11 reports
-```
+# Pick a target capability (or iterate over `bcm-pack list --level L2`)
+CAP_ID="CAP.BSP.001"
 
-Cross-reference: count L2 capabilities in `/func-adr/`; for stage 5 report the
-ratio `tactical ADRs / L2 capabilities`; same logic for stages 6/7/8 vs. capabilities;
-for stage 9 read the BOARD column counts.
+# Upstream readiness — all required slices must be non-empty for stages 1-2 to run
+bcm-pack pack $CAP_ID --deep --compact > /tmp/probe.json
+jq '{
+  product_vision:        (.slices.product_vision        | length),
+  business_vision:       (.slices.business_vision       | length),
+  tech_vision:           (.slices.tech_vision           | length),
+  governing_tech_strat:  (.slices.governing_tech_strat  | length),
+  capability_definition: (.slices.capability_definition | length),
+  tactical_stack:        (.slices.tactical_stack        | length),
+  capability_self:       (.slices.capability_self       | length),
+  warnings:              .warnings
+}' /tmp/probe.json
+
+# Local artifacts produced by this pipeline
+ls process/$CAP_ID/{README.md,aggregates.yaml,commands.yaml,policies.yaml,read-models.yaml,bus.yaml,api.yaml}  # Stage 0
+ls /plan/$CAP_ID/plan.md                                # Stage 1
+ls /plan/$CAP_ID/tasks/TASK-*.md                        # Stage 2
+ls /plan/BOARD.md                                       # Stage 3 (sort-task / launch-task)
+ls sources/*/backend/ src/*/*-bff/ sources/*/frontend/  # Stage 4 artifacts
+ls tests/*/TASK-*-*/report.html                         # Stage 5 reports
+```
 
 Report the status clearly:
 
 ```
-✅ Stage  1 — Product defined (product.md exists, N ADR-PROD-*)
-✅ Stage  2 — Strategic business vision defined (N L1 capabilities)
-✅ Stage  3 — Strategic technical vision defined (6 ADR-TECH-STRAT-*)
-✅ Stage  4 — N FUNC ADRs written (covers M L2 capabilities)
-⏳ Stage  5 — Tactical tech ADRs: K/N L2s have ADR-TECH-TACT-*
-              ⚠ P override(s) PENDING_ARCHITECT_TEAM
-⬜ Stage  6 — BCM YAML not yet produced (validate_repo.py blocked)
-⬜ Stage  7 — Plan: 0/N capabilities planned
-⬜ Stage  8 — Tasks: 0/N capabilities have tasks
-⬜ Stage  9 — Kanban: BOARD.md not yet generated
-⬜ Stage 10 — No implementation artifacts under sources/ or src/*/*-bff/
-⬜ Stage 11 — No test reports under tests/
+Upstream (bcm-pack) for CAP.BSP.001:
+  ✅ product_vision / business_vision / tech_vision present
+  ✅ FUNC ADR present (capability_definition non-empty)
+  ✅ Tactical ADR present (tactical_stack non-empty)
+  ✅ BCM YAML present (capability_self non-empty, no warnings)
 
-Next action: complete tactical tech ADRs (stage 5) for the remaining N-K L2 capabilities.
+Local pipeline:
+  ✅ Stage 0 — Process: process/CAP.BSP.001/ (aggregates, commands, policies, read-models, bus.yaml, api.yaml, schemas/)
+  ✅ Stage 1 — Plan: /plan/CAP.BSP.001/plan.md
+  ⏳ Stage 2 — Tasks: 3/8 epics covered
+  ⬜ Stage 3 — Kanban: BOARD.md not yet generated
+  ⬜ Stage 4 — No implementation artifacts
+  ⬜ Stage 5 — No test reports
+
+Next action: complete task generation for the remaining 5 epics.
 ```
+
+If any upstream slice is empty or `pack.warnings` is non-empty, the upstream
+knowledge corpus is incomplete — direct the user to the upstream
+`banking-knowledge` repository to fix it. This skill cannot author or modify
+upstream artifacts.
 
 ---
 
 ## Step 2 — Guide or Execute the Next Action
 
-### Stages 1–4: Sequential Socratic sessions
+### Stage 0 — Process Modelling generation (parallelizable per capability)
 
-These stages require human input — guide the user to invoke the right skill.
-**Never short-circuit a session** — each one produces governance artifacts the next
-stage depends on.
+For each capability without a `process/{capability-id}/` folder (or whose
+folder is older than the FUNC ADR returned by `bcm-pack`), spawn one subagent
+that invokes the `/process` skill:
 
-| Pending stage | What to tell the user |
-|---|---|
-| Stage 1 | "Start with product brainstorming. Say `let's brainstorm the product` to invoke `/product-brainstorming`." |
-| Stage 2 | "Product is defined. Say `let's do the strategic business session` to map L1/L2/L3 strategic capabilities." |
-| Stage 3 | "Strategic business vision is ready. Say `strategic tech brainstorming` to commit ADR-TECH-STRAT-001..006." |
-| Stage 4 | "Technical vision is committed. Say `business capabilities session` to define IS capabilities and write FUNC ADRs (one per L2)." |
-
-### Stage 5: Tactical tech brainstorming (per L2, parallelizable as separate sessions)
-
-This stage is **mandatory before stage 6** — every L2 must have a committed tactical
-ADR before BCM YAML can be written, because the YAML's technology fields (database, runtime,
-exchange names, SLOs) are derived from the tactical ADR.
-
-Two modes:
-
-**Single L2 mode (sequential, human-driven):**
-> "FUNC ADRs are committed. For each L2, run `/tactic-tech-brainstorming` to decide its
-> concrete stack (language, database, RabbitMQ config, SLOs, sizing). Strategic
-> ADRs are read-only — overrides require explicit justification and architect team approval."
-
-**Batch mode (parallelizable):**
-When the user says `run all tactical ADRs` or `all the tactical sessions`, launch one
-sub-agent per L2 capability that lacks a tactical ADR. Each sub-agent invokes the
-`tactic-tech-brainstorming` skill **non-interactively** by:
-1. Reading the FUNC ADR for its assigned L2.
-2. Applying the strategic constraint defaults from ADR-TECH-STRAT-*.
-3. Producing a draft ADR with `status: Proposed` and **no overrides** (no override is ever
-   auto-approved in batch mode — overrides require human dialogue).
-4. Marking the ADR `requires_review: true` if any decision is non-trivial.
-
-After batch generation, tell the user:
-> "Drafted N tactical ADRs in `tech-adr/`. Review each one and run
-> `/tactic-tech-brainstorming` interactively if any L2 needs a deviation from
-> strategic defaults."
-
-### Stages 6–8: Automated parallelization (BCM, plan, task)
-
-Once stages 4 and 5 are complete, stages 6–8 can run concurrently per capability.
-
-**When the user says "run all plans", "generate all tasks", or "run the full pipeline":**
-
-#### Parallel BCM YAML generation (Stage 6)
-
-For each capability that has a FUNC ADR but no YAML, spawn one subagent:
 ```
-Use the bcm-writer skill to translate ADR-BCM-FUNC-NNN into validated YAML.
-Read: /func-adr/ADR-BCM-FUNC-NNN.md, /tech-adr/ADR-TECH-TACT-NNN-{cap-id}.md,
-      /templates/, /bcm/vocab.yaml.
-Write to: /bcm/{capability-type}-{cap-id}.yaml
-After writing, run python tools/validate_repo.py to confirm coherence.
+Use the process skill to generate the Process Modelling layer for capability
+[CAP.ZONE.NNN — Name].
+
+Knowledge access (mandatory):
+- Source ALL BCM, ADR, and vision context from the `bcm-pack` CLI:
+    `bcm-pack pack [CAP.ZONE.NNN] --deep --compact`
+  Do NOT read /bcm/, /func-adr/, /adr/, /strategic-vision/, /product-vision/,
+  /tech-vision/, or /tech-adr/ directly.
+
+The /process skill will:
+- Pose the session sentinel /tmp/.claude-process-skill.active
+- Drive an Event-Storming-style modelling session producing:
+    process/[CAP.ZONE.NNN]/
+      README.md, aggregates.yaml, commands.yaml, policies.yaml,
+      read-models.yaml, bus.yaml, api.yaml, schemas/*.schema.json
+- Remove the sentinel on exit.
+
+These artifacts are read-only for every downstream stage; the
+process-folder-guard.py PreToolUse hook enforces this.
 ```
 
-#### Parallel Plan generation (Stage 7)
+Process Modelling for one capability is INDEPENDENT of other capabilities —
+launch one subagent per target capability in the same turn for parallelism.
+
+### Stage 1 — Plan generation (parallelizable per capability)
 
 For each L2 capability without a `plan.md`, spawn one subagent:
+
 ```
 Use the plan skill to generate a plan for capability [CAP.ZONE.NNN — Name].
-Context files needed:
-- /bcm/*.yaml                                   (capability definition)
-- /func-adr/ADR-BCM-FUNC-NNN.md                 (governing functional ADR)
-- /tech-adr/ADR-TECH-TACT-NNN-{cap-id}.md       (tactical stack ADR)
-- /strategic-vision/strategic-vision.md
-- /product-vision/product.md
+
+Knowledge access (mandatory):
+- Source ALL BCM, ADR, and vision context from the `bcm-pack` CLI:
+    `bcm-pack pack [CAP.ZONE.NNN] --deep --compact`
+  Do NOT read /bcm/, /func-adr/, /adr/, /strategic-vision/, /product-vision/,
+  /tech-vision/, or /tech-adr/ directly. The pack returns slices for
+  capability_self, capability_definition (FUNC ADR), tactical_stack
+  (tactical ADR), governing_urba, governing_tech_strat, product_vision,
+  business_vision, tech_vision — use these.
+
+Local artifacts (read directly only if updating):
+- /plan/[capability-id]/plan.md   (existing plan, if any)
+
 Save the result to /plan/[capability-id]/plan.md
 ```
 
-#### Parallel Task generation (Stage 8)
+### Stage 2 — Task generation (parallelizable per capability)
 
 For each capability with a plan but no tasks, spawn one subagent:
+
 ```
 Use the task skill to generate tasks for capability [CAP.ZONE.NNN — Name].
-Read the plan from /plan/[capability-id]/plan.md.
-Context files needed:
-- /bcm/*.yaml                                   (capability definition)
-- /func-adr/ADR-BCM-FUNC-NNN.md                 (governing functional ADR)
-- /tech-adr/ADR-TECH-TACT-NNN-{cap-id}.md       (tactical stack ADR)
+Read the plan from /plan/[capability-id]/plan.md (local).
+
+Knowledge access (mandatory):
+- Source ALL BCM and ADR context from the `bcm-pack` CLI:
+    `bcm-pack pack [CAP.ZONE.NNN] --compact`
+  (lightweight is enough for task generation — the rationale ADRs are not
+  needed). Do NOT read /bcm/, /func-adr/, /adr/, or /tech-adr/ directly.
+  Use slices: capability_self, capability_definition,
+  emitted_business_events, consumed_business_events, carried_objects,
+  carried_concepts, governing_urba, tactical_stack.
+
 Save tasks to /plan/[capability-id]/tasks/TASK-*.md with frontmatter:
   task_id, capability_id, capability_name, epic, status, priority,
   depends_on, loop_count: 0, max_loops: 10
 ```
 
-Launch all subagents in the same turn (parallel). Report progress as they complete.
-After they finish, the `/sort-task` skill will detect the new TASK files via the
-PostToolUse hook and refresh `/plan/BOARD.md` automatically.
+Launch all subagents in the same turn (parallel). Report progress as they
+complete. After they finish, the `/sort-task` skill will detect the new TASK
+files via the PostToolUse hook and refresh `/plan/BOARD.md` automatically.
 
-### Stage 9: Hand off to the launch-task scheduler
+### Stage 3 — Hand off to the launch-task scheduler
 
 Once tasks exist, **stop driving execution from this skill** — delegate to
-`/launch-task` (with `/sort-task` as the read-only board view). Do not list tasks
-here. Tell the user:
+`/launch-task` (with `/sort-task` as the read-only board view). Do not list
+tasks here. Tell the user:
 
 > "Tasks are ready. Use `/launch-task` to drive execution (or `/sort-task` for a
 > read-only board view).
@@ -302,24 +331,24 @@ here. Tell the user:
 > - ⚫ `stalled` — code skill exhausted its `max_loops` budget without passing tests;
 >   resume with `/continue-work TASK-NNN [--max-loops N]`."
 
-### Stage 10: Code execution (driven by /launch-task or manual /code)
+### Stage 4 — Code execution (driven by /launch-task or manual /code)
 
 When `/launch-task` (or the user via `/code TASK-NNN`) launches a task, the code skill:
 
 1. **Verifies prerequisites** — status is `todo`/`in_progress`, all `depends_on` are `done`,
    no open questions, status not `stalled`.
 2. **Reads loop counters** — initializes `loop_count: 0`, `max_loops: 10` if absent.
-3. **Detects the capability zone** from `bcm/capabilities-*.yaml` (`zoning` field) or
-   from `decision_scope.zoning` in the FUNC ADR. The zone determines the implementation path:
+3. **Detects the capability zone** from the `bcm-pack` slice (`capability_self.zoning`)
+   for the target capability. The zone determines the implementation path:
 
-   | YAML `zoning`                | Path | Skill(s) invoked                         |
-   |------------------------------|------|------------------------------------------|
-   | `BUSINESS_SERVICE_PRODUCTION`| A    | `implement-capability`                   |
-   | `SUPPORT`                    | A    | `implement-capability`                   |
-   | `REFERENTIAL`                | A    | `implement-capability`                   |
-   | `EXCHANGE_B2B`               | A    | `implement-capability`                   |
-   | `DATA_ANALYTIQUE`            | A    | `implement-capability`                   |
-   | `STEERING`                   | A    | `implement-capability`                   |
+   | `zoning`                     | Path | Skill(s) invoked                              |
+   |------------------------------|------|-----------------------------------------------|
+   | `BUSINESS_SERVICE_PRODUCTION`| A    | `implement-capability`                        |
+   | `SUPPORT`                    | A    | `implement-capability`                        |
+   | `REFERENTIAL`                | A    | `implement-capability`                        |
+   | `EXCHANGE_B2B`               | A    | `implement-capability`                        |
+   | `DATA_ANALYTIQUE`            | A    | `implement-capability`                        |
+   | `STEERING`                   | A    | `implement-capability`                        |
    | `CHANNEL`                    | B    | `create-bff` + `code-web-frontend` (parallel) |
 
 4. **Creates an isolation branch** `feat/TASK-NNN-{slug}` from `main` (or works in the
@@ -355,7 +384,7 @@ When `/launch-task` (or the user via `/code TASK-NNN`) launches a task, the code
        (`#section-progression`, `#consent-gate`, `#table-historique`, `[data-filtre]`,
        etc.). URL injection points: `?beneficiaireId=` and `?consentement=refuse`.
 
-7. **Invokes the matching test skill** (Stage 11 — see below):
+7. **Invokes the matching test skill** (Stage 5 — see below):
    - **Path A (non-CHANNEL)** — `/test-business-capability`, spawning the
      `test-business-capability` agent against the .NET microservice
      (`backend-only` mode).
@@ -376,8 +405,6 @@ When `/launch-task` (or the user via `/code TASK-NNN`) launches a task, the code
 
 10. **Closure** — when tests pass:
     - Set `status: in_review`, add `pr_url:` to the frontmatter.
-    - Run `python tools/validate_repo.py && python tools/validate_events.py` to confirm
-      BCM coherence.
     - Update the task index `index.md`.
     - Commit with Conventional Commits format (`feat(TASK-NNN): …`).
     - Push branch and `gh pr create` with a body that includes:
@@ -386,7 +413,7 @@ When `/launch-task` (or the user via `/code TASK-NNN`) launches a task, the code
       `RABBIT_MGMT_PORT`, `BFF_PORT`), and the manual test plan.
     - Report next available tasks (newly unblocked).
 
-### Stage 11: Test (zone-aware, invoked by code; can be invoked manually)
+### Stage 5 — Test (zone-aware, invoked by code; can be invoked manually)
 
 Two distinct skills, picked by the `/code` skill from the capability zone:
 
@@ -441,52 +468,53 @@ under the same `tests/{capability-id}/TASK-NNN-{slug}/` directory.
 ## Pipeline Integrity Checks
 
 | Stage | Prerequisite |
-|-------|-------------|
-| 2  | `/product-vision/product.md` contains a service offer sentence |
-| 3  | `/strategic-vision/strategic-vision.md` has at least one L1 capability |
-| 4  | `/tech-vision/tech-vision.md` exists with all six ADR-TECH-STRAT-* committed |
-| 5  | At least one `ADR-BCM-FUNC-*.md` in `/func-adr/`; tactical ADR exists per L2 before stage 6 |
-| 6  | A tactical ADR `ADR-TECH-TACT-*` exists for each L2 referenced in FUNC ADRs |
-| 7  | `/bcm/*.yaml` exists and `python tools/validate_repo.py` passes |
-| 8  | `/plan/{capability-id}/plan.md` has at least one epic with an exit condition |
-| 9  | At least one `TASK-NNN-*.md` in `/plan/*/tasks/` with valid frontmatter |
-| 10 | Task status is `todo` (or `in_progress` re-entry); all `depends_on` are `done`; no open questions; not `stalled` |
-| 11 | An implementation artifact exists in `sources/{cap}/`, `src/*/{cap-id}-bff/`, or `sources/{cap-id}/frontend/` |
+|-------|--------------|
+| 0 (Process) | `bcm-pack pack <CAP_ID> --deep` returns non-empty `capability_self`, `capability_definition`, `tactical_stack`, `governing_urba`, `governing_tech_strat`, `product_vision`, `business_vision`, `tech_vision`, and `pack.warnings` is empty. The full upstream chain (product → strategic business → strategic tech → FUNC ADR → tactical ADR → BCM YAML) must be in place in the `banking-knowledge` repo. |
+| 1 (Plan) | Stage 0 prerequisites + `process/{capability-id}/` exists with at least `README.md`, `aggregates.yaml`, `commands.yaml`, `policies.yaml`, `read-models.yaml`, `bus.yaml`. |
+| 2 (Task) | Stage 1 prerequisite + local `/plan/{capability-id}/plan.md` has at least one epic with an exit condition |
+| 3 (sort-task / launch-task) | At least one `TASK-NNN-*.md` in local `/plan/*/tasks/` with valid frontmatter |
+| 4 (Code) | Task status is `todo` (or `in_progress` re-entry); all `depends_on` are `done`; no open questions; not `stalled`; `process/{capability-id}/` is present (task references AGG/CMD/POL/PRJ/QRY identifiers from there) |
+| 5 (Test) | An implementation artifact exists in `sources/{cap}/`, `src/*/{cap-id}-bff/`, or `sources/{cap-id}/frontend/` |
 
-If a prerequisite is missing, explain which earlier stage must be completed first.
-**Strategic overrides flagged `PENDING_ARCHITECT_TEAM`** in any tactical ADR do not
-block stage 6 mechanically, but the ADR's `status` must move from `Proposed` to
-`Accepted` (with architect approval) before the corresponding capability can leave
-stage 9.
+If a prerequisite is missing, explain which earlier stage must be completed
+first. If the gap is upstream (any required `bcm-pack` slice is empty), point
+the user to the `banking-knowledge` repository — this skill cannot fix it.
 
 ---
 
 ## Governance Reminders
 
-Throughout the workflow, enforce these non-negotiable rules:
-
-- **GOV ADRs** (`adr/ADR-BCM-GOV-*.md`) define the meta-rules — read-only.
-- **URBA ADRs** (`adr/ADR-BCM-URBA-*.md`) are read-only — never modified by any stage.
-- **TECH-STRAT ADRs** (`tech-vision/adr/ADR-TECH-STRAT-*.md`) are the strategic constraint
-  surface — read-only after stage 3. Every tactical ADR must explicitly cite which
-  TECH-STRAT rules it applies and which (if any) it overrides.
-- **Tactical ADRs** (`tech-adr/ADR-TECH-TACT-*.md`) may override TECH-STRAT rules **only**
-  with: a hard constraint justification (not a preference), an explicit `OVERRIDE-NNN`
-  block in the ADR body, and `approval_status: PENDING_ARCHITECT_TEAM` until reviewed.
-- Every FUNC ADR must reference the URBA ADRs it is constrained by.
-- Every capability in YAML must trace back to a FUNC ADR.
-- Every task must trace back to plan epic → BCM capability → FUNC ADR → URBA constraints.
-- Every implementation artifact (microservice, BFF, frontend) must be reachable from a
-  TASK-NNN, which is itself reachable from a plan epic.
+- **All upstream context is read-only.** GOV / URBA / TECH-STRAT / FUNC /
+  TACTICAL ADRs and BCM YAML live in the `banking-knowledge` repo and are
+  consumed via `bcm-pack` only. To author or update them, work in that
+  repository directly.
+- Every task must trace back to a plan epic, which traces back to an L2
+  capability whose `bcm-pack` slice is complete (capability_self,
+  capability_definition, tactical_stack).
+- Every implementation artifact (microservice, BFF, frontend) must be
+  reachable from a TASK-NNN, which is itself reachable from a plan epic.
 
 **The traceability chain is unbreakable:**
 
 ```
-Service Offer → Strategic L1 → Strategic Tech (TECH-STRAT) → IS L1/L2 (FUNC) →
-   Tactical Tech (TECH-TACT) → BCM YAML → Plan Epic → Task → Code → Tests → PR
+[upstream — banking-knowledge / bcm-pack]
+  Service Offer → Strategic L1 → Strategic Tech (TECH-STRAT) → IS L1/L2 (FUNC) →
+  Tactical Tech (TECH-TACT) → BCM YAML
+                          ↓
+[local — this repo]
+  Process Modelling (process/) → Plan Epic → Task → Code → Tests → PR
 ```
 
-Any stage that cannot establish this chain must stop and surface the gap to the user.
+Any stage that cannot establish this chain must stop and surface the gap to
+the user.
+
+**The process layer is write-restricted.** Only `/process` can author files
+under `process/{capability-id}/`. The `process-folder-guard.py` PreToolUse
+hook rejects every Write/Edit attempt under `process/**` outside the
+`/process` skill's session, in both the main repo and any kanban worktree
+under `/tmp/kanban-worktrees/...`. Branches and PRs opened by `/code`,
+`/fix`, or `/launch-task` (and their CI/CD pipelines) MUST NOT contain any
+diff under `process/{capability-id}/`.
 
 ---
 

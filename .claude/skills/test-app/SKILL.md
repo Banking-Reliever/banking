@@ -141,9 +141,14 @@ conversation. Include:
 - The capability ID and confirmed zone (CHANNEL)
 - The list of artifacts located in Step 4 (frontend / BFF paths)
 - Any flags the user passed (`--bff`, `--env`, etc.)
-- The path to the FUNC ADR(s) for the capability
-- The plan path: `/plan/{capability-id}/plan.md`
-- The tactical ADR path (if any): `/tech-adr/ADR-TECH-TACT-*-{cap-id}.md`
+- The plan path: `/plan/{capability-id}/plan.md` (local artifact)
+- An explicit instruction to fetch BCM/ADR/vision context from `bcm-pack`:
+  `bcm-pack pack <CAPABILITY_ID> --deep --compact` — and to NOT read
+  `/bcm/`, `/func-adr/`, `/adr/`, `/tech-adr/`, `/tech-vision/`,
+  `/strategic-vision/`, or `/product-vision/` directly. The FUNC ADR is
+  in `slices.capability_definition`; the tactical ADR is in
+  `slices.tactical_stack`; vision narratives are in
+  `slices.product_vision` / `slices.business_vision` / `slices.tech_vision`.
 
 Spawn:
 
@@ -160,7 +165,7 @@ Say to the user:
 > "Spawning test-app agent for TASK-NNN (branch: {BRANCH})..."
 
 The agent handles everything from here:
-- Reads context (TASK, FUNC ADR, plan, tactical ADR, vision docs)
+- Reads context: TASK file (local) + plan (local) + capability pack via `bcm-pack` (FUNC ADR, tactical ADR, vision narratives)
 - States its test plan + assumptions
 - Picks the test mode (full-mock / frontend+bff / bff-only)
 - Brings up the ephemeral environment (HTTP server + BFF + RabbitMQ if needed)

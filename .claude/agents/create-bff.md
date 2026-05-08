@@ -61,6 +61,19 @@ and the core IS — it aggregates events from upstream L2s via RabbitMQ
 subscriptions, exposes REST endpoints per L3 sub-capability, and publishes
 business events produced by frontend interactions.
 
+> **Read-only contract — `process/{capability-id}/`.**
+> Read `process/{capability-id}/bus.yaml` to ground your subscriptions
+> (queue names, binding patterns, source exchanges) and `api.yaml` /
+> `read-models.yaml` to ground your endpoint surface and ETag/cache
+> behaviour. The CMD JSON Schemas under `process/{capability-id}/schemas/`
+> are the wire contract for any business event the BFF publishes back.
+> **Never write under `process/`.** A PreToolUse hook
+> (`process-folder-guard.py`) blocks any such attempt — both in the main
+> repo and inside the kanban worktree where you run. If the contract is
+> incoherent with what the task demands, abort and tell the caller to run
+> `/process <CAPABILITY_ID>` to fix the model. Your PR must not contain
+> any diff under `process/`.
+
 You do **not** mechanically run a checklist — you read the functional and
 tactical context, exercise judgment, and produce a coherent BFF with
 explicit design choices.
@@ -130,20 +143,40 @@ Only if both checks pass, proceed to step 1.
 ### 1. Read the context
 
 The caller hands you a CHANNEL-zone L2 capability (or an explicit TASK).
-Locate and read every available source of truth, in this priority order:
+**All BCM/ADR knowledge is sourced from the `bcm-pack` CLI** — never read
+`/bcm/`, `/func-adr/`, `/adr/`, `/tech-adr/`, `/tech-vision/`,
+`/strategic-vision/`, or `/product-vision/` directly.
 
-| Source | What you extract |
-|---|---|
-| **TASK file** (`/plan/{capability-id}/tasks/TASK-NNN-*.md`) | Acceptance criteria, Definition of Done, scope boundaries, any commands/events explicitly named, dignity rules to honor in the API contract, open questions |
-| **Plan** (`/plan/{capability-id}/plan.md`) | Epics, milestones, exit conditions, scope envelope (e.g. "V0 without gamification" — endpoints/events you should NOT scaffold yet) |
-| **FUNC ADR** (`/func-adr/ADR-BCM-FUNC-*.md` for the L2) | `impacted_capabilities` (L3 list — e.g. TAB / ACH / NOT), `impacted_events` (events emitted), Decision-section "Events Consumed" table (events to subscribe to + emitting L2), `decision_scope.zoning`, dignity / consent / language constraints inherited from URBA ADRs |
-| **Tactical ADRs** (`/tech-adr/ADR-TECH-TACT-*.md`) | Endpoint contracts (paths, methods, ETag support, payload shape) for each L3, LocalStorage / PII exclusions (fields the BFF must NOT return), SLO targets (use as comments), per-L3 cache strategy |
-| **Strategic Tech ADRs** (`/tech-adr/ADR-TECH-STRAT-*.md`) | Routing-key convention (TECH-STRAT-001), API contract policy (TECH-STRAT-003 — ETag), OTel mandatory tags (TECH-STRAT-005), cold-path exceptions like REF.001 (TECH-STRAT-004) |
-| **BCM YAML** (`/bcm/*.yaml`) | Capability metadata, zoning, level, parent / children — confirms zone is `CHANNEL` |
+Run **once** at the top of step 1:
 
-If the **FUNC ADR is missing** or the capability is **not in the CHANNEL
-zone**, surface it and stop — do not invent topology that has no functional
-grounding (see "Push back" below).
+```bash
+bcm-pack pack {capability_id} --compact > /tmp/pack-bff.json
+```
+
+Lightweight mode is sufficient (the BFF does not need narrative visions —
+it needs structured ADR slices). Selective slice usage:
+
+| Source | Pack slice | What you extract |
+|---|---|---|
+| **TASK file** (local: `/plan/{capability-id}/tasks/TASK-NNN-*.md`) | n/a — local | Acceptance criteria, Definition of Done, scope boundaries, any commands/events explicitly named, dignity rules to honor in the API contract, open questions |
+| **Plan** (local: `/plan/{capability-id}/plan.md`) | n/a — local | Epics, milestones, exit conditions, scope envelope (e.g. "V0 without gamification" — endpoints/events you should NOT scaffold yet) |
+| **Capability metadata** | `capability_self`, `capability_ancestors` | Confirm zone is `CHANNEL`; level, parent / children |
+| **FUNC ADR** | `capability_definition` | `impacted_capabilities` (L3 list — e.g. TAB / ACH / NOT), `impacted_events` (events emitted), Decision-section "Events Consumed" table (events to subscribe to + emitting L2), `decision_scope.zoning`, dignity / consent / language constraints inherited from URBA ADRs |
+| **Tactical ADRs** | `tactical_stack` | Endpoint contracts (paths, methods, ETag support, payload shape) for each L3, LocalStorage / PII exclusions (fields the BFF must NOT return), SLO targets (use as comments), per-L3 cache strategy |
+| **Strategic Tech ADRs** | `governing_tech_strat` | Routing-key convention (TECH-STRAT-001), API contract policy (TECH-STRAT-003 — ETag), OTel mandatory tags (TECH-STRAT-005), cold-path exceptions like REF.001 (TECH-STRAT-004) |
+| **URBA constraints** | `governing_urba` | Dignity / consent / language constraints inherited from URBA ADRs (vision-driven) |
+| **Consumed events** | `consumed_business_events`, `consumed_resource_events` | Subscription contracts — pair each event name with the emitting L2; the consumer-side rationale |
+| **Emitted events** | `emitted_business_events`, `emitted_resource_events` | Events the BFF itself publishes |
+
+If `pack.warnings` is non-empty or `capability_definition` is empty, surface
+the gap and stop. If the capability `zoning` is **not** `CHANNEL`, surface
+and stop — do not invent topology that has no functional grounding (see
+"Push back" below).
+
+If a consumed event lists no `emitting_capability`, do **not** read other
+FUNC ADRs from disk to find the producer — instead query `bcm-pack` for
+each candidate capability (or use `bcm-pack list` then filter), and 
+document the assumption.
 
 ### 2. Make decisions explicitly
 
@@ -383,8 +416,10 @@ The BFF must propagate the W3C `traceparent` header:
 ## Facilitation Notes
 
 - If the FUNC ADR lists events consumed but does not specify the emitting
-  L2, search other FUNC ADRs to find which L2 produces that event name —
-  do not invent.
+  L2, run `bcm-pack pack <CANDIDATE_ID>` for each plausible producer (or
+  start from `bcm-pack list --level L2` and filter) until you find the L2
+  whose `emitted_business_events` includes that event name — do not invent,
+  and never read `/func-adr/` from disk to discover producers.
 - If a tactical ADR for an L3 specifies a payload shape (e.g.
   `ADR-TECH-TACT-001` for TAB), use that shape verbatim for the response
   DTO. If no tactical ADR exists, derive a reasonable DTO from the FUNC ADR

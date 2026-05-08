@@ -81,26 +81,41 @@ Before generating any test file, do this in order.
 ### 1. Read the context
 
 The caller hands you a task identifier (`TASK-NNN`) and optionally a branch
-or environment slug. Locate and read every available source of truth, in this
-priority order:
+or environment slug. **All BCM/ADR/vision context is sourced from the
+`bcm-pack` CLI** — never read `/bcm/`, `/func-adr/`, `/adr/`, `/tech-adr/`,
+`/tech-vision/`, `/strategic-vision/`, or `/product-vision/` directly.
 
-| Source | What you extract |
-|---|---|
-| **TASK file** (`/plan/{capability-id}/tasks/TASK-NNN-*.md`) | Definition of Done (each `[ ]` becomes a candidate test), "What to Build" (features to cover), "Business Objects Involved" (entities to assert in the DB), "Business Events to Produce" (RabbitMQ messages to assert on the bus) |
-| **Plan** (`/plan/{capability-id}/plan.md`) | Scoping decisions (explicit *exclusions* worth testing), epic exit conditions |
-| **FUNC ADR** (`/func-adr/ADR-BCM-FUNC-*.md`) | Business rules constraining domain behavior, event semantics, governance constraints inherited from URBA ADRs, aggregate invariants |
-| **Tactical ADR** (`/tech-adr/ADR-TECH-TACT-*-{cap-id}.md`) | Concrete stack (which DB, which broker, which API style, SLOs) — affects backend integration tests |
-| **BCM YAML** (`/bcm/*.yaml`) | Capability zoning (must NOT be CHANNEL), level (L2/L3), parent/children — confirms the agent is operating in scope |
-| **Business event YAML** (`/bcm/business-event-*.yaml`) | Expected event names, schemas, emitting capabilities, routing keys — used to assert bus emission |
-| **Resource event YAML** (`/bcm/resource-event-*.yaml`) | Technical event projection, exchange/queue topology |
-| **Product vision** (`/product-vision/product.md`) | Tone, language posture (used in vocabulary checks on event payloads / API error messages) |
-| **Strategic vision** (`/strategic-vision/strategic-vision.md`) | The strategic capability this TASK contributes to — used to frame the verdict, not to generate tests |
+Run **once** at the top of step 1:
 
-If the TASK file or FUNC ADR is missing, **stop and report a context gap** —
-you cannot fairly judge an implementation against criteria that don't exist.
+```bash
+bcm-pack pack {capability_id} --deep --compact > /tmp/pack-test-bc.json
+```
 
-If the capability `zoning` is `CHANNEL`, **stop and redirect the caller to
-`/test-app`** — this agent does not test frontends or BFFs.
+Use `--deep` so the vision narratives are present — they feed the lightweight
+`test_strategic.py` heuristics. Selective slice usage:
+
+| Source | Pack slice | What you extract |
+|---|---|---|
+| **TASK file** (local: `/plan/{capability-id}/tasks/TASK-NNN-*.md`) | n/a — local | Definition of Done (each `[ ]` becomes a candidate test), "What to Build" (features to cover), "Business Objects Involved" (entities to assert in the DB), "Business Events to Produce" (RabbitMQ messages to assert on the bus) |
+| **Plan** (local: `/plan/{capability-id}/plan.md`) | n/a — local | Scoping decisions (explicit *exclusions* worth testing), epic exit conditions |
+| **Capability metadata** | `capability_self` | `zoning` (must NOT be CHANNEL), level (L2/L3), parent — confirms the agent is operating in scope |
+| **FUNC ADR** | `capability_definition` | Business rules constraining domain behavior, event semantics, governance constraints inherited from URBA ADRs, aggregate invariants |
+| **URBA constraints** | `governing_urba` | Event meta-model (URBA 0007–0013) — naming, schema, routing-key invariants |
+| **Tactical ADR** | `tactical_stack` | Concrete stack (which DB, which broker, which API style, SLOs) — affects backend integration tests |
+| **Strategic Tech ADRs** | `governing_tech_strat` | Routing-key convention (TECH-STRAT-001), OTel mandatory tags (TECH-STRAT-005) |
+| **Business events** | `emitted_business_events` | Expected event names, schemas, emitting capability, routing keys — used to assert bus emission |
+| **Resource events** | `emitted_resource_events` | Technical event projection, exchange/queue topology, wire-level payload shape |
+| **Consumed events** | `consumed_business_events`, `consumed_resource_events` | Subscription contracts to assert in incoming-message tests |
+| **Carried structures** | `carried_objects`, `carried_concepts` | Aggregate fields and invariants asserted in DB and in event payloads |
+| **Product vision** | `product_vision` (deep mode) | Tone, language posture (used in vocabulary checks on event payloads / API error messages) |
+| **Business vision** | `business_vision` (deep mode) | The strategic capability this TASK contributes to — used to frame the verdict, not to generate tests |
+
+If `pack.warnings` is non-empty or `capability_definition` is empty,
+**stop and report a context gap** — you cannot fairly judge an
+implementation against criteria that don't exist.
+
+If `capability_self[0].zoning` is `CHANNEL`, **stop and redirect the caller
+to `/test-app`** — this agent does not test frontends or BFFs.
 
 ### 2. Detect the active branch / environment
 

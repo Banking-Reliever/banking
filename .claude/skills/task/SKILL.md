@@ -13,10 +13,24 @@ description: >
 
 # Task Skill
 
-You are generating **implementation task files** for a business capability, based on its plan. 
-Each task will be picked up by the implement-capability agent for execution. Tasks must contain 
-enough context for a developer (or the implement-capability agent) to work independently — 
-without needing to ask questions.
+You are generating **implementation task files** for a business capability, based on its plan
+and its Process Modelling layer. Each task will be picked up by the implement-capability
+agent for execution. Tasks must contain enough context for a developer (or the
+implement-capability agent) to work independently — without needing to ask questions.
+
+---
+
+## Hard rule — `process/{capability-id}/` is read-only
+
+This skill reads `process/{capability-id}/` (aggregates, commands, policies,
+read-models, bus topology, JSON Schemas) as a primary input — tasks routinely
+reference `AGG.*`, `CMD.*`, `POL.*`, `PRJ.*`, `QRY.*` identifiers from there.
+This skill **never writes** to that folder. A PreToolUse hook
+(`process-folder-guard.py`) enforces this — every Write/Edit under
+`process/**` outside the `/process` skill is rejected.
+
+If the model evolves (new aggregate, renamed command, new policy), stop and run
+`/process <CAPABILITY_ID>` first to refresh the model, then re-run `/task`.
 
 ---
 
@@ -24,14 +38,42 @@ without needing to ask questions.
 
 1. **Identify the capability** to generate tasks for. Ask if not specified, or list plannable 
    capabilities (those with a `plan.md` but no `tasks/` directory yet, or with a stale task set).
+   To enumerate plannable capabilities, run `bcm-pack list --level L2` (and `--level L3` if
+   relevant) — never read `/bcm/*.yaml` directly.
 
-2. **Read all relevant context:**
+2. **Fetch the capability pack** from the `bcm-pack` CLI — this is the **only** sanctioned 
+   knowledge source. Do not read `/bcm/`, `/func-adr/`, `/adr/`, `/strategic-vision/`, or 
+   `/product-vision/` directly; those paths are not authoritative in this checkout.
+
+   ```bash
+   bcm-pack pack <CAPABILITY_ID> --compact > /tmp/pack-task.json
+   ```
+
+   Lightweight mode is enough for task generation — you do not need the rationale ADRs 
+   behind the vision narratives. Read these slices selectively:
+
+   | Slice                       | Used for                                              |
+   |-----------------------------|-------------------------------------------------------|
+   | `capability_self`           | task `capability_id`, `capability_name`, level, ADRs  |
+   | `capability_definition`     | governing FUNC ADR(s) — decisions and constraints     |
+   | `emitted_business_events`   | "Business Events to Produce" per task                 |
+   | `consumed_business_events`  | "Event Subscriptions Required" per task               |
+   | `carried_objects`           | "Business Objects Involved" per task                  |
+   | `carried_concepts`          | terminology grounding — feeds Open Questions if fuzzy |
+   | `governing_urba`            | URBA ADR constraints (event meta-model, naming…)      |
+
+   Then read the **local** artifacts:
    - `/plan/{capability-id}/plan.md` — the source of epics and exit conditions
-   - The capability's YAML in `/bcm/` — for technical identifiers and events
-   - The capability's FUNC ADR(s) in `/func-adr/` — for decisions and constraints
-   - `/adr/ADR-BCM-URBA-*.md` — relevant URBA ADRs (especially 0007-0013 for event model)
-   - `/product-vision/product.md` — service offer context
+   - `process/{capability-id}/` — the Process Modelling layer (read-only).
+     Tasks must reference the `AGG.*` / `CMD.*` / `POL.*` / `PRJ.*` / `QRY.*`
+     identifiers from `aggregates.yaml`, `commands.yaml`, `policies.yaml`,
+     and `read-models.yaml`, and the routing keys / subscriptions from
+     `bus.yaml`. If the folder is absent, stop and run `/process
+     <CAPABILITY_ID>` first.
    - Existing tasks in `/plan/{capability-id}/tasks/` — to avoid duplication
+
+   Check `pack.warnings` — non-empty entries should land in the `Open Questions` of the 
+   first task that touches the affected area.
 
 3. **Check the implement-capability agent** at `.claude/agents/implement-capability.md` 
    to understand what input format it expects, so tasks are written in a compatible structure.

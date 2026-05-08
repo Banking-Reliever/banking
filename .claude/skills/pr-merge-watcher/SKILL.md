@@ -4,6 +4,10 @@ description: >
   Checks the status of open GitHub PRs for tasks with `status: in_review`,
   and automatically transitions tasks whose PR has been merged to `status: done`.
   Refreshes /plan/BOARD.md and identifies newly unblocked tasks.
+  Also inspects each open PR's CI/build status: when the pipeline is failing,
+  harvests the essential information from the build logs and dispatches the
+  `/fix` skill on that PR (idempotent — never re-triggers `/fix` on the same
+  head SHA).
   Trigger on: "check PRs", "check merges", "pr-merge-watcher",
   "are there any merged PRs", "update the board after merge".
   Can also be launched via /loop for periodic local polling.
@@ -11,8 +15,13 @@ description: >
 
 # PR Merge Watcher
 
-Monitors GitHub PRs for `in_review` tasks and automatically closes those
-whose PR has been merged. Updates the kanban board accordingly.
+Monitors GitHub PRs for `in_review` tasks and:
+
+1. Closes those whose PR has been merged (status → `done`).
+2. Detects open PRs whose CI pipeline is failing and dispatches `/fix` with a
+   normalized failure bundle harvested from the GitHub checks.
+
+Updates the kanban board accordingly.
 
 ---
 
@@ -36,27 +45,51 @@ If a task has `status: in_review` but no `pr_url`: skip it and display a warning
 
 ---
 
-## Step 3 — Check the Status of Each PR on GitHub
+## Step 3 — Fetch PR State + CI Status
 
-For each PR URL, extract the number (last path segment) and run:
+For each PR URL, extract the number (last path segment) and run **once**:
 
 ```bash
-gh pr view <NNN> --repo Banking-Reliever/banking --json state,mergedAt
+gh pr view <NNN> --repo Banking-Reliever/banking \
+  --json number,state,mergedAt,headRefName,headRefOid,title,statusCheckRollup
 ```
 
-Interpret the result:
-- `"state": "MERGED"` or `mergedAt` non-null → PR merged
-- Otherwise → skip this task
+Capture:
+
+- `state` and `mergedAt` — used to detect a merged PR.
+- `headRefOid` — the current head SHA (used for `/fix` idempotency).
+- `headRefName` — branch name (passed to `/fix`).
+- `statusCheckRollup` — array of check runs. Each entry exposes
+  `name`, `status` (`COMPLETED`, `IN_PROGRESS`, `QUEUED`, …) and
+  `conclusion` (`SUCCESS`, `FAILURE`, `TIMED_OUT`, `CANCELLED`,
+  `ACTION_REQUIRED`, `NEUTRAL`, `SKIPPED`, …).
 
 ---
 
-## Step 4 — Close Tasks Whose PR Is Merged
+## Step 4 — Classify Each PR
 
-For each task whose PR is merged:
+For each task / PR pair, derive a **bucket** from the data fetched in Step 3:
+
+| Bucket          | Condition                                                                                         |
+|-----------------|---------------------------------------------------------------------------------------------------|
+| `merged`        | `state == "MERGED"` or `mergedAt` non-null                                                        |
+| `ci-pending`    | At least one check with `status` in {`IN_PROGRESS`, `QUEUED`, `REQUESTED`, `WAITING`, `PENDING`}  |
+| `ci-failing`    | All checks `COMPLETED` AND at least one `conclusion` in {`FAILURE`, `TIMED_OUT`, `CANCELLED`, `ACTION_REQUIRED`} |
+| `ci-green`      | All checks `COMPLETED` AND every `conclusion` is `SUCCESS` / `NEUTRAL` / `SKIPPED`                |
+| `no-checks`     | `statusCheckRollup` is empty                                                                      |
+
+Process buckets independently in the order below. A `merged` PR is processed
+even if its last pre-merge CI was failing — merge wins.
+
+---
+
+## Step 5 — Close Tasks Whose PR Is Merged (`merged` bucket)
+
+For each task in the `merged` bucket:
 
 1. Modify the task file:
    - `status: in_review` → `status: done`
-   - Keep `pr_url:` as-is (traceability)
+   - Keep `pr_url:` as-is (traceability).
 
 2. Stage and commit **only** the modified files (never `git add -A`):
 
@@ -68,12 +101,12 @@ git commit -m "chore(TASK-NNN): mark done after PR merge
 
 PR: <pr_url>
 
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
 
-## Step 5 — Rebuild BOARD.md
+## Step 6 — Rebuild BOARD.md
 
 Scan all task files:
 
@@ -120,7 +153,7 @@ git commit -m "chore(board): refresh after PR merge watcher run"
 
 ---
 
-## Step 6 — Push
+## Step 7 — Push
 
 ```bash
 git push origin main
@@ -131,24 +164,141 @@ stop. Suggest the user run `git pull --rebase` then re-launch.
 
 ---
 
-## Step 7 — Report
+## Step 8 — Dispatch `/fix` on Failing CI (`ci-failing` bucket)
 
-Display a summary:
+This step runs **after** Steps 5–7 so that any merge transitions are committed
+and pushed before `/fix` starts mutating worktrees. PRs in the `ci-pending`,
+`ci-green`, or `no-checks` buckets are left alone.
+
+### 8.1 — Idempotency guard (skip already-fixed head SHAs)
+
+For each PR in the `ci-failing` bucket, fetch the existing watcher comments:
+
+```bash
+gh pr view <NNN> --repo Banking-Reliever/banking \
+  --json comments --jq '.comments[] | select(.author.login=="github-actions[bot]" or (.body | startswith("pr-merge-watcher:"))) | .body'
+```
+
+If any prior watcher comment matches the marker
+`pr-merge-watcher: dispatched /fix at <headRefOid>` for the **current**
+`headRefOid`, skip this PR — `/fix` already ran on this exact failing commit.
+The next iteration of the watcher will pick it up again only after a new
+commit lands on the branch.
+
+Also skip the PR when the corresponding TASK file has
+`loop_count >= max_loops` (or `status: stalled`) — the budget is exhausted
+and the user must run `/continue-work` to grant more loops. Emit:
+
+> "⚠ TASK-NNN: PR #N is failing CI but loop budget is exhausted — run `/continue-work TASK-NNN`."
+
+### 8.2 — Harvest the failure bundle from build logs
+
+For each remaining `ci-failing` PR, collect the failing checks and a tight
+log excerpt — these are the "essential information" passed to `/fix`:
+
+```bash
+# 1. List the failing checks for this PR.
+gh pr checks <NNN> --repo Banking-Reliever/banking \
+  --json name,state,conclusion,description,link
+
+# 2. For every check whose conclusion is FAILURE/TIMED_OUT/CANCELLED/ACTION_REQUIRED,
+#    pull the failed-step log lines from the underlying run.
+RUN_ID=$(gh run list --repo Banking-Reliever/banking \
+  --branch <headRefName> --json databaseId,conclusion,headSha \
+  --jq '.[] | select(.headSha=="<headRefOid>" and (.conclusion=="failure" or .conclusion=="timed_out" or .conclusion=="cancelled")) | .databaseId' | head -1)
+
+gh run view "$RUN_ID" --repo Banking-Reliever/banking --log-failed > /tmp/pr-<NNN>-failed.log
+```
+
+From the harvested data, build a **FAILURE_BUNDLE** matching the structure
+`/fix` expects in its Step 0:
+
+```
+Source: pr-checks
+PR: #<NNN> — <title>
+Branch: <headRefName>
+Head SHA: <headRefOid>
+
+Failing checks:
+  ❌ <check name>: <conclusion> — <description (single line)>
+     Link: <check link>
+  ❌ <...>
+
+Raw excerpt (truncated to ~30 lines, head + tail of /tmp/pr-<NNN>-failed.log,
+ANSI stripped, noise lines like "##[group]" / "##[endgroup]" dropped):
+  <…relevant lines only…>
+```
+
+Trim aggressively: keep at most ~30 lines total per PR — head of the failure
+(the first `error:` / `FAILED` line and its immediate context) + tail (the
+final summary). Anything more is noise for `/fix`.
+
+### 8.3 — Mark the PR (write the idempotency marker BEFORE invoking `/fix`)
+
+Post the marker comment now so a concurrent watcher tick (e.g. when running
+under `/loop 5m`) does not re-dispatch the same fix:
+
+```bash
+gh pr comment <NNN> --repo Banking-Reliever/banking --body "$(cat <<'BODY'
+pr-merge-watcher: dispatched /fix at <headRefOid>
+
+Failing checks:
+- <check 1> (<conclusion>)
+- <check 2> (<conclusion>)
+BODY
+)"
+```
+
+### 8.4 — Invoke `/fix`
+
+Invoke the `/fix` skill **once per failing PR**, sequentially (never in
+parallel — `/fix` mutates a worktree and pushes to a branch). Pass the PR
+number plus the harvested FAILURE_BUNDLE so `/fix` can short-circuit its own
+log harvesting:
+
+```
+/fix --pr <NNN>
+
+── REMEDIATION CONTEXT (from pr-merge-watcher) ──
+<FAILURE_BUNDLE built in 8.2, verbatim>
+── END REMEDIATION CONTEXT ──
+```
+
+`/fix` owns its own loop-count bookkeeping, branch reuse, agent dispatch,
+test re-validation, commit, push, and PR comment. The watcher does not
+touch the failing branch itself.
+
+If `/fix` returns a stall (loop budget exhausted) or a flake-suspected exit,
+note it in the final report (Step 9) but do **not** retry on the same tick.
+
+---
+
+## Step 9 — Report
+
+Display a summary that covers all three outcomes:
 
 ```
 PR Merge Watcher — YYYY-MM-DD HH:MM
 
-Closed tasks:
+Closed tasks (merged):
   ✅ TASK-NNN: [title] (PR #NNN merged)
 
 Newly unblocked:
   🟢 TASK-NNN: [title] (was blocked by TASK-NNN)
 
-Still in review:
-  🟡 TASK-NNN: [title] — PR #NNN still open
+Still in review (CI green / pending):
+  🟡 TASK-NNN: [title] — PR #NNN open, checks <green | pending>
+
+Dispatched /fix (CI failing):
+  🔧 TASK-NNN: [title] — PR #NNN, head <sha7>
+     Failing: <check 1>, <check 2>
+     /fix outcome: <pushed fix | stalled | suspected flake>
+
+Skipped (already fixed at this SHA / loop budget exhausted):
+  ⏭ TASK-NNN: PR #NNN @ <sha7> — <reason>
 ```
 
-If nothing changed: no output, no commit.
+If nothing changed and no `/fix` was dispatched: no output, no commit.
 
 ---
 
@@ -165,3 +315,8 @@ For a single manual pass:
 ```
 /pr-merge-watcher
 ```
+
+> Under `/loop`, the idempotency marker (Step 8.3) prevents the same failing
+> head SHA from being fixed twice. A new `/fix` is only dispatched when a new
+> commit lands on the PR branch (which changes `headRefOid`), or when the
+> user resets the loop budget with `/continue-work`.
