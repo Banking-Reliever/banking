@@ -1,0 +1,6 @@
+# Claude Code runtime artefacts
+.claude/scheduled_tasks.lock
+
+# Python bytecode (e.g. .claude/skills/sketch-miro/sketch_miro.py)
+__pycache__/
+*.pyc
