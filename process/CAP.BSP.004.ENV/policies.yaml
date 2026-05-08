@@ -90,7 +90,7 @@ policies:
       command carries the case_id, the active period_index, the category and
       the amount.
     listens_to:
-      - resource_event: TBD  # most likely RVT.BSP.004.PAYMENT_GRANTED from CAP.BSP.004.AUT
+      - business_event: EVT.BSP.004.TRANSACTION_AUTHORIZED  # FUNC-0008 lists this as an impacted event of the L2 breakdown; emitted by the future CAP.BSP.004.AUT (not yet process-modelled). Promote to resource_event RVT.BSP.004.PAYMENT_GRANTED + bus.yaml subscription once a SUB.BUSINESS for CAP.BSP.004.ENV ← CAP.BSP.004.AUT is declared in BCM.
     issues: CMD.BSP.004.ENV.RECORD_CONSUMPTION
     open_question: >-
       ADR-BCM-FUNC-0008 lists `Transaction.Authorized` as an impacted event of
@@ -128,7 +128,7 @@ policies:
       period — emitting one ENVELOPE_PERIOD_WITHOUT_CONSUMPTION per unconsumed
       envelope (the counter-intuitive relapse signal).
     listens_to:
-      - resource_event: TBD  # time-based trigger; no upstream BCM event today
+      - business_event: EVT.SUP.001.PERIOD_DUE  # placeholder: future SUP-zone scheduling capability emits a PERIOD_DUE business event for cases whose period_end has been reached. No SUP scheduler is process-modelled yet; promote to resource_event once authored.
         trigger_kind: time-based
     issues: CMD.BSP.004.ENV.CLOSE_PERIOD
     open_question: >-

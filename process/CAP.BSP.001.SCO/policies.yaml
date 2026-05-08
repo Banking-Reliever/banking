@@ -67,7 +67,7 @@ policies:
       When a beneficiary completes enrolment, compute the baseline behavioural
       score as the reference point for subsequent recomputations.
     listens_to:
-      - resource_event: TBD  # see README open question on enrolment trigger
+      - business_event: EVT.BSP.002.ENROLMENT_COMPLETED  # FUNC-0006 (CAP.BSP.002 — Access & Enrollment). Upstream not yet process-modelled, so we reference the canonical business event; the paired RVT and a SUB.BUSINESS subscription must be added to BCM (ADR-BCM-FUNC-0005) before this can become a resource_event in bus.yaml.
     issues: CMD.BSP.001.SCO.COMPUTE_ENTRY_SCORE
     open_question: >-
       ADR-BCM-FUNC-0005 lists no business subscription for enrolment in CAP.BSP.001.SCO.

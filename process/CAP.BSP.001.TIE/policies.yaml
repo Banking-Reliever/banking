@@ -152,7 +152,7 @@ policies:
       policy the aggregate is materialised lazily on the first algorithmic
       transition or override; both paths converge on the same starting tier.
     listens_to:
-      - resource_event: TBD   # likely RVT.BSP.002.CASE_OPENED — confirm with FUNC-0006
+      - business_event: EVT.BSP.002.ENROLMENT_COMPLETED  # FUNC-0006 (CAP.BSP.002 — Access & Enrollment). Symmetric with POL.BSP.001.SCO.ON_ENROLMENT_COMPLETED. Upstream not yet process-modelled — promote to resource_event + bus.yaml subscription once a SUB.BUSINESS is declared in BCM for CAP.BSP.001.TIE.
     issues: null
     open_question: >-
       Two options: (a) add this policy and a CMD.SEED_INITIAL_TIER (no bus
