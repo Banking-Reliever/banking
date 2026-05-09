@@ -9,6 +9,7 @@ priority: high
 depends_on: []
 loop_count: 0
 max_loops: 10
+pr_url: https://github.com/Banking-Reliever/banking/pull/4
 ---
 
 > **Started on:** 2026-05-05
