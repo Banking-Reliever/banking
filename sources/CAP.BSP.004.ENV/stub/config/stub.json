@@ -1,0 +1,56 @@
+{
+  "Stub": {
+    "Active": false,
+    "EventsPerMinute": 6,
+    "AllowOutOfRangeCadence": false,
+    "Cases": [
+      {
+        "CaseId": "CASE-2026-000001",
+        "PeriodIndex": 0,
+        "PeriodStart": "2026-05-01",
+        "PeriodEnd": "2026-05-31",
+        "Envelopes": [
+          { "AllocationId": "ALLOC-2026-000001-ALIMENTATION", "Category": "ALIMENTATION", "CapAmount": 250.0 },
+          { "AllocationId": "ALLOC-2026-000001-TRANSPORT",    "Category": "TRANSPORT",    "CapAmount": 100.0 },
+          { "AllocationId": "ALLOC-2026-000001-SANTE",        "Category": "SANTE",        "CapAmount":  60.0 }
+        ]
+      },
+      {
+        "CaseId": "CASE-2026-000002",
+        "PeriodIndex": 0,
+        "PeriodStart": "2026-05-01",
+        "PeriodEnd": "2026-05-31",
+        "Envelopes": [
+          { "AllocationId": "ALLOC-2026-000002-ALIMENTATION", "Category": "ALIMENTATION", "CapAmount": 320.0 },
+          { "AllocationId": "ALLOC-2026-000002-TRANSPORT",    "Category": "TRANSPORT",    "CapAmount": 120.0 },
+          { "AllocationId": "ALLOC-2026-000002-LOISIRS",      "Category": "LOISIRS",      "CapAmount":  50.0 },
+          { "AllocationId": "ALLOC-2026-000002-VETEMENTS",    "Category": "VETEMENTS",    "CapAmount":  80.0 }
+        ]
+      },
+      {
+        "CaseId": "CASE-2026-000003",
+        "PeriodIndex": 0,
+        "PeriodStart": "2026-05-01",
+        "PeriodEnd": "2026-05-31",
+        "Envelopes": [
+          { "AllocationId": "ALLOC-2026-000003-ALIMENTATION", "Category": "ALIMENTATION", "CapAmount": 180.0 },
+          { "AllocationId": "ALLOC-2026-000003-TRANSPORT",    "Category": "TRANSPORT",    "CapAmount":  90.0 }
+        ]
+      }
+    ],
+    "RabbitMq": {
+      "HostName": "localhost",
+      "Port": 45481,
+      "UserName": "guest",
+      "Password": "guest",
+      "VirtualHost": "/"
+    },
+    "Bus": {
+      "ExchangeName": "bsp.004.env-events",
+      "RoutingKey": "EVT.BSP.004.ENVELOPE_CONSUMED.RVT.BSP.004.CONSUMPTION_RECORDED"
+    },
+    "Schema": {
+      "RuntimeSchemaPath": "schemas/RVT.BSP.004.CONSUMPTION_RECORDED.schema.json"
+    }
+  }
+}
