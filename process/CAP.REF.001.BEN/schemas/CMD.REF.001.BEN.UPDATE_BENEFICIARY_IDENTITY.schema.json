@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://reliever.example.com/process/CAP.REF.001.BEN/CMD.REF.001.BEN.UPDATE_BENEFICIARY_IDENTITY/0.1.0/schema.json",
+  "x-process-version": "0.1.0",
+  "x-process-role": "command-payload",
+  "x-process-capability": "CAP.REF.001.BEN",
+  "x-process-command": "CMD.REF.001.BEN.UPDATE_BENEFICIARY_IDENTITY",
+  "x-process-aggregate": "AGG.REF.001.BEN.BENEFICIARY_IDENTITY",
+  "x-process-correlation-key": "internal_id",
+  "x-process-idempotency-key": "command_id",
+  "title": "CMD.REF.001.BEN.UPDATE_BENEFICIARY_IDENTITY — Apply a partial update to a beneficiary's identity",
+  "description": "Payload of the UPDATE_BENEFICIARY_IDENTITY command. Partial-update semantics: only fields present in the payload are mutated; absent fields are left unchanged (sticky-PII rule, INV.BEN.003). Emits one RVT.REF.001.BENEFICIARY_REFERENTIAL_UPDATED with transition_kind=UPDATED. Idempotent on command_id over a 30-day window.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["internal_id", "command_id"],
+  "$defs": {
+    "contact_details_patch": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Partial contact_details patch. Only present sub-objects are mutated.",
+      "properties": {
+        "postal_address": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "line1": { "type": "string", "minLength": 1 },
+            "line2": { "type": "string" },
+            "postal_code": { "type": "string", "minLength": 1 },
+            "city": { "type": "string", "minLength": 1 },
+            "country_code": { "type": "string", "minLength": 2, "maxLength": 2 }
+          }
+        },
+        "email": { "type": "string", "format": "email" },
+        "phone_number": { "type": "string" }
+      }
+    }
+  },
+  "properties": {
+    "internal_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "CORRELATION KEY. Canonical identifier of the beneficiary to update."
+    },
+    "command_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "IDEMPOTENCY KEY. Caller-generated unique identifier of this command invocation (deduplicated for 30 days)."
+    },
+    "last_name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional. New legal last name (rare; e.g. legal change)."
+    },
+    "first_name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional. New first name (rare; e.g. legal change)."
+    },
+    "contact_details": { "$ref": "#/$defs/contact_details_patch" }
+  },
+  "anyOf": [
+    { "required": ["last_name"] },
+    { "required": ["first_name"] },
+    { "required": ["contact_details"] }
+  ]
+}

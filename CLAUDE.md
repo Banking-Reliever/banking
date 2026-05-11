@@ -88,10 +88,14 @@ Key coherence rules enforced by `validate_repo.py`:
 Capabilities are implemented using Claude Code skills in this order:
 
 ```
-/business-capabilities-brainstorming → /bcm-writer → /plan → /task → /code
+bcm-pack (knowledge) → /process → /plan → /task → /launch-task → /code → /test-business-capability | /test-app
 ```
 
-Implementation plans live in `plan/<CAP-ID>/plan.md`. Tasks are `plan/<CAP-ID>/tasks/TASK-NNN-*.md` with frontmatter fields `task_id`, `status`, `priority`, `depends_on`. The kanban board is at `plan/BOARD.md` (auto-refreshed by the `/sort-task` skill via PostToolUse hooks whenever a TASK file changes; `/launch-task` is the orchestrator that launches code agents).
+Local artefact layout:
+- **Process Modelling** (DDD tactical layer, written by `/process` only): `process/<CAP-ID>/` — `aggregates.yaml`, `commands.yaml`, `policies.yaml`, `read-models.yaml`, `bus.yaml`, `api.yaml`, `schemas/*.schema.json`. `/process` works on a dedicated `process/<CAP-ID>` branch + worktree and publishes via PR; downstream skills are gated until that PR merges.
+- **Roadmap** (epics / milestones, written by `/plan`): `roadmap/<CAP-ID>/roadmap.md`.
+- **Tasks** (implementation work items, written by `/task`): `tasks/<CAP-ID>/TASK-NNN-*.md` with frontmatter fields `task_id`, `status`, `priority`, `depends_on`, `loop_count`, `max_loops`.
+- **Kanban board**: `tasks/BOARD.md` — auto-refreshed by `/sort-task` via PostToolUse hooks whenever a TASK file changes; `/launch-task` is the orchestrator that launches code agents in isolated worktrees under `/tmp/kanban-worktrees/`.
 
 ### Build Output
 

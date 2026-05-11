@@ -1,0 +1,30 @@
+meta:
+  capability: CAP.REF.001.BEN
+  layer: process-modelling
+  version: 0.1.0
+  governing_adrs:
+    - ADR-BCM-FUNC-0013
+
+# ──────────────────────────────────────────────────────────────
+# Policies — reactive rules. A policy listens to one or more
+# events and issues a command. Policies are the only place in
+# the model where consumed events become commands; aggregates
+# never subscribe to events directly.
+# Identifier: POL.<ZONE>.<L1>.<L2>.<NAME>
+#
+# This capability has NO policies — it has no upstream
+# subscriptions in the BCM corpus (consumed_business_events and
+# consumed_resource_events are both empty for CAP.REF.001.BEN).
+# It is a pure source-of-truth referential, driven exclusively
+# by direct API calls from upstream callers (eligibility /
+# candidacy capability, programme administration, support
+# tooling). This is intentional and matches the canonical golden-
+# record / MDM pattern of ADR-BCM-FUNC-0013.
+#
+# Should a future BCM revision wire upstream events to this
+# capability (for example: an automated programme-exit signal
+# that should trigger ARCHIVE), policies would be added here
+# without renaming any existing AGG / CMD identifier.
+# ──────────────────────────────────────────────────────────────
+
+policies: []

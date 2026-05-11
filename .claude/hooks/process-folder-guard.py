@@ -7,8 +7,9 @@ Mécanisme :
   - Le skill /process « pose » un sentinelle /tmp/.claude-process-skill.active
     avant la première écriture, et le retire à la fin.
   - Ce hook intercepte les outils Write / Edit / MultiEdit / NotebookEdit.
-  - Si la cible se trouve sous process/<CAP>/ (chemin direct ou worktree
-    kanban /tmp/kanban-worktrees/TASK-NNN-*/process/<CAP>/) ET que le
+  - Si la cible se trouve sous process/<CAP>/ (chemin direct, worktree kanban
+    /tmp/kanban-worktrees/TASK-NNN-*/process/<CAP>/, OU worktree dédié au
+    skill /process /tmp/process-worktrees/<CAP_ID>/process/<CAP>/) ET que le
     sentinelle est absent (ou périmé > 30 min), le call est bloqué avec
     exit code 2 et un message stderr destiné à Claude.
 
@@ -46,6 +47,9 @@ SKETCH_MIRO_ALLOWED_BASENAMES = {"banking-miro.url", ".banking-miro.state.json"}
 # /tmp/kanban-worktrees/TASK-NNN-<slug>/...
 WORKTREE_RE = re.compile(r"^/tmp/kanban-worktrees/TASK-[A-Za-z0-9-]+/")
 
+# /tmp/process-worktrees/<CAP_ID>/...  (worktree dédié au skill /process)
+PROCESS_WORKTREE_RE = re.compile(r"^/tmp/process-worktrees/CAP\.[A-Z0-9.]+/")
+
 GUARDED_TOOLS = {"Write", "Edit", "MultiEdit", "NotebookEdit"}
 
 
@@ -55,7 +59,8 @@ def is_under_process(path: str) -> bool:
     Cas couverts :
       1. <PROJECT_ROOT>/process/...
       2. /tmp/kanban-worktrees/TASK-NNN-<slug>/process/...
-      3. Chemin relatif "process/..." (résolu par rapport au cwd implicite)
+      3. /tmp/process-worktrees/<CAP_ID>/process/...
+      4. Chemin relatif "process/..." (résolu par rapport au cwd implicite)
     """
     if not path:
         return False
@@ -75,7 +80,15 @@ def is_under_process(path: str) -> bool:
         if first_seg == PROCESS_REL:
             return True
 
-    # 3. Chemin relatif (rarement utilisé par les outils mais on couvre).
+    # 3. Chemin absolu sous un worktree /process dédié.
+    m = PROCESS_WORKTREE_RE.match(abs_path)
+    if m:
+        rest = abs_path[m.end():]
+        first_seg = rest.split(os.sep, 1)[0] if rest else ""
+        if first_seg == PROCESS_REL:
+            return True
+
+    # 4. Chemin relatif (rarement utilisé par les outils mais on couvre).
     if not os.path.isabs(path):
         norm = os.path.normpath(path)
         if norm.startswith(PROCESS_REL + os.sep) or norm == PROCESS_REL:
@@ -127,6 +140,11 @@ def is_sketch_miro_sidecar(path: str) -> bool:
     if m:
         rest = abs_path[m.end():]
         # rest must be exactly process/<basename>
+        if rest == os.path.join(PROCESS_REL, basename):
+            return True
+    m = PROCESS_WORKTREE_RE.match(abs_path)
+    if m:
+        rest = abs_path[m.end():]
         if rest == os.path.join(PROCESS_REL, basename):
             return True
     return False

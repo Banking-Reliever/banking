@@ -83,7 +83,7 @@ The script:
    - **Top-left**: `watch -n 2` of `git status` + the 10 most recently modified files
      in the worktree (excluding `.git/` and `.agent.log` itself).
    - **Top-right**: `tail -F` of `<worktree>/.agent.log`.
-   - **Bottom (full width)**: `watch -n 3` of `/plan/BOARD.md`.
+   - **Bottom (full width)**: `watch -n 3` of `/tasks/BOARD.md`.
 3. Pre-touches `.agent.log` if it does not exist yet, so `tail` does not bail out.
 4. Sets pane titles via `pane-border-status top`.
 
@@ -106,7 +106,7 @@ Layout:
     │ git status (top-L)   │ tail -F agent.log    │
     │ + recent files       │   (top-R)            │
     ├──────────────────────┴──────────────────────┤
-    │ /plan/BOARD.md (bottom, full width)         │
+    │ /tasks/BOARD.md (bottom, full width)         │
     └─────────────────────────────────────────────┘
 
 Useful tmux keys:

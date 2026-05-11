@@ -16,7 +16,7 @@ description: >
   /test-business-capability) for non-CHANNEL backend microservices, test-app
   (entry point: /test-app) for CHANNEL frontend + BFF — with an automatic
   remediation loop bounded by a loop budget.
-  The /sort-task skill keeps `/plan/BOARD.md` fresh (read-only); /launch-task is
+  The /sort-task skill keeps `/tasks/BOARD.md` fresh (read-only); /launch-task is
   the task scheduler — it tracks readiness, prioritizes by critical path, and
   spawns autonomous code agents in isolated worktrees.
 
@@ -64,18 +64,20 @@ upstream artifacts — it consumes them.
 
 [1] Plan                            (plan skill)                              [PARALLELIZABLE per L2 capability]
         ↓ reads:    `bcm-pack pack <CAP_ID> --deep` + process/{capability-id}/ (read-only)
-        ↓           + local `/plan/{capability-id}/plan.md` if updating an existing plan
-        ↓ produces: /plan/{capability-id}/plan.md  (epics, milestones, exit conditions)
+        ↓           + local `/roadmap/{capability-id}/roadmap.md` if updating an existing roadmap
+        ↓ produces: /roadmap/{capability-id}/roadmap.md  (epics, milestones, exit conditions)
+        ↓ NOTE: /tasks/ folder is reserved for the kanban (BOARD.md + <CAP_ID>/TASK-*.md) —
+        ↓       the plan skill writes to /roadmap/, never to /tasks/.
 
 [2] Task                            (task skill)                              [PARALLELIZABLE per capability]
-        ↓ reads:    /plan/{capability-id}/plan.md (local) + process/{capability-id}/ (read-only)
+        ↓ reads:    /roadmap/{capability-id}/roadmap.md (local) + process/{capability-id}/ (read-only)
         ↓           + `bcm-pack pack <CAP_ID>` (BCM + ADRs)
-        ↓ produces: /plan/{capability-id}/tasks/TASK-NNN-*.md
+        ↓ produces: /tasks/{capability-id}/TASK-NNN-*.md
                     (frontmatter: task_id, status, priority, depends_on, loop_count, max_loops)
 
 [3a] Sort-task                      (sort-task skill)                         [READ-ONLY BOARD GENERATOR]
-        ↓ reads:    all /plan/**/TASK-*.md
-        ↓ writes:   /plan/BOARD.md  (auto-refreshed on every TASK file change via hook)
+        ↓ reads:    all /tasks/**/TASK-*.md
+        ↓ writes:   /tasks/BOARD.md  (auto-refreshed on every TASK file change via hook)
         ↓ computes: ready / blocked / needs_info / stalled / in_progress / in_review / done
 
 [3b] Launch-task                    (launch-task skill)                       [SCHEDULER — drives stages 4-5]
@@ -84,7 +86,7 @@ upstream artifacts — it consumes them.
         ↓ enforces: idempotency (one code agent per task), one active task per capability
 
 [4] Code                            (code skill)                              [PARALLELIZABLE per task — one agent per task]
-        ↓ reads:    /plan/{capability-id}/tasks/TASK-NNN.md
+        ↓ reads:    /tasks/{capability-id}/TASK-NNN.md
         ↓ creates:  isolated git worktree on branch feat/TASK-NNN-{slug}
         ↓ detects:  capability `zoning` → routes to the correct path
         ↓ Path A — non-CHANNEL: spawns the implement-capability agent
@@ -189,9 +191,9 @@ jq '{
 
 # Local artifacts produced by this pipeline
 ls process/$CAP_ID/{README.md,aggregates.yaml,commands.yaml,policies.yaml,read-models.yaml,bus.yaml,api.yaml}  # Stage 0
-ls /plan/$CAP_ID/plan.md                                # Stage 1
-ls /plan/$CAP_ID/tasks/TASK-*.md                        # Stage 2
-ls /plan/BOARD.md                                       # Stage 3 (sort-task / launch-task)
+ls /roadmap/$CAP_ID/roadmap.md                          # Stage 1
+ls /tasks/$CAP_ID/TASK-*.md                        # Stage 2
+ls /tasks/BOARD.md                                       # Stage 3 (sort-task / launch-task)
 ls sources/*/backend/ src/*/*-bff/ sources/*/frontend/  # Stage 4 artifacts
 ls tests/*/TASK-*-*/report.html                         # Stage 5 reports
 ```
@@ -207,7 +209,7 @@ Upstream (bcm-pack) for CAP.BSP.001:
 
 Local pipeline:
   ✅ Stage 0 — Process: process/CAP.BSP.001/ (aggregates, commands, policies, read-models, bus.yaml, api.yaml, schemas/)
-  ✅ Stage 1 — Plan: /plan/CAP.BSP.001/plan.md
+  ✅ Stage 1 — Roadmap: /roadmap/CAP.BSP.001/roadmap.md
   ⏳ Stage 2 — Tasks: 3/8 epics covered
   ⬜ Stage 3 — Kanban: BOARD.md not yet generated
   ⬜ Stage 4 — No implementation artifacts
@@ -258,10 +260,10 @@ launch one subagent per target capability in the same turn for parallelism.
 
 ### Stage 1 — Plan generation (parallelizable per capability)
 
-For each L2 capability without a `plan.md`, spawn one subagent:
+For each L2 capability without a `roadmap.md`, spawn one subagent:
 
 ```
-Use the plan skill to generate a plan for capability [CAP.ZONE.NNN — Name].
+Use the plan skill to generate a roadmap for capability [CAP.ZONE.NNN — Name].
 
 Knowledge access (mandatory):
 - Source ALL BCM, ADR, and vision context from the `bcm-pack` CLI:
@@ -273,18 +275,19 @@ Knowledge access (mandatory):
   business_vision, tech_vision — use these.
 
 Local artifacts (read directly only if updating):
-- /plan/[capability-id]/plan.md   (existing plan, if any)
+- /roadmap/[capability-id]/roadmap.md   (existing roadmap, if any)
 
-Save the result to /plan/[capability-id]/plan.md
+Save the result to /roadmap/[capability-id]/roadmap.md
+(Do NOT write to /tasks/ — that folder is reserved for the kanban.)
 ```
 
 ### Stage 2 — Task generation (parallelizable per capability)
 
-For each capability with a plan but no tasks, spawn one subagent:
+For each capability with a roadmap but no tasks, spawn one subagent:
 
 ```
 Use the task skill to generate tasks for capability [CAP.ZONE.NNN — Name].
-Read the plan from /plan/[capability-id]/plan.md (local).
+Read the roadmap from /roadmap/[capability-id]/roadmap.md (local).
 
 Knowledge access (mandatory):
 - Source ALL BCM and ADR context from the `bcm-pack` CLI:
@@ -295,14 +298,14 @@ Knowledge access (mandatory):
   emitted_business_events, consumed_business_events, carried_objects,
   carried_concepts, governing_urba, tactical_stack.
 
-Save tasks to /plan/[capability-id]/tasks/TASK-*.md with frontmatter:
+Save tasks to /tasks/[capability-id]/TASK-*.md with frontmatter:
   task_id, capability_id, capability_name, epic, status, priority,
   depends_on, loop_count: 0, max_loops: 10
 ```
 
 Launch all subagents in the same turn (parallel). Report progress as they
 complete. After they finish, the `/sort-task` skill will detect the new TASK
-files via the PostToolUse hook and refresh `/plan/BOARD.md` automatically.
+files via the PostToolUse hook and refresh `/tasks/BOARD.md` automatically.
 
 ### Stage 3 — Hand off to the launch-task scheduler
 
@@ -314,10 +317,10 @@ tasks here. Tell the user:
 > read-only board view).
 >
 > `/launch-task` will:
-> - Invoke `/sort-task` first to scan all `/plan/**/TASK-*.md` and compute readiness
+> - Invoke `/sort-task` first to scan all `/tasks/**/TASK-*.md` and compute readiness
 >   (todo / in_progress / in_review / done / blocked / needs_info / stalled).
 > - Prioritize ready tasks by critical path × business priority.
-> - Maintain `/plan/BOARD.md` (auto-refreshed on every TASK file change via hook).
+> - Maintain `/tasks/BOARD.md` (auto-refreshed on every TASK file change via hook).
 > - Launch one `code` agent per ready task — manually, reactively (when a dependency
 >   merges), or fully autonomously (`/launch-task auto`).
 > - In autonomous mode, each task gets its own git worktree under
@@ -399,7 +402,7 @@ When `/launch-task` (or the user via `/code TASK-NNN`) launches a task, the code
 9. **Stall procedure** — if the loop budget is exhausted with failing tests:
    - Update task frontmatter: `status: stalled`, write `stalled_reason` (last failing
      criteria + date), keep `loop_count` and `max_loops`.
-   - Invoke `/sort-task` to refresh `/plan/BOARD.md` so the board reflects the ⚫ state.
+   - Invoke `/sort-task` to refresh `/tasks/BOARD.md` so the board reflects the ⚫ state.
    - Stop. Tell the user to run `/continue-work TASK-NNN [--max-loops N]` with optional
      guidance to relaunch.
 
@@ -471,8 +474,8 @@ under the same `tests/{capability-id}/TASK-NNN-{slug}/` directory.
 |-------|--------------|
 | 0 (Process) | `bcm-pack pack <CAP_ID> --deep` returns non-empty `capability_self`, `capability_definition`, `tactical_stack`, `governing_urba`, `governing_tech_strat`, `product_vision`, `business_vision`, `tech_vision`, and `pack.warnings` is empty. The full upstream chain (product → strategic business → strategic tech → FUNC ADR → tactical ADR → BCM YAML) must be in place in the `banking-knowledge` repo. |
 | 1 (Plan) | Stage 0 prerequisites + `process/{capability-id}/` exists with at least `README.md`, `aggregates.yaml`, `commands.yaml`, `policies.yaml`, `read-models.yaml`, `bus.yaml`. |
-| 2 (Task) | Stage 1 prerequisite + local `/plan/{capability-id}/plan.md` has at least one epic with an exit condition |
-| 3 (sort-task / launch-task) | At least one `TASK-NNN-*.md` in local `/plan/*/tasks/` with valid frontmatter |
+| 2 (Task) | Stage 1 prerequisite + local `/roadmap/{capability-id}/roadmap.md` has at least one epic with an exit condition |
+| 3 (sort-task / launch-task) | At least one `TASK-NNN-*.md` in local `/tasks/*/` with valid frontmatter |
 | 4 (Code) | Task status is `todo` (or `in_progress` re-entry); all `depends_on` are `done`; no open questions; not `stalled`; `process/{capability-id}/` is present (task references AGG/CMD/POL/PRJ/QRY identifiers from there) |
 | 5 (Test) | An implementation artifact exists in `sources/{cap}/`, `src/*/{cap-id}-bff/`, or `sources/{cap-id}/frontend/` |
 
@@ -521,7 +524,7 @@ diff under `process/{capability-id}/`.
 ## Operational Notes
 
 - **The `/sort-task` skill runs on every TASK file change** (via PostToolUse hook). It
-  refreshes `/plan/BOARD.md` automatically — do not regenerate it from this skill.
+  refreshes `/tasks/BOARD.md` automatically — do not regenerate it from this skill.
 - **Branch / environment isolation is end-to-end.** Every implementation component
   (implement-capability agent, create-bff agent, code-web-frontend agent) reads the
   current git branch slug and embeds it in artefact names: bus channels, RabbitMQ

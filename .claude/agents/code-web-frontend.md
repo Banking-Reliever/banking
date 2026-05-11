@@ -155,7 +155,7 @@ Only if both checks pass, proceed to step 1.
 ### 1. Identify the task and read the context
 
 The caller hands you a task identifier (`TASK-NNN`) and the capability
-ID. Locate `/plan/{capability-id}/tasks/TASK-NNN-*.md` and verify:
+ID. Locate `/tasks/{capability-id}/TASK-NNN-*.md` and verify:
 
 - `status: todo` (not `in_progress` or `done`)
 - All tasks listed in `depends_on` have status `done`
@@ -178,8 +178,8 @@ Selective slice usage:
 
 | Source | Pack slice | What you extract |
 |---|---|---|
-| **TASK file** (local: `/plan/{capability-id}/tasks/TASK-NNN-*.md`) | n/a — local | "What to Build" (views/sections), Definition of Done (each `[ ]` is a UI invariant), business objects displayed, business events to emit on user interaction, dignity / consent rules to honor, language posture |
-| **Plan** (local: `/plan/{capability-id}/plan.md`) | n/a — local | Epics, milestones, scoping rules ("V0 without gamification" — what NOT to render), constraints |
+| **TASK file** (local: `/tasks/{capability-id}/TASK-NNN-*.md`) | n/a — local | "What to Build" (views/sections), Definition of Done (each `[ ]` is a UI invariant), business objects displayed, business events to emit on user interaction, dignity / consent rules to honor, language posture |
+| **Roadmap** (local: `/roadmap/{capability-id}/roadmap.md`) | n/a — local | Epics, milestones, scoping rules ("V0 without gamification" — what NOT to render), constraints |
 | **Capability metadata** | `capability_self`, `capability_ancestors` | Capability name (used in `<title>` and `window.{Name}Api`), zoning, parent L1 |
 | **FUNC ADR** | `capability_definition` | Business rules constraining UX, business vocabulary, displayed business objects, governance constraints inherited from URBA ADRs, language / consent posture |
 | **URBA dignity / consent rules** | `governing_urba` | Hard rules on DOM order, consent gate, French vocabulary |
@@ -276,7 +276,7 @@ Before scaffolding, output a single block to the caller:
     Source:        [BFF | microservice | ⚠ inferred]
     Upstream port: [N | n/a]
 - Business rules applied in the UI:
-    - [rule 1 extracted from plan/ADR]
+    - [rule 1 extracted from roadmap/ADR]
     - [rule 2…]
 - Consent gate:      [yes | no]
 - Events emitted:    [list, or "none"]
@@ -692,8 +692,10 @@ After generating all files:
    `done` once DoD is validated; the older skill set it directly to
    `done`, but the kanban now keeps the test step in the loop).
 
-2. **Update the task index** `/plan/{capability-id}/tasks/index.md` to
-   reflect the new status if such an index exists.
+2. **Do NOT write any per-capability task-index file.** The `/tasks/` folder
+   is reserved for `/tasks/BOARD.md` and `/tasks/<CAP_ID>/TASK-*.md`; the kanban
+   `BOARD.md` is the single source of task status and is refreshed
+   automatically by `/sort-task` on every TASK file change.
 
 3. **Return a structured success report**:
 

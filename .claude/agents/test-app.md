@@ -93,8 +93,8 @@ Use `--deep` so the vision narratives are present — they feed the lightweight
 
 | Source | Pack slice | What you extract |
 |---|---|---|
-| **TASK file** (local: `/plan/{capability-id}/tasks/TASK-NNN-*.md`) | n/a — local | Definition of Done (each `[ ]` becomes a candidate test), "What to Build" (features to cover), "Business Objects Involved" (entities to look for in the UI), "Business Events to Produce" (network calls to intercept or messages to assert on the bus) |
-| **Plan** (local: `/plan/{capability-id}/plan.md`) | n/a — local | Scoping decisions ("V0 without gamification", "no real-time updates yet" — explicit *exclusions* worth testing), epic exit conditions |
+| **TASK file** (local: `/tasks/{capability-id}/TASK-NNN-*.md`) | n/a — local | Definition of Done (each `[ ]` becomes a candidate test), "What to Build" (features to cover), "Business Objects Involved" (entities to look for in the UI), "Business Events to Produce" (network calls to intercept or messages to assert on the bus) |
+| **Roadmap** (local: `/roadmap/{capability-id}/roadmap.md`) | n/a — local | Scoping decisions ("V0 without gamification", "no real-time updates yet" — explicit *exclusions* worth testing), epic exit conditions |
 | **Capability metadata** | `capability_self` | `zoning` (must be CHANNEL), level (L2/L3), parent — confirms the agent is operating in scope |
 | **FUNC ADR** | `capability_definition` | Business rules constraining UX (dignity rule, consent gate, language posture), event semantics, governance constraints inherited from URBA ADRs |
 | **URBA constraints** | `governing_urba` | Mandatory dignity / consent / vocabulary rules to assert in `test_business_rules.py` |

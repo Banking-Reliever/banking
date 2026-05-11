@@ -40,8 +40,8 @@ fresh `code` session with the full original context.
 
 ## Step 1 — Locate and Validate the Task
 
-1. Find the task file at `/plan/{capability-id}/tasks/TASK-NNN-*.md`.
-   If not found, scan all `plan/*/tasks/` directories and report a list of stalled tasks.
+1. Find the task file at `/tasks/{capability-id}/TASK-NNN-*.md`.
+   If not found, scan all `tasks/*/` directories and report a list of stalled tasks.
 
 2. Verify the task status is `stalled`:
    - If `status: done` → tell the user: "TASK-NNN is already done — nothing to resume."
@@ -105,7 +105,7 @@ Write the updated frontmatter. Do not touch any other field (preserves `depends_
 
 ## Step 4 — Notify the Board
 
-Invoke `/sort-task` to refresh `/plan/BOARD.md` and reflect the `todo` status
+Invoke `/sort-task` to refresh `/tasks/BOARD.md` and reflect the `todo` status
 (→ will transition to `in_progress` once the code agent starts). `/launch-task`
 will pick it up reactively when its Step 6 fires.
 

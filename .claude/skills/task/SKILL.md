@@ -2,13 +2,13 @@
 name: task
 description: >
   Generates concrete implementation tasks for a planned business capability, ready to be 
-  executed by the implement-capability agent. Tasks are written to /plan/{capability-id}/tasks/. 
+  executed by the implement-capability agent. Tasks are written to /tasks/{capability-id}/TASK-NNN-*.md. 
   Use this skill whenever the user wants to generate tasks from a plan, break epics into 
   implementation work, create the task list for a capability, or prepare work for coding. 
   Trigger on: "generate tasks", "create tasks", "break down the plan", "tasks for capability", 
-  "implementation tasks", "what are the tasks", or any time a plan.md exists for a capability 
+  "implementation tasks", "what are the tasks", or any time a roadmap.md exists for a capability 
   and the user is ready to define the implementation work items. Also trigger proactively 
-  after a plan.md is created or updated for a capability.
+  after a roadmap.md is created or updated for a capability.
 ---
 
 # Task Skill
@@ -34,12 +34,47 @@ If the model evolves (new aggregate, renamed command, new policy), stop and run
 
 ---
 
+## Readiness gate — process model must be merged on `main`
+
+Before reading anything from `process/<CAP_ID>/`, verify the model has landed
+on `main`. A model that exists only on a `process/<CAP_ID>` branch (PR still
+open, not yet reviewed) is NOT ready to drive task generation.
+
+```bash
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
+CAP_ID="<CAPABILITY_ID>"
+
+# 1. Folder must exist on main.
+git -C "$PROJECT_ROOT" ls-tree --name-only main -- "process/$CAP_ID" \
+    > /tmp/process-main-check.txt
+if [ ! -s /tmp/process-main-check.txt ]; then
+  echo "GATE-FAIL: process/$CAP_ID/ is not on main."
+  echo "Run /process $CAP_ID, then merge the resulting PR before retrying /task."
+  exit 1
+fi
+
+# 2. No open PR for the process branch.
+OPEN_COUNT=$(gh pr list --head "process/$CAP_ID" --state open --json number --jq 'length' 2>/dev/null || echo 0)
+if [ "$OPEN_COUNT" != "0" ]; then
+  PR_URL=$(gh pr list --head "process/$CAP_ID" --state open --json url --jq '.[0].url')
+  echo "GATE-FAIL: an open process PR ($PR_URL) is still pending review."
+  echo "Wait for it to be merged into main before running /task."
+  exit 1
+fi
+```
+
+If either check fails, **stop and surface the failure to the user with the
+redirect message** — do not proceed to generate tasks. Once the PR is merged,
+re-run `/task`.
+
+---
+
 ## Before You Begin
 
 1. **Identify the capability** to generate tasks for. Ask if not specified, or list plannable 
-   capabilities (those with a `plan.md` but no `tasks/` directory yet, or with a stale task set).
-   To enumerate plannable capabilities, run `bcm-pack list --level L2` (and `--level L3` if
-   relevant) — never read `/bcm/*.yaml` directly.
+   capabilities (those with a `roadmap.md` under `/roadmap/{cap}/` but no `/tasks/{cap}/`
+   directory yet, or with a stale task set). To enumerate plannable capabilities, run
+   `bcm-pack list --level L2` (and `--level L3` if relevant) — never read `/bcm/*.yaml` directly.
 
 2. **Fetch the capability pack** from the `bcm-pack` CLI — this is the **only** sanctioned 
    knowledge source. Do not read `/bcm/`, `/func-adr/`, `/adr/`, `/strategic-vision/`, or 
@@ -63,14 +98,14 @@ If the model evolves (new aggregate, renamed command, new policy), stop and run
    | `governing_urba`            | URBA ADR constraints (event meta-model, naming…)      |
 
    Then read the **local** artifacts:
-   - `/plan/{capability-id}/plan.md` — the source of epics and exit conditions
+   - `/roadmap/{capability-id}/roadmap.md` — the source of epics and exit conditions
    - `process/{capability-id}/` — the Process Modelling layer (read-only).
      Tasks must reference the `AGG.*` / `CMD.*` / `POL.*` / `PRJ.*` / `QRY.*`
      identifiers from `aggregates.yaml`, `commands.yaml`, `policies.yaml`,
      and `read-models.yaml`, and the routing keys / subscriptions from
      `bus.yaml`. If the folder is absent, stop and run `/process
      <CAPABILITY_ID>` first.
-   - Existing tasks in `/plan/{capability-id}/tasks/` — to avoid duplication
+   - Existing tasks in `/tasks/{capability-id}/` — to avoid duplication
 
    Check `pack.warnings` — non-empty entries should land in the `Open Questions` of the 
    first task that touches the affected area.
@@ -82,7 +117,8 @@ If the model evolves (new aggregate, renamed command, new policy), stop and run
 
 ## Task Structure
 
-Each task is a markdown file in `/plan/{capability-id}/tasks/TASK-NNN-short-slug.md`.
+Each task is a markdown file in `/tasks/{capability-id}/TASK-NNN-short-slug.md`
+(flat per-capability folder — no nested `tasks/` subdirectory).
 
 Tasks are grouped by epic. Number them sequentially across the capability (TASK-001, TASK-002, etc.).
 
@@ -187,33 +223,20 @@ Assign tasks:
 
 ---
 
-## Step 3 — Write and Index
+## Step 3 — Write the Task Files
 
-Write each task file to `/plan/{capability-id}/tasks/TASK-NNN-[slug].md`.
+Write each task file to `/tasks/{capability-id}/TASK-NNN-[slug].md` — a flat
+per-capability folder, no nested `tasks/` subdirectory. Create the
+`/tasks/{capability-id}/` directory if it does not exist.
 
-After writing all tasks, create or update an index file at `/plan/{capability-id}/tasks/index.md`:
-
-```markdown
-# Task Index — [Capability Name] ([Capability ID])
-
-## Epic 1 — [Name]
-| ID | Title | Priority | Status | Depends On |
-|----|-------|----------|--------|-----------|
-| TASK-001 | [title] | high | todo | — |
-| TASK-002 | [title] | high | todo | TASK-001 |
-
-## Epic 2 — [Name]
-| ID | Title | Priority | Status | Depends On |
-|----|-------|----------|--------|-----------|
-| TASK-003 | [title] | medium | todo | TASK-002 |
-...
-
-## Dependency Graph (text)
-TASK-001 → TASK-002 → TASK-003
-                    ↘ TASK-004 (parallel with TASK-003)
-```
+Do NOT write any other file under `/tasks/`. That folder holds only the
+kanban: `BOARD.md` at its root (auto-generated by `/sort-task`) plus the
+`<CAP_ID>/TASK-*.md` cards. Per-capability indices, summaries, roadmap
+files, and contract folders all live elsewhere — see the layout rules in
+the `/plan` (→ `/roadmap/`) and `/process` (→ `process/`) skills.
 
 After writing all tasks, tell the user:
-> "Tasks for [capability] are committed to `/plan/[capability-id]/tasks/`. 
+> "Tasks for [capability] are committed to `/tasks/[capability-id]/`. 
 > To implement a task, use the implement-capability agent and reference the task file.
-> Start with TASK-001 (or any task with no dependencies)."
+> Start with TASK-001 (or any task with no dependencies). The kanban view at
+> `/tasks/BOARD.md` is refreshed automatically by `/sort-task`."

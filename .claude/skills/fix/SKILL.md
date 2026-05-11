@@ -53,6 +53,41 @@ that folder.
 
 ---
 
+## Readiness gate — process model must be merged on `main`
+
+Before re-spawning any implementation agent, verify the capability's process
+model is on `main` and that no `process/<CAP_ID>` PR is open. A fix must
+never run against an unreviewed model — that would risk re-implementing on
+top of a contract about to be reshaped by review.
+
+```bash
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
+CAP_ID="<CAPABILITY_ID-of-the-failing-task>"
+
+# 1. Folder must exist on main.
+git -C "$PROJECT_ROOT" ls-tree --name-only main -- "process/$CAP_ID" \
+    > /tmp/process-main-check.txt
+if [ ! -s /tmp/process-main-check.txt ]; then
+  echo "GATE-FAIL: process/$CAP_ID/ is not on main."
+  echo "Cannot fix this PR until /process $CAP_ID has been run and the model PR merged."
+  exit 1
+fi
+
+# 2. No open PR for the process branch.
+OPEN_COUNT=$(gh pr list --head "process/$CAP_ID" --state open --json number --jq 'length' 2>/dev/null || echo 0)
+if [ "$OPEN_COUNT" != "0" ]; then
+  PR_URL=$(gh pr list --head "process/$CAP_ID" --state open --json url --jq '.[0].url')
+  echo "GATE-FAIL: open process PR ($PR_URL) is pending review for $CAP_ID."
+  echo "Cannot run /fix until the process PR is merged into main."
+  exit 1
+fi
+```
+
+If either check fails, **stop and surface the failure** — the fix cannot
+land on a moving contract.
+
+---
+
 ## Step 0 — Resolve the Input
 
 The user gives you a failure signal. Identify which form it takes:
@@ -70,7 +105,7 @@ Always end Step 0 with three resolved values:
 
 1. **`BRANCH_NAME`** — the existing feature branch (e.g. `feat/TASK-001-bsp-env-envelope-consumed`).
    - Derive the **task slug** as the suffix after `feat/TASK-NNN-`.
-2. **`TASK_FILE`** — the absolute path to `plan/{capability-id}/tasks/TASK-NNN-*.md`
+2. **`TASK_FILE`** — the absolute path to `tasks/{capability-id}/TASK-NNN-*.md`
    that owns this branch (TASK-NNN is encoded in the branch name).
 3. **`FAILURE_BUNDLE`** — the failure context normalized into the structure below
    (used verbatim later in the REMEDIATION CONTEXT block):
@@ -318,7 +353,7 @@ ELSE
 ### Stall Procedure (loop budget exhausted)
 
 Identical to `/code`'s stall: set `status: stalled`, write `stalled_reason` (loop
-count + last failing items + date), refresh `/plan/BOARD.md` via `/sort-task`,
+count + last failing items + date), refresh `/tasks/BOARD.md` via `/sort-task`,
 report to the user, point them at `/continue-work TASK-NNN [--max-loops N]`.
 
 `/fix` does not push the failed attempt — leave the worktree in place and the branch

@@ -96,8 +96,8 @@ Use `--deep` so the vision narratives are present — they feed the lightweight
 
 | Source | Pack slice | What you extract |
 |---|---|---|
-| **TASK file** (local: `/plan/{capability-id}/tasks/TASK-NNN-*.md`) | n/a — local | Definition of Done (each `[ ]` becomes a candidate test), "What to Build" (features to cover), "Business Objects Involved" (entities to assert in the DB), "Business Events to Produce" (RabbitMQ messages to assert on the bus) |
-| **Plan** (local: `/plan/{capability-id}/plan.md`) | n/a — local | Scoping decisions (explicit *exclusions* worth testing), epic exit conditions |
+| **TASK file** (local: `/tasks/{capability-id}/TASK-NNN-*.md`) | n/a — local | Definition of Done (each `[ ]` becomes a candidate test), "What to Build" (features to cover), "Business Objects Involved" (entities to assert in the DB), "Business Events to Produce" (RabbitMQ messages to assert on the bus) |
+| **Roadmap** (local: `/roadmap/{capability-id}/roadmap.md`) | n/a — local | Scoping decisions (explicit *exclusions* worth testing), epic exit conditions |
 | **Capability metadata** | `capability_self` | `zoning` (must NOT be CHANNEL), level (L2/L3), parent — confirms the agent is operating in scope |
 | **FUNC ADR** | `capability_definition` | Business rules constraining domain behavior, event semantics, governance constraints inherited from URBA ADRs, aggregate invariants |
 | **URBA constraints** | `governing_urba` | Event meta-model (URBA 0007–0013) — naming, schema, routing-key invariants |

@@ -4,14 +4,14 @@ capability_id: CAP.BSP.004.ENV
 capability_name: Budget Envelope Management
 epic: Epic 1 — Contract and Development Stub for Envelope Consumption
 task_type: contract-stub
-status: todo
+status: in_progress
 priority: high
 depends_on: []
 loop_count: 0
 max_loops: 10
 ---
 
-> **Started on:** 2026-05-05
+> **Started on:** 2026-05-09
 
 # TASK-001 — Contract and development stub for `EVT.BSP.004.ENVELOPE_CONSUMED`
 

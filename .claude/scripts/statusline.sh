@@ -67,7 +67,7 @@ if [ "$count" -eq 1 ]; then
     bn=$(basename "$wt")
     task_id=$(echo "$bn" | grep -oE '^TASK-[A-Za-z0-9]+')
 
-    task_file=$(find "$wt/plan" -name "${task_id}-*.md" 2>/dev/null | head -1)
+    task_file=$(find "$wt/tasks" -name "${task_id}-*.md" 2>/dev/null | head -1)
     status=""
     loop_count=""
     max_loops=""
@@ -105,7 +105,7 @@ else
     for wt in "${active[@]}"; do
         bn=$(basename "$wt")
         task_id=$(echo "$bn" | grep -oE '^TASK-[A-Za-z0-9]+')
-        task_file=$(find "$wt/plan" -name "${task_id}-*.md" 2>/dev/null | head -1)
+        task_file=$(find "$wt/tasks" -name "${task_id}-*.md" 2>/dev/null | head -1)
         loop_part=""
         if [ -n "$task_file" ] && [ -f "$task_file" ]; then
             lc=$(extract_field "$task_file" "loop_count")

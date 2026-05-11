@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://reliever.example.com/process/CAP.REF.001.BEN/CMD.REF.001.BEN.ARCHIVE_BENEFICIARY/0.1.0/schema.json",
+  "x-process-version": "0.1.0",
+  "x-process-role": "command-payload",
+  "x-process-capability": "CAP.REF.001.BEN",
+  "x-process-command": "CMD.REF.001.BEN.ARCHIVE_BENEFICIARY",
+  "x-process-aggregate": "AGG.REF.001.BEN.BENEFICIARY_IDENTITY",
+  "x-process-correlation-key": "internal_id",
+  "x-process-idempotency-key": "command_id",
+  "title": "CMD.REF.001.BEN.ARCHIVE_BENEFICIARY — Archive a beneficiary record",
+  "description": "Payload of the ARCHIVE_BENEFICIARY command. Flips referential_status from ACTIVE to ARCHIVED. Emits one RVT.REF.001.BENEFICIARY_REFERENTIAL_UPDATED with transition_kind=ARCHIVED. Idempotent on command_id over a 30-day window.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["internal_id", "command_id"],
+  "properties": {
+    "internal_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "CORRELATION KEY. Canonical identifier of the beneficiary to archive."
+    },
+    "command_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "IDEMPOTENCY KEY."
+    },
+    "reason": {
+      "type": "string",
+      "enum": ["PROGRAMME_EXIT_SUCCESS", "PROGRAMME_EXIT_DROPOUT", "TRANSFER_TO_STANDARD_BANKING", "OPERATIONAL_OTHER"],
+      "description": "Optional categorisation of the archival reason. Used for downstream analytics."
+    },
+    "comment": {
+      "type": "string",
+      "description": "Optional free-text justification — e.g. operator note for audit. Stored alongside the transition; NOT part of PII."
+    }
+  }
+}

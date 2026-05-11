@@ -1,0 +1,110 @@
+meta:
+  capability: CAP.REF.001.BEN
+  layer: process-modelling
+  version: 0.1.0
+  governing_adrs:
+    - ADR-TECH-STRAT-004  # dual-referential-access — query + bus replication
+
+# ──────────────────────────────────────────────────────────────
+# Read models — projections built from this capability's domain
+# events for query-time consumption. Read models are owned by
+# this capability; outside consumers either subscribe to the
+# RVT.REF.001.BENEFICIARY_REFERENTIAL_UPDATED event family to
+# maintain their own local cache (per ADR-TECH-STRAT-004's dual-
+# referential-access rule), OR call one of the queries below.
+# Identifier: PRJ.<ZONE>.<L1>.<L2>.<NAME> — projections
+#             QRY.<ZONE>.<L1>.<L2>.<NAME> — queries served on top
+# ──────────────────────────────────────────────────────────────
+
+read_models:
+
+  - id: PRJ.REF.001.BEN.BENEFICIARY_DIRECTORY
+    name: Beneficiary directory (current state)
+    backs_resource: RES.REF.001.BENEFICIARY_IDENTITY
+    fed_by:
+      - RVT.REF.001.BENEFICIARY_REFERENTIAL_UPDATED  # last-write-wins on (internal_id, revision)
+    fields:
+      - internal_id
+      - external_id
+      - last_name
+      - first_name
+      - date_of_birth
+      - contact_details
+      - referential_status
+      - creation_date
+      - last_update_date
+      - revision
+    consistency: eventual
+    note: >-
+      Built from the RVT stream by simple last-write-wins keyed on
+      (internal_id, revision). Materialises the current canonical state of
+      every beneficiary.
+
+  - id: PRJ.REF.001.BEN.BENEFICIARY_HISTORY
+    name: Beneficiary lifecycle history
+    fed_by:
+      - RVT.REF.001.BENEFICIARY_REFERENTIAL_UPDATED
+    fields:
+      - internal_id
+      - revision
+      - transition_kind     # REGISTERED | UPDATED | ARCHIVED | RESTORED
+      - changed_fields      # list of field names mutated by the transition (UPDATED only)
+      - referential_status_after
+      - occurred_at
+      - command_id          # the originating command_id
+    retention: 7y           # PII audit trail — cf. ADR-TECH-STRAT-004 retention guidance
+    consistency: eventual
+    note: >-
+      Audit trail of every state transition. Distinct from
+      PRJ.BENEFICIARY_DIRECTORY: stores the full history rather than the
+      current state. Long retention reflects the regulatory audit window
+      for master-data of vulnerable populations.
+
+queries:
+
+  - id: QRY.REF.001.BEN.GET_BENEFICIARY
+    served_by: PRJ.REF.001.BEN.BENEFICIARY_DIRECTORY
+    request:
+      internal_id: string
+    response:
+      shape: object
+      fields: [internal_id, external_id, last_name, first_name, date_of_birth, contact_details, referential_status, creation_date, last_update_date, revision]
+    consumers:
+      - CAP.BSP.001.SCO   # behavioural scoring — internal_id resolution (see process/CAP.BSP.001.SCO/bus.yaml.identity_resolution)
+      - CAP.BSP.002.ENR   # enrolment — read after registration to confirm canonical state
+      - CAP.BSP.004.ENV   # budget envelopes — internal_id resolution from case_id (anticipated)
+      - CAP.CHN.001.DSH   # beneficiary dashboard — render names / contact details
+      - CAP.CHN.002.VUE   # prescriber view — render the supervised beneficiary
+      - many more         # every L2 capability that needs canonical identity (see ADR-TECH-STRAT-004)
+    api_binding: { method: GET, path: /beneficiaries/{internal_id} }
+    cache: { etag: true, max_age: PT30S }
+
+  - id: QRY.REF.001.BEN.GET_BENEFICIARY_BY_EXTERNAL_ID
+    served_by: PRJ.REF.001.BEN.BENEFICIARY_DIRECTORY
+    request:
+      external_id: string
+    response:
+      shape: object
+      fields: [internal_id, external_id, last_name, first_name, date_of_birth, contact_details, referential_status, creation_date, revision]
+    consumers:
+      - CAP.BSP.002.ENR   # candidacy → enrolment bridge — finds the internal_id from the candidacy reference
+    api_binding: { method: GET, path: /beneficiaries/by-external-id/{external_id} }
+    cache: { etag: true, max_age: PT30S }
+    note: >-
+      Lookup path used by the upstream candidacy/enrolment capability to
+      find the canonical internal_id from the external_id it minted before
+      registration.
+
+  - id: QRY.REF.001.BEN.LIST_BENEFICIARY_HISTORY
+    served_by: PRJ.REF.001.BEN.BENEFICIARY_HISTORY
+    request:
+      internal_id: string
+      since: { type: date-time, optional: true }
+      limit: { type: integer, default: 50, max: 500 }
+    response:
+      shape: array
+      item_fields: [revision, transition_kind, changed_fields, referential_status_after, occurred_at, command_id]
+    consumers:
+      - CAP.STG.*   # steering / governance / audit (anticipated)
+      - support-tooling  # ops investigations on data integrity incidents
+    api_binding: { method: GET, path: /beneficiaries/{internal_id}/history }

@@ -1,9 +1,9 @@
 ---
 name: sort-task
 description: >
-  Read-only kanban board generator. Scans all TASK-*.md files under /plan/, calculates
+  Read-only kanban board generator. Scans all TASK-*.md files under /tasks/, calculates
   derived states (needs_info, blocked, ready), scores ready tasks by critical-path
-  priority, and writes /plan/BOARD.md. Pure observation: never modifies TASK files,
+  priority, and writes /tasks/BOARD.md. Pure observation: never modifies TASK files,
   never launches agents, never invokes other skills. Used as the canonical refresh
   primitive — called by PostToolUse hooks on TASK file changes, by /launch-task at the
   start of every orchestration flow, and directly by the user when they only want to
@@ -15,7 +15,7 @@ description: >
 
 # Sort-task — Kanban Board Generator
 
-You scan the task universe and produce a fresh `/plan/BOARD.md`. You never mutate TASK
+You scan the task universe and produce a fresh `/tasks/BOARD.md`. You never mutate TASK
 files, never spawn agents, never invoke other skills. Your job is pure observation.
 
 Work silently and report compactly at the end. For orchestration (launching code agents,
@@ -28,7 +28,7 @@ status transitions, worktrees), the user must call `/launch-task` separately.
 Find all task files:
 
 ```bash
-find /plan -name "TASK-*.md" | sort
+find /tasks -name "TASK-*.md" | sort
 ```
 
 For each file found, read the YAML frontmatter to extract:
@@ -140,7 +140,7 @@ prioritize first.
 
 ---
 
-## Step 4 — Write /plan/BOARD.md
+## Step 4 — Write /tasks/BOARD.md
 
 Write the file with this exact format. Always display the board **in the conversation**
 in addition to writing the file.
@@ -245,7 +245,7 @@ TASK-001 → TASK-002 → TASK-003
 ```
 
 If no TASK-*.md exists, write an empty BOARD.md containing only the message
-`No tasks found in /plan/.` and proceed to Step 5.
+`No tasks found in /tasks/.` and proceed to Step 5.
 
 ---
 
@@ -261,7 +261,7 @@ Top ready: TASK-XXX (score N), TASK-YYY (score N), TASK-ZZZ (score N)
 Stalled (need /continue-work): TASK-AAA, TASK-BBB
 Unresolved dependency references:
   - TASK-NNN (CAP.X.Y) → `<ref>` (no matching task)
-Board: /plan/BOARD.md
+Board: /tasks/BOARD.md
 ```
 
 If a section is empty (e.g. no stalled tasks, no unresolved refs), omit the line.
