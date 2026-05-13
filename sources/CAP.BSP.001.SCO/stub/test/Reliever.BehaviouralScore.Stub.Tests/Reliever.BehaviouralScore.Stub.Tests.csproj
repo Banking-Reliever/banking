@@ -19,4 +19,10 @@
     <ProjectReference Include="..\..\src\Reliever.BehaviouralScore.Stub\Reliever.BehaviouralScore.Stub.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="schemas\RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

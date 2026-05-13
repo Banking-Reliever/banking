@@ -22,7 +22,8 @@ namespace Reliever.BehaviouralScore.Stub;
 ///   Rule 4   Routing key {BusinessEventName}.{ResourceEventName}
 ///   Rule 5   Only this L2 publishes on this exchange
 ///   Rule 6   Schema governance is design-time; the runtime schema is loaded
-///            from plan/CAP.BSP.001.SCO/contracts/ and used to fail-fast on
+///            from this assembly's schemas/ directory (shipped via the
+///            csproj's CopyToOutputDirectory rule) and used to fail-fast on
 ///            any non-conforming payload BEFORE publication.
 /// </summary>
 public sealed class Worker : BackgroundService
