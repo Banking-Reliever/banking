@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://reliever.example.com/contracts/CAP.BSP.004.ENV/EVT.BSP.004.ENVELOPE_CONSUMED/1.0.0/schema.json",
+  "x-bcm-version": "1.0.0",
+  "x-bcm-role": "design-time-documentation",
+  "x-bcm-capability": "CAP.BSP.004.ENV",
+  "x-bcm-business-event": "EVT.BSP.004.ENVELOPE_CONSUMED",
+  "x-bcm-paired-resource-event": "RVT.BSP.004.CONSUMPTION_RECORDED",
+  "x-bcm-carried-business-object": "OBJ.BSP.004.ALLOCATION",
+  "x-bcm-routing-key": "EVT.BSP.004.ENVELOPE_CONSUMED.RVT.BSP.004.CONSUMPTION_RECORDED",
+  "x-bcm-correlation-key": "case_id",
+  "x-bcm-non-normative-on-the-wire": true,
+  "title": "EVT.BSP.004.ENVELOPE_CONSUMED — Budget envelope consumed (design-time business event)",
+  "description": "DESIGN-TIME DOCUMENTATION ONLY — NO AUTONOMOUS BUS MESSAGE.\n\nThis schema describes the abstract business fact 'a budget envelope of a beneficiary has been (partially or fully) consumed' at the meta-model level (ADR-BCM-URBA-0007). Per ADR-TECH-STRAT-001 Rule 2, only the resource event (RVT.BSP.004.CONSUMPTION_RECORDED) generates an autonomous bus message; this business event appears on the wire ONLY as the prefix of the routing key (Rule 4). It is therefore NEVER published as a standalone message on RabbitMQ; no producer should ever serialise a payload against this schema for transport, and no consumer should ever expect to receive one.\n\nWhy this schema still exists: it documents the business intent carried by the operational resource event, traces back to BCM business-event-reliever.yaml, supports human governance (DDD ubiquitous language), and feeds documentation tooling (EventCatalog views, Miro process boards) — without polluting the operational rail.\n\nFor the runtime, transported, validated payload see RVT.BSP.004.CONSUMPTION_RECORDED.schema.json — the runtime contract.\n\nGoverning ADRs: ADR-BCM-FUNC-0008 (BSP.004 L2 breakdown), ADR-BCM-URBA-0007 (event meta-model), ADR-BCM-URBA-0009 (capability event responsibility), ADR-TECH-STRAT-001 (Dual-Rail Event Infrastructure — NORMATIVE).\n\nIdentity resolution: as for the paired resource event, consumer-side identity resolution from case_id toward OBJ.REF.001.BENEFICIARY_RECORD.internal_id is performed via CAP.REF.001.BEN. This producer NEVER carries the canonical internal_id.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "allocation_id",
+    "case_id",
+    "category",
+    "cap_amount",
+    "consumed_amount",
+    "period_start",
+    "period_end",
+    "status"
+  ],
+  "properties": {
+    "allocation_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the consumed envelope (one (case_id, period, category) triple). Mirrors OBJ.BSP.004.ALLOCATION.allocation_id."
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "CORRELATION KEY (design-time view). Reference to the beneficiary's participation case (Reliever case ID) owned by CAP.BSP.002.ENR. Identity resolution toward OBJ.REF.001.BENEFICIARY_RECORD.internal_id is performed by consumers via CAP.REF.001.BEN — NEVER carried by the producer."
+    },
+    "category": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Spending category covered by the envelope (e.g. ALIMENTATION, TRANSPORT). Canonically held by CAP.REF.001.TIE."
+    },
+    "cap_amount": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Maximum amount authorised on the envelope for the active period."
+    },
+    "consumed_amount": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Total consumed amount of the envelope after the consumption that triggered this business fact. The available remaining balance is conceptually `cap_amount - consumed_amount`."
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date",
+      "description": "Inclusive start date of the envelope's active allocation period (ISO-8601 calendar date)."
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date",
+      "description": "Inclusive end date of the envelope's active allocation period (ISO-8601 calendar date)."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["OPEN", "DEPLETED", "UNCONSUMED"],
+      "description": "Status of the envelope at the time of the business fact (OBJ.BSP.004.ALLOCATION.status). Documents the lifecycle position; not transported on the wire."
+    }
+  }
+}
