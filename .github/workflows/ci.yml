@@ -23,18 +23,29 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Reject changes to governance / model folders
+      - name: Reject changes to process/ from non-process branches
         shell: bash
         run: |
           set -euo pipefail
           BASE_SHA="${{ github.event.pull_request.base.sha }}"
           HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          HEAD_REF="${{ github.event.pull_request.head.ref }}"
           git fetch --no-tags --depth=1 origin "$BASE_SHA" 2>/dev/null || true
 
-          # Folders whose content cannot be modified through a regular PR. Those
-          # are governance, BCM, vision, ADR and tooling artefacts that must
-          # only evolve through their dedicated decision processes.
-          PROTECTED_REGEX='^(adr/|bcm/|externals-template/|[^/]+-vision/|plan/|[^/]+-adr/|templates/|tools/)'
+          # process/{capability-id}/ is the DDD tactical model. It is owned
+          # exclusively by the /process skill, which works on a dedicated
+          # branch named `process/CAP.<...>` and publishes via its own PR.
+          # No other branch (in particular feat/TASK-NNN-* PRs from
+          # /launch-task, /code, /fix) may modify process/.
+          # See CLAUDE.md and README.md for the full invariant.
+          PROTECTED_REGEX='^process/'
+
+          # Allow modifications under process/ only from a dedicated
+          # process/<CAP_ID> branch.
+          if [[ "$HEAD_REF" =~ ^process/CAP\..+ ]]; then
+            echo "✓ Head branch '$HEAD_REF' is a /process branch — process/ modifications allowed."
+            exit 0
+          fi
 
           mapfile -t CHANGED < <(git diff --name-only --diff-filter=ACMRTD "$BASE_SHA"..."$HEAD_SHA")
           OFFENDERS=()
@@ -46,13 +57,18 @@ jobs:
           done
 
           if [ ${#OFFENDERS[@]} -gt 0 ]; then
-            echo "❌ This PR modifies files in protected folders. These can only evolve through their governance process (ADR / BCM modelling / vision / templates / tools)."
+            echo "❌ This PR (head branch '$HEAD_REF') modifies files under process/."
+            echo "   process/ is owned exclusively by the /process skill and may only"
+            echo "   be modified through a dedicated 'process/<CAP_ID>' PR."
+            echo
+            echo "Offending files:"
             printf '  - %s\n' "${OFFENDERS[@]}"
             echo
-            echo "Protected roots: adr/, bcm/, externals-template/, *-vision/, plan/, *-adr/, templates/, tools/"
+            echo "To change the process model, run /process <CAP_ID> locally — it"
+            echo "will create the right branch and worktree and open the right PR."
             exit 1
           fi
-          echo "✅ No protected paths modified."
+          echo "✓ No process/ modifications on this branch."
 
   language-check:
     name: Code Language Matches BCM
@@ -64,35 +80,35 @@ jobs:
         with:
           python-version: '3.x'
 
+      # The BCM no longer lives in this repo — it is hosted in the private
+      # `banking-knowledge` repo and consumed via the `bcm-pack` CLI. To
+      # check that code under sources/ uses the same natural language as
+      # the BCM, install bcm-pack from that repo. Requires a token with
+      # read access to Banking-Reliever/banking-knowledge in the
+      # `BANKING_KNOWLEDGE_TOKEN` repo secret.
+      #
+      # If the secret is not set (or installation fails for any other
+      # reason), the install step succeeds silently and the script will
+      # detect the missing CLI and skip the check (exit 0). Configure the
+      # secret to make this check effective.
+      - name: Install bcm-pack from banking-knowledge (optional)
+        id: install_bcm_pack
+        continue-on-error: true
+        env:
+          BANKING_KNOWLEDGE_TOKEN: ${{ secrets.BANKING_KNOWLEDGE_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BANKING_KNOWLEDGE_TOKEN:-}" ]; then
+            echo "ℹ BANKING_KNOWLEDGE_TOKEN secret not set — skipping bcm-pack install."
+            echo "  The language-check script will run in skip mode."
+            exit 0
+          fi
+          pip install --upgrade pip
+          pip install "git+https://${BANKING_KNOWLEDGE_TOKEN}@github.com/Banking-Reliever/banking-knowledge.git@v0.1.0"
+          bcm-pack --help >/dev/null
+
       - name: Verify natural language consistency (BCM ↔ code)
         run: python3 .github/scripts/check_language.py
-
-  validators:
-    name: BCM Validators
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-          cache: 'pip'
-          cache-dependency-path: tools/requirements.txt
-
-      - name: Install validator deps
-        run: pip install -r tools/requirements.txt
-
-      - name: validate_repo.py (strict)
-        run: python3 tools/validate_repo.py --strict
-
-      - name: validate_events.py (advisory)
-        # validate_events.py currently reports 26 pre-existing BCM coherence
-        # errors on main (cross-events without an associated resource event,
-        # property mismatches in RES.REF.001 series). Treat as advisory until a
-        # dedicated BCM cleanup task lands; then flip this step to mandatory by
-        # removing `continue-on-error`.
-        continue-on-error: true
-        run: python3 tools/validate_events.py --bcm-dir bcm --events-dir bcm
 
   dotnet:
     name: .NET Build & Unit Tests

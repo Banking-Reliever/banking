@@ -1,31 +1,43 @@
 #!/usr/bin/env python3
-"""Verify that the natural language used under sources/ matches the BCM.
+"""Verify that the natural language used under sources/ and src/ matches the BCM.
 
-The BCM (bcm/) is the source of truth for the project's ubiquitous language.
-Any code produced under sources/ (or src/) must be written in the same natural
-language as the BCM — no mixing English / French / Spanish across the model
-boundary.
+The BCM is the source of truth for the project's ubiquitous language. Since
+the BCM no longer lives in this repo (it is hosted in the external
+`banking-knowledge` repo and consumed via the `bcm-pack` CLI), this script:
 
-Detection is stop-word based: we tokenise text, count occurrences of well-known
-short stop-words for each candidate language, and pick the dominant one. This
-is intentionally tiny so the validator stays in the "PyYAML only" envelope of
-tools/requirements.txt and needs no extra deps in CI.
+  1. Discovers the capabilities modeled in this repo by listing
+     `process/CAP.*/` folders (these are the capabilities whose process model
+     has been authored locally and merged on `main`).
+  2. For each capability, calls `bcm-pack pack <CAP_ID> --compact` to fetch
+     the upstream prose (capability descriptions, FUNC ADR decision /
+     context / consequences, business-object definitions, vision narratives).
+  3. Aggregates the prose, runs a stop-word language detector, and picks the
+     dominant language.
+  4. Compares it to the dominant language found in code under `sources/` and
+     `src/`. Mismatch ⇒ exit 1.
+
+Detection is stop-word based: tiny, no extra deps beyond `bcm-pack` itself
+and the standard library.
 
 Exit codes:
-  0 — BCM and code agree (or there is no code yet).
+  0 — BCM and code agree, OR there is nothing to check yet (no
+      `process/CAP.*/` folders, no source code, or `bcm-pack` unavailable).
   1 — BCM and code disagree.
-  2 — BCM language could not be determined.
+  2 — `bcm-pack` is installed but every invocation failed (hard error).
 """
 from __future__ import annotations
 
+import json
+import os
 import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-BCM_DIR = ROOT / "bcm"
+PROCESS_DIR = ROOT / "process"
 SOURCE_DIRS = [ROOT / "sources", ROOT / "src"]
-BCM_EXTS = {".yaml", ".yml", ".md"}
 SOURCE_EXTS = {
     ".cs", ".fs", ".vb",
     ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs",
@@ -35,6 +47,28 @@ SOURCE_EXTS = {
     ".css", ".scss",
     ".md", ".txt",
 }
+
+# Slices that carry natural-language prose (as opposed to identifiers,
+# IDs, enums…). Anything else in the pack is structural and would only
+# muddy the language detection.
+PROSE_SLICES = {
+    "capability_self",
+    "capability_ancestors",
+    "capability_definition",
+    "carried_objects",
+    "carried_concepts",
+    "governing_urba",
+    "governing_tech_strat",
+    "governance_adrs",
+    "product_vision",
+    "business_vision",
+    "tech_vision",
+}
+
+# Within those slices, only collect string values whose length suggests
+# prose rather than an identifier. 30 chars filters out things like
+# "BUSINESS_SERVICE_PRODUCTION" or "OBJ.REF.001.BENEFICIAIRE".
+MIN_PROSE_LEN = 30
 
 STOPWORDS: dict[str, set[str]] = {
     "en": {
@@ -61,9 +95,80 @@ STOPWORDS: dict[str, set[str]] = {
 }
 
 WORD_RE = re.compile(r"[A-Za-zÀ-ÿ]+")
+CAP_DIR_RE = re.compile(r"^CAP\.[A-Z0-9.]+$")
 
 
-def collect_text(roots: list[Path], exts: set[str]) -> str:
+def discover_capabilities() -> list[str]:
+    """List CAP_IDs that have a local process model."""
+    if not PROCESS_DIR.exists():
+        return []
+    return sorted(
+        d.name for d in PROCESS_DIR.iterdir()
+        if d.is_dir() and CAP_DIR_RE.match(d.name)
+    )
+
+
+def fetch_pack(cap_id: str) -> dict | None:
+    """Run `bcm-pack pack <cap_id> --compact` and return parsed JSON, or None on failure."""
+    try:
+        result = subprocess.run(
+            ["bcm-pack", "pack", cap_id, "--deep", "--compact"],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
+        )
+    except FileNotFoundError:
+        return None  # bcm-pack not installed — caller decides what to do
+    except subprocess.TimeoutExpired:
+        print(f"  ⚠ bcm-pack pack {cap_id}: timed out after 60s", file=sys.stderr)
+        return None
+
+    if result.returncode != 0:
+        print(
+            f"  ⚠ bcm-pack pack {cap_id}: exit {result.returncode}\n"
+            f"    stderr: {result.stderr.strip()[:300]}",
+            file=sys.stderr,
+        )
+        return None
+
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        print(f"  ⚠ bcm-pack pack {cap_id}: invalid JSON ({exc})", file=sys.stderr)
+        return None
+
+
+def extract_prose(node, accumulator: list[str]) -> None:
+    """Walk a JSON sub-tree and collect string values long enough to be prose."""
+    if isinstance(node, str):
+        if len(node) >= MIN_PROSE_LEN:
+            accumulator.append(node)
+    elif isinstance(node, list):
+        for item in node:
+            extract_prose(item, accumulator)
+    elif isinstance(node, dict):
+        for value in node.values():
+            extract_prose(value, accumulator)
+
+
+def collect_bcm_text(capabilities: list[str]) -> tuple[str, int]:
+    """Aggregate prose across every capability's pack. Returns (text, packs_seen)."""
+    chunks: list[str] = []
+    packs_seen = 0
+    for cap_id in capabilities:
+        print(f"  · bcm-pack pack {cap_id} --deep --compact")
+        pack = fetch_pack(cap_id)
+        if pack is None:
+            continue
+        packs_seen += 1
+        slices = pack.get("slices") or {}
+        for slice_name in PROSE_SLICES:
+            extract_prose(slices.get(slice_name), chunks)
+    return "\n".join(chunks), packs_seen
+
+
+def collect_code_text(roots: list[Path], exts: set[str]) -> str:
     chunks: list[str] = []
     for root in roots:
         if not root.exists():
@@ -95,19 +200,51 @@ def detect_language(text: str) -> tuple[str | None, dict[str, int]]:
 
 
 def main() -> int:
-    bcm_text = collect_text([BCM_DIR], BCM_EXTS)
-    code_text = collect_text(SOURCE_DIRS, SOURCE_EXTS)
+    # Skip cleanly when bcm-pack is not installed (e.g. CI runs without
+    # access to the private banking-knowledge repo). The check is
+    # advisory in that case rather than a hard CI failure.
+    if shutil.which("bcm-pack") is None:
+        print(
+            "ℹ bcm-pack CLI not on PATH — skipping language check.\n"
+            "  To enable this check in CI, install bcm-pack from the\n"
+            "  banking-knowledge repo (requires read access)."
+        )
+        return 0
+
+    capabilities = discover_capabilities()
+    if not capabilities:
+        print("ℹ No process/CAP.*/ folders found — no capability modeled yet, skipping.")
+        return 0
+
+    print(f"Discovered {len(capabilities)} capabilities under process/:")
+    for cap in capabilities:
+        print(f"  - {cap}")
+
+    print("\nFetching prose from bcm-pack:")
+    bcm_text, packs_seen = collect_bcm_text(capabilities)
+    if packs_seen == 0:
+        print(
+            "ERROR: bcm-pack is installed but every `bcm-pack pack` call failed.\n"
+            "       Check the messages above (auth, network, missing capability…).",
+            file=sys.stderr,
+        )
+        return 2
+
+    code_text = collect_code_text(SOURCE_DIRS, SOURCE_EXTS)
 
     bcm_lang, bcm_counts = detect_language(bcm_text)
     code_lang, code_counts = detect_language(code_text)
 
-    print(f"BCM stop-word counts: {bcm_counts}")
+    print(f"\nBCM  stop-word counts (over {packs_seen} pack(s)): {bcm_counts}")
     print(f"Code stop-word counts: {code_counts}")
-    print(f"BCM language : {bcm_lang}")
+    print(f"BCM  language: {bcm_lang}")
     print(f"Code language: {code_lang}")
 
     if bcm_lang is None:
-        print("ERROR: unable to determine BCM language — bcm/ has no detectable text.", file=sys.stderr)
+        print(
+            "ERROR: unable to determine BCM language — packs returned no detectable prose.",
+            file=sys.stderr,
+        )
         return 2
 
     if code_lang is None:
@@ -116,13 +253,13 @@ def main() -> int:
 
     if bcm_lang != code_lang:
         print(
-            f"ERROR: source code is written in '{code_lang}' but the BCM is written in '{bcm_lang}'.\n"
+            f"\nERROR: source code is written in '{code_lang}' but the BCM is written in '{bcm_lang}'.\n"
             f"       The code must use the same natural language as the BCM (the ubiquitous-language source of truth).",
             file=sys.stderr,
         )
         return 1
 
-    print(f"OK: code and BCM agree on language ({bcm_lang}).")
+    print(f"\n✓ Code and BCM agree on language ({bcm_lang}).")
     return 0
 
 
