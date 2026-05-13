@@ -10,13 +10,15 @@ description: |
     / Presentation / Contracts projects, MongoDB persistence, RabbitMQ
     messaging, REST API, full Clean Architecture.
   - **Mode B — Contract and development stub** (when
-    `task_type: contract-stub` is set): produces only the JSON Schema
-    artifacts for the events emitted by the capability and a runnable
-    development stub publishing them on the agreed bus topology — for use
-    when only the contract is given and the full implementation is deferred.
-    Output is much narrower: JSON Schemas under `plan/{cap-id}/contracts/`
-    and a minimal .NET worker service under `sources/{cap-name}/stub/`. No
-    full microservice scaffold.
+    `task_type: contract-stub` is set): produces a runnable development stub
+    publishing the events on the agreed bus topology — for use when only the
+    contract is given and the full implementation is deferred. The wire-
+    format JSON Schemas are NOT regenerated here — they are read from
+    `process/{capability-id}/schemas/RVT.*.schema.json` (already authored
+    by `/process`). Mode B output is therefore narrow: a minimal .NET
+    worker service under `sources/{cap-name}/stub/`. No full microservice
+    scaffold; no schema files written anywhere (they live under
+    `process/{capability-id}/schemas/`, owned by `/process`).
 
   In both modes, the agent reasons from the functional context (TASK file,
   FUNC ADR, plan, tactical ADR, BCM YAML, strategic tech ADRs) rather than
@@ -154,7 +156,7 @@ Read the TASK file frontmatter and extract the `task_type` field:
 | `task_type` value | Mode | Output |
 |---|---|---|
 | (absent) or `full-microservice` | **Mode A** — full microservice scaffold | `sources/{capability-name}/backend/` with the full Clean Architecture tree |
-| `contract-stub` | **Mode B** — contract + development stub | `plan/{capability-id}/contracts/*.schema.json` (runtime + design-time JSON Schemas) AND `sources/{capability-name}/stub/` (minimal .NET worker publishing on RabbitMQ) |
+| `contract-stub` | **Mode B** — contract + development stub | `sources/{capability-name}/stub/` (minimal .NET worker publishing on RabbitMQ). JSON Schemas are NOT generated — Mode B reads them from `process/{capability-id}/schemas/RVT.*.schema.json` (already authored by `/process`). |
 
 Announce the chosen mode to the caller before any further action:
 
@@ -186,8 +188,8 @@ need are already structured slices). Selective slice usage:
 
 | Source | Pack slice | What you extract |
 |---|---|---|
-| **TASK file** (local: `/plan/{capability-id}/tasks/TASK-NNN-*.md`) | n/a — local | Acceptance criteria, Definition of Done, scope boundaries, any commands/events explicitly named, open questions, `task_type` |
-| **Plan** (local: `/plan/{capability-id}/plan.md`) | n/a — local | Epics, milestones, exit conditions, scope envelope |
+| **TASK file** (local: `/tasks/{capability-id}/TASK-NNN-*.md`) | n/a — local | Acceptance criteria, Definition of Done, scope boundaries, any commands/events explicitly named, open questions, `task_type` |
+| **Roadmap** (local: `/roadmap/{capability-id}/roadmap.md`) | n/a — local | Epics, milestones, exit conditions, scope envelope |
 | **Capability metadata** | `capability_self`, `capability_ancestors` | Zoning, level (L2 / L3), parent capability, ADR pointers |
 | **FUNC ADR** | `capability_definition` | Business events emitted, business objects owned, event subscriptions, governance constraints from URBA ADRs |
 | **Tactical ADR** | `tactical_stack` | Concrete stack choices: language, runtime, database (likely MongoDB), messaging (likely RabbitMQ), API style, SLOs |
@@ -425,38 +427,33 @@ The pack is the source of truth for field names and types. The JSON
 Schemas mirror these. Never read `/bcm/*.yaml` directly — go through
 `bcm-pack`.
 
-### B.3 — Generate the JSON Schemas
+### B.3 — Read the JSON Schemas (do NOT regenerate them)
 
-Two schemas per `EVT/RVT` pair, written under
-`plan/{capability-id}/contracts/`:
+The wire-format schemas already exist under
+`process/{capability-id}/schemas/` — they were authored by the `/process`
+skill from the BCM corpus. Mode B is a **consumer** of those files; it
+never writes schemas itself.
 
-| File | Role | Required content |
-|---|---|---|
-| `RVT.{...}.schema.json` | **Runtime contract** — every payload published on the bus MUST validate against this | `$schema`, `$id` with version segment in URL, `x-bcm-version` annotation, `title`, `description`, `type: object`, `properties` mirroring the carried resource's fields PLUS the correlation key (`identifiant_dossier`) PLUS any envelope fields explicitly required by the task, `required` list, `additionalProperties: false` |
-| `EVT.{...}.schema.json` | **Design-time documentation** — describes the abstract business fact at the meta-model level; **no autonomous bus message corresponds to it** (cf. `ADR-TECH-STRAT-001` Rule 2) | Same structure as the RVT schema, but with an explicit annotation in the schema's `description` field marking it as documentation-only and stating that no bus message corresponds to it |
+For each emitted `RVT.*` of the capability, read:
 
-**Versioning encoding** — every schema declares both:
+```
+process/{capability-id}/schemas/RVT.{capability-id}.{event}.schema.json
+```
 
-- `$id` URL with a version segment, e.g.
-  `https://reliever.example.com/contracts/{capability-id}/{event-id}/{version}/schema.json`.
-  A new BCM version → new path = explicit deprecation surface.
-- A top-level `"x-bcm-version": "{version}"` annotation matching the BCM
-  event version. This makes the version inspectable without URL parsing.
+Required for the stub:
+- the `$id` URL (used as the message envelope's `$schemaRef`)
+- the `x-bcm-version` annotation (mirrored on every published message)
+- the `properties` (the stub fills these with realistic randomised values
+  honouring `additionalProperties: false`)
+- the correlation-key field (typically `identifiant_dossier`) — the stub
+  produces a fresh value per message and never carries the canonical
+  referential identifier (consumers resolve via the relevant referential).
 
-**Correlation key** — every schema declares the correlation key field
-(typically `identifiant_dossier`) as required, with a `description` that
-documents the resolution path toward `OBJ.REF.001.BENEFICIAIRE.identifiant_interne`
-via `CAP.REF.001.BEN`. Consumers perform that lookup; producers don't carry
-the canonical identifier.
-
-**Index** — write `plan/{capability-id}/contracts/README.md` listing the
-schemas, their roles (runtime vs documentation), the BCM event IDs, the
-routing key, and the carried object/resource. To list the **consumers
-known today**, query `bcm-pack` for each subscriber capability (or read
-the `consumed_business_events[*].consumer_capability` references in the
-caller pack and group by `subscribed_event`). Never read
-`bcm/business-subscription-*.yaml` or `bcm/resource-subscription-*.yaml`
-directly — those paths are not authoritative in this checkout.
+If a schema is missing or stale relative to the FUNC ADR, **stop**:
+that is a `/process` problem. Tell the caller to run `/process <CAP_ID>`
+to refresh the model and merge the resulting PR before re-running this
+task. Do NOT attempt to write a fallback schema anywhere — the schemas are
+owned by `/process` and live under `process/{capability-id}/schemas/`.
 
 ### B.4 — Generate the development stub
 
@@ -532,8 +529,8 @@ Before writing files, output:
 🛠 Mode B implementation plan for [CAP.ID — Name]
 - Mode:                   Contract + development stub
 - Capability:             [name]
-- Events to contract:     [list of EVT/RVT pairs]
-- Output (contracts):     plan/{capability-id}/contracts/
+- Events to publish:      [list of RVT.* read from process/{capability-id}/schemas/]
+- Schemas (read-only):    process/{capability-id}/schemas/RVT.*.schema.json
 - Output (stub):          sources/{capability-name}/stub/
 - Bus exchange:           [name derived from capability-id]
 - Routing keys:           [list]
@@ -553,10 +550,8 @@ When Mode B succeeds:
 
   Capability:           [CAP.ID — Name]
   Mode:                 Contract + development stub
-  Schemas produced:
-    Runtime  : plan/{capability-id}/contracts/RVT.*.schema.json
-    Doc-only : plan/{capability-id}/contracts/EVT.*.schema.json
-    Index    : plan/{capability-id}/contracts/README.md
+  Schemas consumed (read-only, owned by /process):
+    process/{capability-id}/schemas/RVT.*.schema.json
   Stub:                 sources/{capability-name}/stub/
   Bus exchange:         [name]
   Routing keys:         [list]

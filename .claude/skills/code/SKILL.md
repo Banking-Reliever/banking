@@ -8,7 +8,7 @@ description: >
   task, code a specific capability task, start development on a TASK-NNN, or execute an 
   implementation work item. Trigger on: "code TASK-NNN", "implement TASK-NNN", 
   "code this task", "start implementing", "build [capability]", or any time a task file 
-  exists in /plan/{capability}/tasks/ with status "todo" and all dependencies are resolved. 
+  exists in /tasks/{capability}/ with status "todo" and all dependencies are resolved. 
   Also trigger proactively when the user says "let's code" or "start development" and a 
   specific task or capability is named.
 ---
@@ -47,6 +47,40 @@ never to invent or reshape them.
 
 ---
 
+## Readiness gate — process model must be merged on `main`
+
+Before reading the task, before spawning any agent, verify that the
+capability's process model is on `main` and that no `process/<CAP_ID>` PR
+is still open:
+
+```bash
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
+CAP_ID="<CAPABILITY_ID-of-the-task>"
+
+# 1. Folder must exist on main.
+git -C "$PROJECT_ROOT" ls-tree --name-only main -- "process/$CAP_ID" \
+    > /tmp/process-main-check.txt
+if [ ! -s /tmp/process-main-check.txt ]; then
+  echo "GATE-FAIL: process/$CAP_ID/ is not on main."
+  echo "Cannot run /code for this task — run /process $CAP_ID and merge the PR first."
+  exit 1
+fi
+
+# 2. No open PR for the process branch.
+OPEN_COUNT=$(gh pr list --head "process/$CAP_ID" --state open --json number --jq 'length' 2>/dev/null || echo 0)
+if [ "$OPEN_COUNT" != "0" ]; then
+  PR_URL=$(gh pr list --head "process/$CAP_ID" --state open --json url --jq '.[0].url')
+  echo "GATE-FAIL: open process PR ($PR_URL) is pending review for $CAP_ID."
+  echo "Cannot run /code until the process PR is merged into main."
+  exit 1
+fi
+```
+
+If either check fails, **stop and surface the failure** — do not spawn any
+implementation agent. Once the PR is merged, re-run `/code TASK-NNN`.
+
+---
+
 ## Before You Begin
 
 > **Note:** For orchestrated multi-task workflows (board view, prioritization, dependency
@@ -55,7 +89,7 @@ never to invent or reshape them.
 1. **Identify the task.** The user should specify a task ID (e.g., `TASK-001`) or a capability
    name. If ambiguous, redirect to `/launch-task` to get the prioritized list.
 
-2. **Read the task file.** Find it at `/plan/{capability-id}/tasks/TASK-NNN-*.md`.
+2. **Read the task file.** Find it at `/tasks/{capability-id}/TASK-NNN-*.md`.
 
 3. **Verify prerequisites:**
    - Status is `todo` or `in_progress` (not `in_review`, `done`, or `stalled`)
@@ -88,7 +122,7 @@ never to invent or reshape them.
    narratives.
 
    Local artifacts (always read directly):
-   - the plan file at `/plan/{capability-id}/plan.md`
+   - the roadmap file at `/roadmap/{capability-id}/roadmap.md`
    - the Process Modelling layer at `process/{capability-id}/` (read-only) —
      `aggregates.yaml`, `commands.yaml`, `policies.yaml`, `read-models.yaml`,
      `bus.yaml`, `api.yaml`, `schemas/*.schema.json`. The implementation agents
@@ -260,8 +294,10 @@ Say:
 > "Spawning implement-capability agent in Mode B (contract+stub) for [capability name] with task TASK-[NNN]..."
 
 The agent produces:
-- JSON Schemas under `plan/{capability-id}/contracts/`
 - A minimal .NET worker stub under `sources/{capability-name}/stub/`
+- The wire-format JSON Schemas it publishes are NOT regenerated — the agent
+  reads them directly from `process/{capability-id}/schemas/RVT.*.schema.json`
+  (already authored by `/process`). No schema files are written outside `process/`.
 - No full microservice scaffold (Domain / Application / Infrastructure / Presentation / Contracts projects), no MongoDB, no REST API
 
 The agent may push back if the BCM does not declare any business or
@@ -511,7 +547,7 @@ Triggered when `loop_count >= max_loops` and tests still fail.
      Last test run: [DATE]
    ```
 
-2. **Refresh `/plan/BOARD.md`** by invoking `/sort-task` so the board reflects the `stalled` status immediately.
+2. **Refresh `/tasks/BOARD.md`** by invoking `/sort-task` so the board reflects the `stalled` status immediately.
 
 3. **Report to the user** — this is a **mandatory human checkpoint**:
    ```
@@ -560,7 +596,10 @@ After all tests pass (or after the remediation loop concludes):
    python tools/validate_events.py
    ```
 
-3. **Update the task index** at `/plan/{capability-id}/tasks/index.md` to reflect the new status.
+3. **(Removed)** No per-capability task index file is maintained — `/tasks/`
+   contains only `BOARD.md` (refreshed automatically by `/sort-task`) and the
+   `<CAP_ID>/TASK-*.md` cards. The TASK file's frontmatter status update
+   in step 1 is sufficient — the board picks it up.
 
 4. **Commit all changes** using the Conventional Commits format:
    ```bash

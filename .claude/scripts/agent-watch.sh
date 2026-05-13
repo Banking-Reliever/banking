@@ -7,7 +7,7 @@
 #   │ + fichiers récemment     │   (logs en direct)    │
 #   │   modifiés               │                       │
 #   ├──────────────────────────┴───────────────────────┤
-#   │ /plan/BOARD.md (rafraîchi toutes les 3s)         │
+#   │ /tasks/BOARD.md (rafraîchi toutes les 3s)         │
 #   └──────────────────────────────────────────────────┘
 #
 # Usage :
@@ -48,7 +48,7 @@ if [ -z "$worktree" ]; then
 fi
 
 session="agent-watch-${TASK_ID}"
-board="${PROJECT_ROOT}/plan/BOARD.md"
+board="${PROJECT_ROOT}/tasks/BOARD.md"
 log="${worktree}/.agent.log"
 
 # Idempotence : si la session existe déjà, attache (ou no-op en mode detach).

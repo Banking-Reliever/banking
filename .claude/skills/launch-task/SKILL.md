@@ -57,6 +57,45 @@ agent prompt:
 
 ---
 
+## Readiness gate — process model must be merged on `main`
+
+Before launching any code agent for a task whose capability is `<CAP_ID>`,
+verify that `process/<CAP_ID>/` is on `main` AND that no `process/<CAP_ID>`
+PR is still open. The agent worktree is forked from `main`, so an unmerged
+process model would never reach the agent — and silently launching against
+an empty `process/<CAP_ID>/` produces a useless run.
+
+```bash
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
+CAP_ID="<CAPABILITY_ID-of-the-task-about-to-launch>"
+
+# 1. Folder must exist on main.
+git -C "$PROJECT_ROOT" ls-tree --name-only main -- "process/$CAP_ID" \
+    > /tmp/process-main-check.txt
+if [ ! -s /tmp/process-main-check.txt ]; then
+  echo "GATE-FAIL: process/$CAP_ID/ is not on main."
+  echo "Cannot launch tasks for $CAP_ID — run /process $CAP_ID first and merge the PR."
+  # SKIP this candidate; continue with other capabilities in auto mode.
+fi
+
+# 2. No open PR for the process branch.
+OPEN_COUNT=$(gh pr list --head "process/$CAP_ID" --state open --json number --jq 'length' 2>/dev/null || echo 0)
+if [ "$OPEN_COUNT" != "0" ]; then
+  PR_URL=$(gh pr list --head "process/$CAP_ID" --state open --json url --jq '.[0].url')
+  echo "GATE-FAIL: open process PR ($PR_URL) is pending review for $CAP_ID."
+  echo "Cannot launch tasks for $CAP_ID until the PR is merged."
+  # SKIP this candidate; continue with other capabilities in auto mode.
+fi
+```
+
+In **manual mode** (`launch TASK-NNN`), a gate failure is a hard stop —
+report the gate-fail message and refuse to launch. In **auto mode**,
+silently skip every candidate whose capability fails the gate (do not
+launch them) and surface the skipped list in the final summary so the user
+knows which capabilities still need their process PR merged.
+
+---
+
 ## Usage Cycle
 
 The skill supports four main intents:
@@ -83,7 +122,7 @@ Before any decision, invoke `/sort-task` to obtain a fresh state of the kanban:
 Skill: sort-task
 ```
 
-`/sort-task` writes `/plan/BOARD.md` and returns a compact report with:
+`/sort-task` writes `/tasks/BOARD.md` and returns a compact report with:
 - Counts per status (`ready`, `in_progress`, `in_review`, `blocked`, `needs_info`, `stalled`, `done`)
 - Top ready tasks with their priority scores
 - Stalled tasks needing `/continue-work`
@@ -183,7 +222,7 @@ If the worktree already exists (same case): use it as-is without recreating.
 #### C.4 — Read the Task File Content
 
 Read the complete content of the `TASK-NNN-*.md` file to include in the sub-agent prompt.
-Read the local plan at `/plan/{capability-id}/plan.md`.
+Read the local roadmap at `/roadmap/{capability-id}/roadmap.md`.
 
 For **all** BCM/ADR/vision context, fetch the capability pack from the `bcm-pack` CLI —
 do NOT read `/bcm/`, `/func-adr/`, `/adr/`, `/strategic-vision/`, or `/product-vision/`
@@ -319,7 +358,7 @@ or `/tech-vision/` directly — those paths are not authoritative in this checko
 
 After spawning all sub-agents:
 
-1. **Re-invoke `/sort-task`** to refresh `/plan/BOARD.md` with the new `in_progress` statuses.
+1. **Re-invoke `/sort-task`** to refresh `/tasks/BOARD.md` with the new `in_progress` statuses.
 2. **Display in the conversation**:
    ```
    🚀 [N] agent(s) launched in parallel:
@@ -327,7 +366,7 @@ After spawning all sub-agents:
    - TASK-001 → autonomous agent running | worktree: /tmp/kanban-worktrees/TASK-001-freeze-contract
    - TASK-007 → autonomous agent running | worktree: /tmp/kanban-worktrees/TASK-007-other-task
 
-   Board updated → /plan/BOARD.md
+   Board updated → /tasks/BOARD.md
 
    Agents are working autonomously. Use /sort-task to check progress,
    or /pr-merge-watcher to check open PRs.
@@ -373,13 +412,13 @@ Once the task is confirmed:
      > **Started on:** [DATE]
      ```
 
-2. **Re-invoke `/sort-task`** to refresh `/plan/BOARD.md` with the new status.
+2. **Re-invoke `/sort-task`** to refresh `/tasks/BOARD.md` with the new status.
 
 3. **Announce clearly**:
    ```
    Launching TASK-[NNN] — [title]
    Capability: [CAP.ID] | Epic: [Epic N]
-   Board updated → /plan/BOARD.md
+   Board updated → /tasks/BOARD.md
 
    Invoking code skill...
    ```
@@ -426,7 +465,7 @@ When the user signals that the PR has been merged ("PR for TASK-NNN merged",
    - TASK-[NNN+1]: [title] → code agent spawned
    - TASK-[NNN+2]: [title] → code agent spawned (parallel)
 
-   Board updated → /plan/BOARD.md
+   Board updated → /tasks/BOARD.md
    ```
 
 ### 5c — Direct Closure Without PR
@@ -475,7 +514,7 @@ For each task that passed the idempotency check:
    This is the idempotency lock — any concurrent evaluation of the same task will see
    `in_progress` and skip it.
 2. Add below the frontmatter: `> **Started on:** [DATE]`
-3. **Re-invoke `/sort-task`** to refresh `/plan/BOARD.md` with the new status.
+3. **Re-invoke `/sort-task`** to refresh `/tasks/BOARD.md` with the new status.
 
 ---
 
@@ -522,7 +561,7 @@ Skipped (already active):
 - TASK-[NNN+3]: in_progress — agent already running
 - TASK-[NNN+4]: capability CAP.X.NNN already busy (TASK-NNN+5 in_progress)
 
-Board updated → /plan/BOARD.md
+Board updated → /tasks/BOARD.md
 ```
 
 If no task passes the idempotency check, simply report:
@@ -559,7 +598,7 @@ For `in_review`, remind that the PR must be merged before it can be closed.
 which task must be `done` (not just `in_review`) to unblock it.
 
 **Board always up to date** — every status change must immediately be reflected in
-`/plan/BOARD.md` by re-invoking `/sort-task`. Never leave the board stale.
+`/tasks/BOARD.md` by re-invoking `/sort-task`. Never leave the board stale.
 
 **Auto mode = worktrees + sub-agents** — in automatic mode, each task gets its own
 working directory (`git worktree`) and its own autonomous agent. Never checkout on

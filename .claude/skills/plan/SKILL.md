@@ -2,7 +2,7 @@
 name: plan
 description: >
   Breaks a validated L2 or L3 business capability into an implementation roadmap expressed as 
-  epics and milestones. Produces /plan/{capability-id}/plan.md for each capability. Use this 
+  epics and milestones. Produces /roadmap/{capability-id}/roadmap.md for each capability. Use this 
   skill whenever the user wants to plan how to implement a capability, create an epic breakdown, 
   define milestones for a capability, or produce a capability roadmap. Trigger on: "plan this 
   capability", "create a plan", "epic breakdown", "roadmap for capability", "how do we implement 
@@ -36,6 +36,43 @@ If the `process/{capability-id}/` folder is missing or stale relative to the FUN
 ADR returned by `bcm-pack`, **stop and tell the user to run `/process
 <CAPABILITY_ID>` first**. Do not attempt to derive aggregates or commands inside
 the plan; that is a category violation.
+
+---
+
+## Readiness gate — process model must be merged on `main`
+
+Before reading anything from `process/<CAP_ID>/`, verify that the model has
+actually landed on `main`. A model that exists only on a `process/<CAP_ID>`
+branch (PR still open, not yet reviewed) is NOT ready to consume — planning
+on top of an unreviewed model produces churn when the PR review reshapes the
+aggregates or commands.
+
+```bash
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
+CAP_ID="<CAPABILITY_ID>"
+
+# 1. Folder must exist on main.
+git -C "$PROJECT_ROOT" ls-tree --name-only main -- "process/$CAP_ID" \
+    > /tmp/process-main-check.txt
+if [ ! -s /tmp/process-main-check.txt ]; then
+  echo "GATE-FAIL: process/$CAP_ID/ is not on main."
+  echo "Run /process $CAP_ID, then merge the resulting PR before retrying /plan."
+  exit 1
+fi
+
+# 2. No open PR for the process branch.
+OPEN_COUNT=$(gh pr list --head "process/$CAP_ID" --state open --json number --jq 'length' 2>/dev/null || echo 0)
+if [ "$OPEN_COUNT" != "0" ]; then
+  PR_URL=$(gh pr list --head "process/$CAP_ID" --state open --json url --jq '.[0].url')
+  echo "GATE-FAIL: an open process PR ($PR_URL) is still pending review."
+  echo "Wait for it to be merged into main before running /plan."
+  exit 1
+fi
+```
+
+If either check fails, **stop and surface the failure to the user with the
+redirect message above** — do not proceed to draft the plan. Once the PR is
+merged and `process/<CAP_ID>/` appears on `main`, re-run `/plan`.
 
 ---
 
@@ -143,9 +180,13 @@ files — surface the error to the user and ask them to confirm the ID against `
    If the folder exists but lacks an entry referenced in `pack.emitted_*` /
    `pack.consumed_*`, surface the gap and ask the user to refresh `/process`.
 
-4. **Check if a plan already exists** locally at `/plan/{capability-id}/plan.md`. This *is* a
-   local file — the plan output lives in the working repo, not in `banking-knowledge`. If it 
-   exists, ask: "A plan already exists. Do you want to update it or start fresh?"
+4. **Check if a roadmap already exists** locally at `/roadmap/{capability-id}/roadmap.md`. This *is* a
+   local file — the roadmap output lives in the working repo, not in `banking-knowledge`. If it 
+   exists, ask: "A roadmap already exists. Do you want to update it or start fresh?"
+
+   The folder `/tasks/` is reserved for the kanban (`/tasks/BOARD.md` and the
+   per-capability `/tasks/<CAP_ID>/TASK-*.md` cards) — the `/plan` skill writes
+   only to `/roadmap/`, never to `/tasks/`.
 
 ---
 
@@ -226,12 +267,16 @@ For the full plan, identify:
 
 ## Output
 
-**File**: `/plan/{capability-id}/plan.md` (create directory if needed)
+**File**: `/roadmap/{capability-id}/roadmap.md` (create directory if needed)
+
+> Do NOT write under `/tasks/` — that folder is reserved for the kanban
+> (`/tasks/BOARD.md` and `/tasks/<CAP_ID>/TASK-*.md` cards). The roadmap is a
+> separate artefact with its own root.
 
 **Format**:
 
 ```markdown
-# Plan — [Capability Name] ([Capability ID])
+# Roadmap — [Capability Name] ([Capability ID])
 
 ## Capability Summary
 > [One-sentence capability responsibility from `capability_self[0].description`]
@@ -286,6 +331,6 @@ For the full plan, identify:
 ```
 
 After writing, tell the user:
-> "The plan for [capability] is committed to `/plan/[capability-id]/plan.md`. 
+> "The roadmap for [capability] is committed to `/roadmap/[capability-id]/roadmap.md`. 
 > When you're ready, the task skill will break each epic into concrete tasks for 
-> the implement-capability agent."
+> the implement-capability agent (written under `/tasks/[capability-id]/`)."

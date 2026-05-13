@@ -1,0 +1,192 @@
+meta:
+  capability: CAP.REF.001.BEN
+  layer: process-modelling
+  version: 0.1.0
+  governing_adrs:
+    - ADR-BCM-FUNC-0013
+    - ADR-BCM-URBA-0009
+    - ADR-TECH-STRAT-004  # PII governance, dual referential access
+
+# ──────────────────────────────────────────────────────────────
+# Commands — verbs this capability accepts. Each CMD is the unit
+# a client (HTTP API caller — there are no in-process policies on
+# this capability) issues to request a state transition. A CMD is
+# always handled by exactly one aggregate, and emits zero or more
+# domain events.
+# Identifier: CMD.<ZONE>.<L1>.<L2>.<VERB>
+#
+# All four commands emit the SAME resource event family
+# (RVT.REF.001.BENEFICIARY_REFERENTIAL_UPDATED) — the kind of
+# transition is discriminated by the payload's `transition_kind`
+# field (REGISTERED | UPDATED | ARCHIVED | RESTORED). Consumers
+# subscribe once to the event family and route on the discriminator.
+# ──────────────────────────────────────────────────────────────
+
+commands:
+
+  - id: CMD.REF.001.BEN.REGISTER_BENEFICIARY
+    name: Register a new beneficiary in the canonical referential
+    intent: >-
+      Create a new beneficiary record in the canonical referential. The
+      caller — typically the eligibility / candidacy capability upstream of
+      enrolment — provides the natural identity (names, date of birth,
+      contact details) plus an external_id (the candidacy reference) that
+      anchors idempotency. The aggregate generates a stable internal_id and
+      returns it; downstream capabilities key all future references on that
+      internal_id.
+    accepted_by: AGG.REF.001.BEN.BENEFICIARY_IDENTITY
+    issued_by:
+      - http-api-caller   # eligibility / candidacy capability or admin tooling — no in-process policy
+    payload_schema: schemas/CMD.REF.001.BEN.REGISTER_BENEFICIARY.schema.json
+    preconditions:
+      - id: PRE.001
+        rule: No prior beneficiary record exists for the same external_id.
+      - id: PRE.002
+        rule: Required identity fields are present (last_name, first_name, date_of_birth).
+    invariants_enforced:
+      - INV.BEN.001
+      - INV.BEN.002
+      - INV.BEN.006
+      - INV.BEN.007
+    emits:
+      - RVT.REF.001.BENEFICIARY_REFERENTIAL_UPDATED  # transition_kind: REGISTERED
+      # business-event family pivot (no autonomous bus message — Rule 2 of ADR-TECH-STRAT-001):
+      # EVT.REF.001.BENEFICIARY_REFERENTIAL_UPDATED
+    errors:
+      - code: BENEFICIARY_ALREADY_REGISTERED
+        when: A beneficiary with the same external_id already exists. Idempotent re-call returns the existing internal_id (200 OK) rather than 409.
+      - code: IDENTITY_FIELDS_MISSING
+        when: One of last_name, first_name, date_of_birth is missing or empty.
+    idempotency:
+      key: external_id
+      window: lifetime
+    api_binding: { method: POST, path: /beneficiaries }
+
+  - id: CMD.REF.001.BEN.UPDATE_BENEFICIARY_IDENTITY
+    name: Update the identity fields of a beneficiary
+    intent: >-
+      Apply a partial update to a beneficiary's identity record — typically
+      contact details, occasionally name corrections (legal change). The
+      payload carries only the fields to mutate; absent fields are left
+      unchanged (sticky-PII rule, INV.BEN.003).
+    accepted_by: AGG.REF.001.BEN.BENEFICIARY_IDENTITY
+    issued_by:
+      - http-api-caller
+    payload_schema: schemas/CMD.REF.001.BEN.UPDATE_BENEFICIARY_IDENTITY.schema.json
+    preconditions:
+      - id: PRE.001
+        rule: A beneficiary exists for the given internal_id.
+      - id: PRE.002
+        rule: referential_status is ACTIVE.
+      - id: PRE.003
+        rule: command_id has not been processed before (idempotency).
+    invariants_enforced:
+      - INV.BEN.002
+      - INV.BEN.003
+      - INV.BEN.006
+      - INV.BEN.007
+    emits:
+      - RVT.REF.001.BENEFICIARY_REFERENTIAL_UPDATED  # transition_kind: UPDATED
+    errors:
+      - code: BENEFICIARY_NOT_FOUND
+        when: No beneficiary matches the given internal_id.
+      - code: BENEFICIARY_ARCHIVED
+        when: referential_status is ARCHIVED — RESTORE first.
+      - code: COMMAND_ALREADY_PROCESSED
+        when: command_id has been previously applied (idempotent — returns the prior result).
+      - code: NO_FIELDS_TO_UPDATE
+        when: The payload carries no mutable fields.
+    idempotency:
+      key: command_id
+      window: 30d
+    api_binding: { method: PATCH, path: /beneficiaries/{internal_id} }
+
+  - id: CMD.REF.001.BEN.ARCHIVE_BENEFICIARY
+    name: Archive a beneficiary record
+    intent: >-
+      Flip referential_status from ACTIVE to ARCHIVED — typically on
+      programme exit (success, dropout, transfer to standard banking). The
+      record remains queryable so historical references resolve, but no
+      further UPDATE is accepted until RESTORE is issued.
+    accepted_by: AGG.REF.001.BEN.BENEFICIARY_IDENTITY
+    issued_by:
+      - http-api-caller
+    payload_schema: schemas/CMD.REF.001.BEN.ARCHIVE_BENEFICIARY.schema.json
+    preconditions:
+      - id: PRE.001
+        rule: A beneficiary exists for the given internal_id.
+      - id: PRE.002
+        rule: referential_status is ACTIVE.
+      - id: PRE.003
+        rule: command_id has not been processed before.
+    invariants_enforced:
+      - INV.BEN.002
+      - INV.BEN.004
+      - INV.BEN.006
+      - INV.BEN.007
+    emits:
+      - RVT.REF.001.BENEFICIARY_REFERENTIAL_UPDATED  # transition_kind: ARCHIVED
+    errors:
+      - code: BENEFICIARY_NOT_FOUND
+        when: No beneficiary matches the given internal_id.
+      - code: BENEFICIARY_ALREADY_ARCHIVED
+        when: referential_status is already ARCHIVED.
+      - code: COMMAND_ALREADY_PROCESSED
+        when: command_id has been previously applied.
+    idempotency:
+      key: command_id
+      window: 30d
+    api_binding: { method: POST, path: /beneficiaries/{internal_id}/archive }
+
+  - id: CMD.REF.001.BEN.RESTORE_BENEFICIARY
+    name: Restore an archived beneficiary record
+    intent: >-
+      Flip referential_status from ARCHIVED back to ACTIVE. Rare audited
+      operation — typically reverses an archival applied in error. Does NOT
+      mutate identity fields; if those need correction, follow with an
+      UPDATE.
+    accepted_by: AGG.REF.001.BEN.BENEFICIARY_IDENTITY
+    issued_by:
+      - http-api-caller
+    payload_schema: schemas/CMD.REF.001.BEN.RESTORE_BENEFICIARY.schema.json
+    preconditions:
+      - id: PRE.001
+        rule: A beneficiary exists for the given internal_id.
+      - id: PRE.002
+        rule: referential_status is ARCHIVED.
+      - id: PRE.003
+        rule: command_id has not been processed before.
+    invariants_enforced:
+      - INV.BEN.002
+      - INV.BEN.005
+      - INV.BEN.006
+      - INV.BEN.007
+    emits:
+      - RVT.REF.001.BENEFICIARY_REFERENTIAL_UPDATED  # transition_kind: RESTORED
+    errors:
+      - code: BENEFICIARY_NOT_FOUND
+        when: No beneficiary matches the given internal_id.
+      - code: BENEFICIARY_NOT_ARCHIVED
+        when: referential_status is already ACTIVE.
+      - code: COMMAND_ALREADY_PROCESSED
+        when: command_id has been previously applied.
+    idempotency:
+      key: command_id
+      window: 30d
+    api_binding: { method: POST, path: /beneficiaries/{internal_id}/restore }
+
+# ──────────────────────────────────────────────────────────────
+# Transition kinds — discriminator for the single emitted RVT.
+# Kept here so consumers and the schema can be type-checked
+# against the same enum.
+# ──────────────────────────────────────────────────────────────
+
+transition_kinds:
+  - id: REGISTERED
+    emitting_command: CMD.REF.001.BEN.REGISTER_BENEFICIARY
+  - id: UPDATED
+    emitting_command: CMD.REF.001.BEN.UPDATE_BENEFICIARY_IDENTITY
+  - id: ARCHIVED
+    emitting_command: CMD.REF.001.BEN.ARCHIVE_BENEFICIARY
+  - id: RESTORED
+    emitting_command: CMD.REF.001.BEN.RESTORE_BENEFICIARY

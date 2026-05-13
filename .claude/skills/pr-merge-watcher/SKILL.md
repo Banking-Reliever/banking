@@ -3,7 +3,7 @@ name: pr-merge-watcher
 description: >
   Checks the status of open GitHub PRs for tasks with `status: in_review`,
   and automatically transitions tasks whose PR has been merged to `status: done`.
-  Refreshes /plan/BOARD.md and identifies newly unblocked tasks.
+  Refreshes /tasks/BOARD.md and identifies newly unblocked tasks.
   Also inspects each open PR's CI/build status: when the pipeline is failing,
   harvests the essential information from the build logs and dispatches the
   `/fix` skill on that PR (idempotent — never re-triggers `/fix` on the same
@@ -28,7 +28,7 @@ Updates the kanban board accordingly.
 ## Step 1 — Find Tasks in Review
 
 ```bash
-grep -rl 'status: in_review' plan/*/tasks/TASK-*.md 2>/dev/null
+grep -rl 'status: in_review' tasks/*/TASK-*.md 2>/dev/null
 ```
 
 If no files are found: terminate silently, no commit.
@@ -96,7 +96,7 @@ For each task in the `merged` bucket:
 ```bash
 git config user.email "pr-watcher@claude-code"
 git config user.name "Claude PR Watcher"
-git add plan/<capability>/tasks/TASK-NNN-*.md
+git add tasks/<capability>/TASK-NNN-*.md
 git commit -m "chore(TASK-NNN): mark done after PR merge
 
 PR: <pr_url>
@@ -114,7 +114,7 @@ Scan all task files:
 find plan -name 'TASK-*.md' | sort
 ```
 
-Rebuild `/plan/BOARD.md` with the following structure:
+Rebuild `/tasks/BOARD.md` with the following structure:
 
 ```markdown
 # Task Board — YYYY-MM-DD HH:MM UTC
@@ -147,7 +147,7 @@ Rebuild `/plan/BOARD.md` with the following structure:
 Stage and commit BOARD.md:
 
 ```bash
-git add plan/BOARD.md
+git add tasks/BOARD.md
 git commit -m "chore(board): refresh after PR merge watcher run"
 ```
 

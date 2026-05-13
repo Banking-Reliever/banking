@@ -59,9 +59,9 @@ deliberate.
    answer yourself.
 
    Local artifacts (the working repo is authoritative for these):
-   - The TASK file: `/plan/{capability-id}/tasks/TASK-NNN-*.md`
-   - The plan: `/plan/{capability-id}/plan.md` — the epic this task belongs to and its exit condition
-   - Sibling tasks in `/plan/{capability-id}/tasks/` — to spot collateral amendments (Rule 2)
+   - The TASK file: `/tasks/{capability-id}/TASK-NNN-*.md`
+   - The roadmap: `/roadmap/{capability-id}/roadmap.md` — the epic this task belongs to and its exit condition
+   - Sibling tasks in `/tasks/{capability-id}/` — to spot collateral amendments (Rule 2)
 
    Knowledge corpus — fetch via the `bcm-pack` CLI **only**, never read `/bcm/`, `/func-adr/`, 
    `/adr/`, `/strategic-vision/`, or `/product-vision/` directly:
@@ -238,7 +238,7 @@ clarify a DoD item, note a constraint. Do not refactor the entire file.
 ### New tasks (Rule 3 — deferred amendments)
 
 When a resolution touches a `done`/`in_progress`/`in_review` task, create a new task file:
-- Path: `/plan/{capability-id}/tasks/TASK-[next-number]-amendement-[slug].md`
+- Path: `/tasks/{capability-id}/TASK-[next-number]-amendement-[slug].md`
 - Use the standard task frontmatter with `status: todo`, `priority` matching the urgency of the delta
 - `depends_on`: include the original task it amends
 - Body: be explicit that this task amends TASK-[NNN] and describe exactly what changes

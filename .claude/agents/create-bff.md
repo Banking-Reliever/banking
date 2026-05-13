@@ -158,8 +158,8 @@ it needs structured ADR slices). Selective slice usage:
 
 | Source | Pack slice | What you extract |
 |---|---|---|
-| **TASK file** (local: `/plan/{capability-id}/tasks/TASK-NNN-*.md`) | n/a — local | Acceptance criteria, Definition of Done, scope boundaries, any commands/events explicitly named, dignity rules to honor in the API contract, open questions |
-| **Plan** (local: `/plan/{capability-id}/plan.md`) | n/a — local | Epics, milestones, exit conditions, scope envelope (e.g. "V0 without gamification" — endpoints/events you should NOT scaffold yet) |
+| **TASK file** (local: `/tasks/{capability-id}/TASK-NNN-*.md`) | n/a — local | Acceptance criteria, Definition of Done, scope boundaries, any commands/events explicitly named, dignity rules to honor in the API contract, open questions |
+| **Roadmap** (local: `/roadmap/{capability-id}/roadmap.md`) | n/a — local | Epics, milestones, exit conditions, scope envelope (e.g. "V0 without gamification" — endpoints/events you should NOT scaffold yet) |
 | **Capability metadata** | `capability_self`, `capability_ancestors` | Confirm zone is `CHANNEL`; level, parent / children |
 | **FUNC ADR** | `capability_definition` | `impacted_capabilities` (L3 list — e.g. TAB / ACH / NOT), `impacted_events` (events emitted), Decision-section "Events Consumed" table (events to subscribe to + emitting L2), `decision_scope.zoning`, dignity / consent / language constraints inherited from URBA ADRs |
 | **Tactical ADRs** | `tactical_stack` | Endpoint contracts (paths, methods, ETag support, payload shape) for each L3, LocalStorage / PII exclusions (fields the BFF must NOT return), SLO targets (use as comments), per-L3 cache strategy |

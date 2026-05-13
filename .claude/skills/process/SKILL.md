@@ -29,6 +29,16 @@ description: >
   MultiEdit / NotebookEdit calls targeting any path under `process/` are
   rejected unless the `/process` skill's session sentinel
   (`/tmp/.claude-process-skill.active`) is present.
+
+  Publication rule: `/process` always works on a dedicated branch
+  `process/<CAP_ID>` inside an isolated worktree at
+  `/tmp/process-worktrees/<CAP_ID>/`. It commits, pushes, and opens (or
+  refreshes) a Pull Request titled `process(<CAP_ID>): …` against `main`.
+  The PR must be reviewed and merged before any downstream skill (`/plan`,
+  `/task`, `/launch-task`, `/code`, `/fix`) can consume the model on `main`
+  — those skills enforce a readiness gate that refuses to run when the
+  capability has either no `process/<CAP_ID>/` on `main` or an open
+  unmerged process PR.
 ---
 
 # Process — Tactical DDD Process Modelling
@@ -65,15 +75,85 @@ agent's job downstream.
   `/tmp/.claude-process-skill.active` is present. The hook does **not** parse
   Bash commands, so always use `Write` / `Edit` for files under `process/` —
   never shell redirects (`cat > …`, `sed -i`, `tee`, etc.).
+- The hook recognises three roots as `process/**`:
+  `<repo>/process/`, `/tmp/kanban-worktrees/TASK-NNN-*/process/`, and
+  `/tmp/process-worktrees/<CAP_ID>/process/` — the last one being where this
+  skill performs every write.
 - All downstream skills and the agents they spawn treat `process/{capability-id}/`
   as **read-only**. Their PRs must never carry diffs under that path.
 - `/process` is **idempotent and durable**: re-running it on an existing
   `process/{capability-id}/` is allowed (and expected when the FUNC ADR
   evolves), but it must always offer to diff first and ask before overwriting.
 
+## Publication rule (hard constraint)
+
+- `/process` writes nothing on the main checkout. Every modification happens
+  inside a dedicated worktree at `/tmp/process-worktrees/<CAP_ID>/` checked
+  out on a dedicated branch `process/<CAP_ID>`.
+- At the end of the session, the skill commits the changes, pushes the
+  branch, and opens (or refreshes) a Pull Request against `main`. The PR
+  title is `process(<CAP_ID>): <one-line summary>` and the body recapitulates
+  the modelling session (aggregates / commands / policies / read-models /
+  bus topology decisions, plus open questions).
+- The PR must be reviewed and merged through GitHub before any downstream
+  skill (`/plan`, `/task`, `/launch-task`, `/code`, `/fix`) can consume the
+  model on `main`. Those skills enforce a readiness gate (see "Readiness
+  gate" section in each downstream SKILL.md).
+- Re-running `/process <CAP_ID>` while the branch and worktree already exist
+  is the supported refinement workflow: the skill reuses both, appends a
+  new commit, and pushes. The existing open PR is updated in place — no new
+  PR is opened.
+
 ---
 
-## Step 0 — Sentinel and Session Boundary
+## Step 0 — Branch, Worktree, and Sentinel
+
+This skill **never writes on the main checkout**. It always runs inside a
+dedicated git worktree on a dedicated branch, so the result can flow through
+a normal Pull Request review before landing on `main`.
+
+### 0.1 — Resolve paths
+
+```bash
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
+CAP_ID="<CAPABILITY_ID>"                              # e.g. CAP.BSP.001.SCO
+BRANCH_NAME="process/${CAP_ID}"
+WORKTREE_PATH="/tmp/process-worktrees/${CAP_ID}"
+```
+
+### 0.2 — Create or reuse the branch + worktree
+
+```bash
+mkdir -p /tmp/process-worktrees
+
+if git -C "$PROJECT_ROOT" worktree list --porcelain \
+      | grep -q "^worktree $WORKTREE_PATH\$"; then
+  # Re-run on an existing /process session — reuse in place.
+  echo "Reusing existing worktree at $WORKTREE_PATH on branch $BRANCH_NAME"
+elif git -C "$PROJECT_ROOT" show-ref --verify --quiet "refs/heads/$BRANCH_NAME"; then
+  # Branch exists but no worktree — re-attach.
+  git -C "$PROJECT_ROOT" worktree add "$WORKTREE_PATH" "$BRANCH_NAME"
+else
+  # Greenfield — create branch off main and worktree in one shot.
+  git -C "$PROJECT_ROOT" fetch origin main --quiet || true
+  git -C "$PROJECT_ROOT" worktree add -b "$BRANCH_NAME" "$WORKTREE_PATH" main
+fi
+```
+
+If the branch already exists and is behind `main`, fast-forward it before
+working — this avoids opening a PR with stale baseline:
+
+```bash
+git -C "$WORKTREE_PATH" fetch origin main --quiet || true
+git -C "$WORKTREE_PATH" merge --ff-only origin/main 2>/dev/null || true
+```
+
+**From this step onward, every `Write`, `Edit`, `Read`, `Bash`, and
+`git diff` call MUST target paths under `$WORKTREE_PATH`.** Do not touch the
+main checkout's `process/` tree — the readiness gate downstream depends on
+`process/<CAP_ID>/` only appearing on `main` when the PR is merged.
+
+### 0.3 — Sentinel
 
 **Before** writing the first byte under `process/`, mark the session as a
 `/process` session by touching the sentinel file:
@@ -84,7 +164,9 @@ touch /tmp/.claude-process-skill.active
 
 This grants the `process-folder-guard.py` hook permission to allow `Write`,
 `Edit`, `MultiEdit`, and `NotebookEdit` calls on `process/**` for the duration
-of this skill invocation.
+of this skill invocation. The hook recognises both
+`<repo>/process/...` and `/tmp/process-worktrees/<CAP_ID>/process/...` as
+guarded paths, so the sentinel covers both.
 
 **At the very end** of the skill (success or graceful abort), remove it:
 
@@ -148,18 +230,24 @@ them upstream to `banking-knowledge` to fix the BCM/FUNC ADR before retrying.
 
 ## Step 2 — Detect Existing Process Folder (idempotency)
 
+Look in **both** the worktree (where prior work-in-progress on this branch
+lives) and on `main` (the merged baseline):
+
 ```bash
-ls process/<CAPABILITY_ID>/ 2>/dev/null
+ls "$WORKTREE_PATH/process/$CAP_ID/"             2>/dev/null    # WIP on this branch
+git -C "$PROJECT_ROOT" ls-tree --name-only main -- "process/$CAP_ID" 2>/dev/null   # merged baseline
 ```
 
-| State                                       | Action                                                                                          |
-|---------------------------------------------|-------------------------------------------------------------------------------------------------|
-| Folder absent                               | Greenfield modelling.                                                                           |
-| Folder present, FUNC ADR unchanged          | Ask the user: "A process model exists. Do you want to refine it, regenerate, or stop?"          |
-| Folder present, FUNC ADR has new events     | Run a *delta* session — keep stable AGG/CMD/POL identifiers, append new commands / events / policies. Never silently rename existing IDs (downstream code is keyed on them). |
+| State                                                               | Action                                                                                          |
+|---------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| Folder absent on main AND on branch                                 | Greenfield modelling.                                                                           |
+| Folder present on main, FUNC ADR unchanged                          | Ask the user: "A merged process model exists. Do you want to refine it, regenerate, or stop?"   |
+| Folder present on main, FUNC ADR has new events                     | Run a *delta* session — keep stable AGG/CMD/POL identifiers, append new commands / events / policies. Never silently rename existing IDs (downstream code is keyed on them). |
+| Folder present only on branch (prior `/process` run, PR still open) | Resume in place — the previous diff is still under review. Append refinements as a new commit on the same branch; the open PR is updated by the push in Step 6.5. |
 
 Always show a `git diff` of any change before writing the final files, so the
-user can sanity-check the delta.
+user can sanity-check the delta. All `git diff` calls run inside the
+worktree: `git -C "$WORKTREE_PATH" diff -- process/$CAP_ID/`.
 
 ---
 
@@ -371,7 +459,7 @@ Announce: "Coherence checks ✅ — writing files." Then proceed.
 
 ## Step 6 — Write the Files
 
-Write to `process/<CAPABILITY_ID>/`:
+Write to `$WORKTREE_PATH/process/<CAPABILITY_ID>/`:
 
 - `README.md`
 - `aggregates.yaml`
@@ -384,16 +472,118 @@ Write to `process/<CAPABILITY_ID>/`:
 - `schemas/RVT.*.schema.json` (one per emitted resource event)
 
 Always use the `Write` and `Edit` tools — never shell redirects. The
-`process-folder-guard.py` hook will allow these calls because the sentinel
-from Step 0 is in place.
+`process-folder-guard.py` hook allows these calls because the sentinel from
+Step 0.3 is in place AND the worktree path is recognised as a `process/**`
+root.
 
-After every write, run `git diff` on the touched file and show the user the
-diff before moving on. This makes the modelling session reviewable in real
-time.
+Pass the **full absolute path** to the tools (e.g.
+`/tmp/process-worktrees/CAP.BSP.001.SCO/process/CAP.BSP.001.SCO/aggregates.yaml`).
+Never write to the equivalent path under the main checkout.
+
+After every write, show the diff using
+`git -C "$WORKTREE_PATH" diff -- process/$CAP_ID/<file>` before moving on.
+This makes the modelling session reviewable in real time.
 
 ---
 
-## Step 7 — Tear Down the Sentinel
+## Step 6.5 — Commit, Push, and Open / Refresh the PR
+
+Once all files have been written and the user has signed off on the diff:
+
+### 6.5.1 — Stage and commit (inside the worktree)
+
+```bash
+cd "$WORKTREE_PATH"
+git add "process/$CAP_ID/"
+git status --porcelain
+```
+
+If `git status --porcelain` is empty, there is nothing to publish — skip
+straight to Step 7. Otherwise, commit with a message that mirrors the
+session:
+
+```bash
+git commit -m "$(cat <<'EOF'
+process(<CAP_ID>): <one-line summary of the modelling decision>
+
+- Aggregates: <list>
+- Commands: <list>
+- Policies: <list>
+- Read-models: <list>
+- Bus exchange: <name>
+- Open questions: <count>
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+EOF
+)"
+```
+
+If this is a *refinement* commit on an existing branch, prefix the subject
+with `process(<CAP_ID>): refine — …` so the commit history reads cleanly.
+
+### 6.5.2 — Push the branch
+
+```bash
+git push -u origin "$BRANCH_NAME"
+```
+
+### 6.5.3 — Open or refresh the PR
+
+Detect whether a PR is already open for this branch:
+
+```bash
+PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --state open --json number --jq '.[0].number')
+```
+
+- **No open PR** — open one:
+
+  ```bash
+  gh pr create \
+    --base main \
+    --head "$BRANCH_NAME" \
+    --title "process(<CAP_ID>): <one-line summary>" \
+    --body "$(cat <<'EOF'
+  ## Summary
+  Process Modelling layer for `<CAP_ID>` — DDD tactical model produced by `/process`.
+
+  ## Files
+  - `process/<CAP_ID>/README.md`
+  - `process/<CAP_ID>/aggregates.yaml`
+  - `process/<CAP_ID>/commands.yaml`
+  - `process/<CAP_ID>/policies.yaml`
+  - `process/<CAP_ID>/read-models.yaml`
+  - `process/<CAP_ID>/bus.yaml`
+  - `process/<CAP_ID>/api.yaml`
+  - `process/<CAP_ID>/schemas/*.json`
+
+  ## Modelling decisions
+  <copy the README's "Scenario walkthrough" section>
+
+  ## Open questions
+  <copy the README's "Open process-level questions" section>
+
+  ## Downstream impact
+  Once merged, `/plan <CAP_ID>` becomes runnable. Until then the readiness
+  gate in `/plan`, `/task`, `/launch-task`, `/code`, and `/fix` will refuse
+  to consume this capability.
+
+  🤖 Generated with [Claude Code](https://claude.com/claude-code)
+  EOF
+  )"
+  ```
+
+- **PR already open** — the `git push` above already updated it. Just
+  resurface the URL:
+
+  ```bash
+  gh pr view "$PR_NUMBER" --json url --jq '.url'
+  ```
+
+Capture the URL of the (new or existing) PR for the final announcement.
+
+---
+
+## Step 7 — Tear Down the Sentinel and Announce
 
 ```bash
 rm -f /tmp/.claude-process-skill.active
@@ -401,18 +591,23 @@ rm -f /tmp/.claude-process-skill.active
 
 Then announce:
 
-> "Process model for `<CAPABILITY_ID>` is committed under
-> `process/<CAPABILITY_ID>/`. The folder is now read-only for every other
-> skill — `/plan`, `/task`, `/code`, `/fix`, `/launch-task`, `/continue-work`
-> — and all their downstream agents. To refine the model, re-run `/process
-> <CAPABILITY_ID>`.
+> "Process model for `<CAPABILITY_ID>` is committed on branch
+> `process/<CAPABILITY_ID>` (worktree: `/tmp/process-worktrees/<CAP_ID>/`)
+> and published as PR <PR_URL>. The PR must be reviewed and merged into
+> `main` before any downstream skill can consume the model.
 >
-> Next: `/plan <CAPABILITY_ID>` will read this folder (in addition to
-> `bcm-pack pack`) to draft the implementation epics."
-
-If the user wants to **commit** the changes, they can use `/commit` (this skill
-does not auto-commit — Process Modelling is high-stakes and benefits from a
-manual review pass on the diff before committing).
+> While the PR is open:
+> - `/plan`, `/task`, `/launch-task`, `/code`, and `/fix` will refuse to
+>   run on this capability (readiness gate).
+> - To refine the model, re-run `/process <CAPABILITY_ID>` — this skill
+>   will reuse the existing branch and worktree and append a new commit
+>   to the same PR.
+>
+> After merge:
+> - The worktree at `/tmp/process-worktrees/<CAP_ID>/` can be removed with
+>   `git worktree remove /tmp/process-worktrees/<CAP_ID> --force` (the user
+>   does this — this skill never deletes a worktree it might still need).
+> - `/plan <CAPABILITY_ID>` becomes runnable."
 
 ---
 

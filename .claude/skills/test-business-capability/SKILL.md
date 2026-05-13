@@ -56,7 +56,7 @@ The user provides a `TASK-NNN` identifier or a capability name. Optional flags:
 | `--env <slug>` | Same as `--branch` (alias, environment-slug convention) |
 
 If the task identifier is ambiguous, list tasks with status `done` or
-`in_progress` from `plan/*/tasks/` — only already-implemented tasks can be
+`in_progress` from `tasks/*/` — only already-implemented tasks can be
 tested. If nothing matches, stop and ask.
 
 ---
@@ -67,7 +67,7 @@ Read the capability ID from the TASK file frontmatter, then look up its
 zoning:
 
 ```bash
-CAP_ID=$(grep -m1 '^capability_id:' "/plan/{capability-id}/tasks/TASK-NNN-*.md" | awk '{print $2}')
+CAP_ID=$(grep -m1 '^capability_id:' "/tasks/{capability-id}/TASK-NNN-*.md" | awk '{print $2}')
 
 ZONING=$(grep -l "id: ${CAP_ID}" bcm/capabilities-*.yaml 2>/dev/null \
   | xargs grep -A1 "id: ${CAP_ID}" 2>/dev/null \
@@ -133,7 +133,7 @@ conversation. Include:
 - The capability ID and confirmed zone (non-CHANNEL)
 - The backend artifact path located in Step 4
 - Any flags the user passed (`--env`, etc.)
-- The plan path: `/plan/{capability-id}/plan.md` (local artifact)
+- The roadmap path: `/roadmap/{capability-id}/roadmap.md` (local artifact)
 - An explicit instruction to fetch BCM/ADR/vision context from `bcm-pack`:
   `bcm-pack pack <CAPABILITY_ID> --deep --compact` — and to NOT read
   `/bcm/`, `/func-adr/`, `/adr/`, `/tech-adr/`, `/tech-vision/`,
