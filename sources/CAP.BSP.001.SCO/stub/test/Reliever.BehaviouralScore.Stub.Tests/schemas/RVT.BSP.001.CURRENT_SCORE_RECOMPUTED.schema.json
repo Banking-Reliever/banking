@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://reliever.example.com/contracts/CAP.BSP.001.SCO/RVT.BSP.001.CURRENT_SCORE_RECOMPUTED/1.0.0/schema.json",
+  "x-bcm-version": "1.0.0",
+  "x-bcm-role": "runtime-contract",
+  "x-bcm-capability": "CAP.BSP.001.SCO",
+  "x-bcm-business-event": "EVT.BSP.001.SCORE_RECOMPUTED",
+  "x-bcm-resource-event": "RVT.BSP.001.CURRENT_SCORE_RECOMPUTED",
+  "x-bcm-carried-resource": "RES.BSP.001.CURRENT_SCORE",
+  "x-bcm-carried-business-object": "OBJ.BSP.001.EVALUATION",
+  "x-bcm-routing-key": "EVT.BSP.001.SCORE_RECOMPUTED.RVT.BSP.001.CURRENT_SCORE_RECOMPUTED",
+  "x-bcm-correlation-key": "case_id",
+  "title": "RVT.BSP.001.CURRENT_SCORE_RECOMPUTED — Current behavioural score recomputed",
+  "description": "Runtime contract for the resource event published by CAP.BSP.001.SCO whenever the behavioural score of a beneficiary is recomputed after a transaction or a significant behavioural signal. Every payload published on the operational RabbitMQ topic exchange owned by CAP.BSP.001.SCO with routing key EVT.BSP.001.SCORE_RECOMPUTED.RVT.BSP.001.CURRENT_SCORE_RECOMPUTED MUST validate against this schema (ADR-TECH-STRAT-001 Rules 1, 2, 3, 4, 5, 6). The payload is a domain event DDD: it carries the data of the score-recalculation aggregate transition — coherent and atomic — not a snapshot of the read model RES.BSP.001.CURRENT_SCORE, and not a technical patch of fields. Beneficiary identity resolution toward OBJ.REF.001.BENEFICIARY_RECORD.internal_id is performed by consumers via CAP.REF.001.BEN lookup using the case_id correlation key carried by this payload (the producer never carries the canonical identifier).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "evaluation_id",
+    "case_id",
+    "score_value",
+    "delta_score",
+    "contributing_factors",
+    "evaluation_type",
+    "evenement_declencheur",
+    "computation_timestamp",
+    "model_version"
+  ],
+  "properties": {
+    "evaluation_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier of this evaluation (UUID or business code). Mirrors RES.BSP.001.CURRENT_SCORE.evaluation_id and OBJ.BSP.001.EVALUATION.evaluation_id."
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "CORRELATION KEY. Reference to the relevant participation case (Reliever case ID). Mirrors RES.BSP.001.CURRENT_SCORE.case_id and OBJ.BSP.001.EVALUATION.case_id. Identity resolution: consumers resolve case_id toward OBJ.REF.001.BENEFICIARY_RECORD.internal_id via a CAP.REF.001.BEN (Beneficiary Reference) lookup. The producer (CAP.BSP.001.SCO) NEVER carries the canonical internal_id."
+    },
+    "score_value": {
+      "type": "number",
+      "description": "Numeric value of the behavioural score AFTER recomputation (transition target value). Mirrors RES.BSP.001.CURRENT_SCORE.score_value and OBJ.BSP.001.EVALUATION.score_value."
+    },
+    "delta_score": {
+      "type": "number",
+      "description": "Score variation compared to the previous evaluation (transition delta). Domain event DDD field — captures the magnitude of the transition. Mirrors RES.BSP.001.CURRENT_SCORE.delta_score."
+    },
+    "contributing_factors": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "poids"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Type of contributing factor (e.g. 'transaction_categorie', 'budget_respect', 'recurrence', 'comportement_signal')."
+          },
+          "poids": {
+            "type": "number",
+            "description": "Weight applied to this factor in the score recomputation (signed; positive = upward contribution, negative = downward)."
+          },
+          "valeur": {
+            "type": ["number", "string", "boolean", "null"],
+            "description": "Optional measured value of the factor at recomputation time."
+          }
+        }
+      },
+      "description": "Factors that contributed to this recomputation, with their type and weight. Mirrors RES.BSP.001.CURRENT_SCORE.contributing_factors and OBJ.BSP.001.EVALUATION.contributing_factors."
+    },
+    "evaluation_type": {
+      "type": "string",
+      "enum": ["INITIAL", "CURRENT"],
+      "description": "Evaluation type — INITIAL (enrolment baseline) or CURRENT (post-transaction recomputation). Mirrors OBJ.BSP.001.EVALUATION.evaluation_type."
+    },
+    "evenement_declencheur": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the transaction or behavioural signal that triggered the recomputation. Mirrors RES.BSP.001.CURRENT_SCORE.evenement_declencheur. Carries the causal link of the domain event DDD."
+    },
+    "computation_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Recomputation timestamp (ISO-8601, UTC recommended). Mirrors OBJ.BSP.001.EVALUATION.computation_timestamp and RES.BSP.001.CURRENT_SCORE.computation_timestamp."
+    },
+    "model_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Version of the scoring model used for this recomputation (e.g. SemVer or model-registry tag). Mirrors OBJ.BSP.001.EVALUATION.model_version and RES.BSP.001.CURRENT_SCORE.model_version."
+    }
+  }
+}

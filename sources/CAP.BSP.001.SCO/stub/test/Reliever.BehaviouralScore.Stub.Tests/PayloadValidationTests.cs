@@ -16,25 +16,13 @@ namespace Reliever.BehaviouralScore.Stub.Tests;
 /// </summary>
 public class PayloadValidationTests
 {
+    private const string SchemaRelativePath =
+        "schemas/RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json";
+
     private static SchemaValidator LoadValidator()
     {
-        // Walk up from bin/Debug/net10.0/ until the repo root (containing
-        // plan/CAP.BSP.001.SCO/contracts/) is found, then resolve the schema.
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null)
-        {
-            var candidate = Path.Combine(dir.FullName,
-                "plan", "CAP.BSP.001.SCO", "contracts",
-                "RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json");
-            if (File.Exists(candidate))
-            {
-                return SchemaValidator.FromFile(candidate);
-            }
-            dir = dir.Parent;
-        }
-        throw new FileNotFoundException(
-            "Cannot locate plan/CAP.BSP.001.SCO/contracts/RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json " +
-            "by walking parents of " + AppContext.BaseDirectory);
+        var path = Path.Combine(AppContext.BaseDirectory, SchemaRelativePath);
+        return SchemaValidator.FromFile(path);
     }
 
     private static StubOptions DefaultOptions() => new()

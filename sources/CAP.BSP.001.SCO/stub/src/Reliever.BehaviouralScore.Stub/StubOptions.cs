@@ -44,10 +44,11 @@ public sealed class StubOptions
     /// <summary>
     /// Path to the runtime JSON Schema
     /// (RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json).
-    /// Resolved relative to AppContext.BaseDirectory.
+    /// Resolved relative to AppContext.BaseDirectory; the file is shipped
+    /// next to the assembly via the csproj CopyToOutputDirectory rule.
     /// </summary>
     public string SchemaPath { get; set; } =
-        "../../../../plan/CAP.BSP.001.SCO/contracts/RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json";
+        "schemas/RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json";
 
     /// <summary>
     /// Scoring-model version label written into every payload.

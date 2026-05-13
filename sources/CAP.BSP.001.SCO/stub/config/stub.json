@@ -6,7 +6,7 @@
     "cadence_outside_range_override": false,
     "exchange_name": "bsp.001.sco-events",
     "routing_key": "EVT.BSP.001.SCORE_RECOMPUTED.RVT.BSP.001.CURRENT_SCORE_RECOMPUTED",
-    "schema_path": "../../plan/CAP.BSP.001.SCO/contracts/RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json",
+    "schema_path": "schemas/RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json",
     "model_version": "stub-1.0.0",
     "simulated_cases": [
       "CASE-RELIEVER-2026-000001",

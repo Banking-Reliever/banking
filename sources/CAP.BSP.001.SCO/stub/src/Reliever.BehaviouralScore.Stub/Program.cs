@@ -7,13 +7,13 @@ using Reliever.BehaviouralScore.Stub;
 //
 // This .NET 10 worker publishes simulated RVT.BSP.001.CURRENT_SCORE_RECOMPUTED
 // payloads on a RabbitMQ topic exchange owned by CAP.BSP.001.SCO, honoring
-// the runtime contract under plan/CAP.BSP.001.SCO/contracts/. The whole
-// stub is governed by:
+// the runtime JSON Schema shipped next to the assembly under schemas/.
+// The whole stub is governed by:
 //
-//   - func-adr/ADR-BCM-FUNC-0005-L2-BSP001-remédiation-comportementale.md
-//   - adr/ADR-BCM-URBA-0007-meta-modele-evenementiel-normalise.md
-//   - adr/ADR-BCM-URBA-0009-definition-capacite-evenementielle.md
-//   - tech-vision/adr/ADR-TECH-STRAT-001-event-infrastructure.md (NORMATIVE)
+//   - ADR-BCM-FUNC-0005 (L2 BSP001 — behavioural remediation)
+//   - ADR-BCM-URBA-0007 (normalised event meta-model)
+//   - ADR-BCM-URBA-0009 (definition of an event-driven capability)
+//   - ADR-TECH-STRAT-001 (event infrastructure — NORMATIVE)
 //
 // Activation: STUB__ACTIVE=true (or appsettings.json Stub:Active=true).
 // Inactive in production by default.

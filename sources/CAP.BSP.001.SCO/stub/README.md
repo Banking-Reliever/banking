@@ -1,6 +1,6 @@
 # CAP.BSP.001.SCO — Development Stub
 
-A minimal .NET 10 worker service that publishes simulated `RVT.BSP.001.CURRENT_SCORE_RECOMPUTED` events on a RabbitMQ topic exchange owned by `CAP.BSP.001.SCO`. The stub honors the runtime JSON Schema at [`/plan/CAP.BSP.001.SCO/contracts/RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json`](../../../plan/CAP.BSP.001.SCO/contracts/RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json) — every outgoing payload is validated **before** publication; an invalid payload is never put on the wire.
+A minimal .NET 10 worker service that publishes simulated `RVT.BSP.001.CURRENT_SCORE_RECOMPUTED` events on a RabbitMQ topic exchange owned by `CAP.BSP.001.SCO`. The stub honors the runtime JSON Schema shipped next to the assembly under [`src/Reliever.BehaviouralScore.Stub/schemas/RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json`](src/Reliever.BehaviouralScore.Stub/schemas/RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json) — every outgoing payload is validated **before** publication; an invalid payload is never put on the wire.
 
 > **Mode B (Contract + Stub) — not the real microservice.** This stub will be decommissioned when Epic 2 of `CAP.BSP.001.SCO`'s plan delivers the real scoring algorithm under `sources/CAP.BSP.001.SCO/backend/`.
 
@@ -44,7 +44,7 @@ To observe published messages, in the management UI bind a queue to exchange `bs
 | `Stub:CadenceOutsideRangeOverride` | `false` | Required `true` to allow values outside `[1, 10]`. Justify in your deployment notes. |
 | `Stub:ExchangeName` | `bsp.001.sco-events` | Topic exchange owned by this capability. |
 | `Stub:RoutingKey` | `EVT.BSP.001.SCORE_RECOMPUTED.RVT.BSP.001.CURRENT_SCORE_RECOMPUTED` | Routing-key convention from ADR-TECH-STRAT-001 Rule 4. |
-| `Stub:SchemaPath` | `../../../../plan/CAP.BSP.001.SCO/contracts/RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json` | Runtime schema loaded at startup. |
+| `Stub:SchemaPath` | `schemas/RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json` | Runtime schema loaded at startup (resolved against the assembly's output directory). |
 | `Stub:ModelVersion` | `stub-1.0.0` | `model_version` written into every payload. |
 | `Stub:SimulatedCases` | `[ "CASE-RELIEVER-2026-000001", … ]` | Pool of `case_id` values picked at random. |
 | `Stub:EvaluationTypeMix` | `{ INITIAL: 0.2, CURRENT: 0.8 }` | Probability mix for `evaluation_type`. |
@@ -81,9 +81,13 @@ sources/CAP.BSP.001.SCO/stub/
 │       ├── PayloadFactory.cs                ← simulated transition data (domain event DDD)
 │       ├── SchemaValidator.cs               ← loads JSON Schema, validates every payload
 │       ├── StubOptions.cs                   ← configuration types
-│       └── appsettings.json
+│       ├── appsettings.json
+│       └── schemas/
+│           └── RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json  ← runtime contract (copied to output)
 └── test/
     └── Reliever.BehaviouralScore.Stub.Tests/
         ├── Reliever.BehaviouralScore.Stub.Tests.csproj
-        └── PayloadValidationTests.cs
+        ├── PayloadValidationTests.cs
+        └── schemas/
+            └── RVT.BSP.001.CURRENT_SCORE_RECOMPUTED.schema.json  ← same schema, copied to test output
 ```
