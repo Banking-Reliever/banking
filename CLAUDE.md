@@ -1,102 +1,154 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code (claude.ai/code) when working in this repository.
 
-## Commands
+## What this repo is
 
-```bash
-# Install dependencies (PyYAML only)
-pip install -r tools/requirements.txt
+This is the **implementation side** of *Reliever*, a financial-inclusion product.
+It turns validated business capabilities into runnable .NET microservices, BFFs,
+vanilla web frontends, contract stubs, and their tests.
 
-# Full build: validate → export BCM views → generate context.txt
-./build.sh
+All upstream knowledge — BCM YAML, GOV / URBA / TECH-STRAT / FUNC / TECH-TACT
+ADRs, product / business / tech visions — lives in a separate
+**`banking-knowledge`** repo and is consumed **read-only** through the
+`bcm-pack` CLI. This repo never authors or edits upstream artifacts. There is
+no `bcm/`, `adr/`, `func-adr/`, `tools/`, `build.sh`, or EventCatalog build
+here anymore.
 
-# Structural validation only (capabilities, events, subscriptions coherence)
-python3 tools/validate_repo.py
-python3 tools/validate_repo.py --strict          # strict mode
-python3 tools/validate_events.py --bcm-dir bcm --events-dir bcm
+## The implementation pipeline
 
-# Semantic review (full repo)
-./test.sh                                          # full semantic review
-./test-ci.sh                                       # PR-scoped review (uses git diff vs origin/main)
-
-# Launch EventCatalog views (ports 4444 and 4445)
-./run.sh
-```
-
-## Architecture
-
-This is a **model-first BCM repository** for *Reliever*, a financial inclusion product. There is no application code — the repository contains structured YAML models, ADRs, and Python tooling to validate and export the Business Capability Map.
-
-### ADR Governance Hierarchy
-
-All architectural decisions flow through three families with strict precedence:
+Six stages, each owned by a single skill, each writing to a single folder:
 
 ```
-GOV  (meta-rules, review cycles, arbitration board)
- ↓
-URBA (zoning, L1/L2/L3 rules, naming, event meta-model)
- ↓
-FUNC (per-capability functional decisions — one FUNC ADR per L2)
+[0] /process       process/<CAP_ID>/          DDD tactical model (PR-gated)
+[1] /plan          roadmap/<CAP_ID>/          epics + milestones
+[2] /task          tasks/<CAP_ID>/            unit-of-work TASK-NNN-*.md
+[3] /sort-task     tasks/BOARD.md             read-only kanban (hook-driven)
+    /launch-task   /tmp/kanban-worktrees/…    scheduler — spawns /code agents
+[4] /code          sources/<CAP_ID>/…         zone-aware implementation
+                   src/<zone>/<CAP_ID>-bff/   (CHANNEL BFF)
+[5] /test-*        tests/<CAP_ID>/…           pytest + report.html
 ```
 
-A FUNC ADR cannot contradict an URBA ADR. Every BCM evolution requires an accepted ADR. ADRs live in `adr/` (structural) and `func-adr/` (functional, one per L2 capability).
+Entry point for end-to-end orchestration: **`/implementation-pipeline`** —
+probes upstream readiness via `bcm-pack`, inspects local artifacts, dispatches
+the next pending stage. Idempotent: re-invoke after each stage completes.
 
-### 7-Zone TOGAF Extended Model
+## Repo layout
 
-Capabilities are placed in exactly one zone (`zoning` field in YAML). Values in `bcm/vocab.yaml`:
+```
+/process/<CAP_ID>/        Stage 0 — aggregates.yaml, commands.yaml, policies.yaml,
+                          read-models.yaml, bus.yaml, api.yaml, schemas/*.schema.json
+/roadmap/<CAP_ID>/        Stage 1 — roadmap.md
+/tasks/                   Stages 2-3 — BOARD.md + <CAP_ID>/TASK-NNN-*.md
+/sources/<CAP_ID>/        Stage 4 — backend/ (Mode A microservice) | stub/ (Mode B) | frontend/
+/src/<zone-abbrev>/<CAP_ID>-bff/   Stage 4 — CHANNEL BFFs
+/tests/<CAP_ID>/TASK-NNN-{slug}/   Stage 5 — generated pytest suite + report.html
+/externals-template/      seed templates for the application & process catalogues
+/.claude/skills/          one folder per skill (see cheatsheet)
+/.claude/agents/          implement-capability, create-bff, code-web-frontend,
+                          test-business-capability, test-app, harness-backend
+/.claude/hooks/           process-folder-guard.py, kanban-watch-*.sh
+```
 
-| YAML value | Zone |
+## TASK frontmatter
+
+```yaml
+task_id: TASK-NNN
+capability_id: CAP.<ZONE>.<NNN>[.<SUB>]
+epic: <epic-id>
+status: todo | ready | in_progress | in_review | done | blocked | needs_info | stalled
+priority: <int>
+depends_on: [TASK-NNN, …]
+task_type: full-microservice | contract-stub   # optional, defaults to full
+loop_count: 0
+max_loops: 10
+pr_url: <set by /code on PR creation>
+```
+
+`/code` is the sole writer of `loop_count`, `max_loops`, `stalled_reason`, `pr_url`.
+
+## Stage 4 routing (zone- and type-aware)
+
+| Trigger | Agent(s) | Output |
+|---|---|---|
+| `task_type: contract-stub` (any zone) | `implement-capability` (Mode B) | `sources/<CAP_ID>/stub/` — minimal .NET worker publishing RVT events; reads schemas from `process/<CAP_ID>/schemas/RVT.*.schema.json` (does NOT regenerate them) |
+| zone ∈ {`BUSINESS_SERVICE_PRODUCTION`, `SUPPORT`, `REFERENTIAL`, `EXCHANGE_B2B`, `DATA_ANALYTIQUE`, `STEERING`} | `implement-capability` (Mode A) | `sources/<CAP_ID>/backend/` — .NET 10 microservice (Domain / Application / Infrastructure / Presentation / Contracts), MongoDB, RabbitMQ |
+| zone = `CHANNEL` | `create-bff` ∥ `code-web-frontend` (parallel) | `src/<zone>/<CAP_ID>-bff/` (.NET 10 Minimal API BFF) + `sources/<CAP_ID>/frontend/` (vanilla HTML5/CSS3/JS) |
+
+Zone is read from `bcm-pack pack <CAP_ID>` — never inferred from the capability ID prefix.
+
+Post-implementation:
+- Stage 5 runs automatically (`test-business-capability` for non-CHANNEL,
+  `test-app` for CHANNEL). Failure feeds back into the implementation agent
+  via a `── REMEDIATION CONTEXT ──` block, bounded by `max_loops`.
+- For non-CHANNEL Mode A, an optional **contract harness** is attached via
+  `/harness-backend <CAP_ID>` — scaffolds a `*.Contracts.Harness/` project
+  that derives `openapi.yaml` + `asyncapi.yaml` from `process/<CAP_ID>/`
+  and the BCM corpus, with bidirectional `x-lineage` extensions.
+
+## Skill cheatsheet
+
+| Command | What it does |
 |---|---|
-| `STEERING` | Pilotage & governance |
-| `BUSINESS_SERVICE_PRODUCTION` | Core business (Reliever's core domain) |
-| `SUPPORT` | Transverse IT support |
-| `REFERENTIAL` | Shared master data |
-| `EXCHANGE_B2B` | External ecosystem exchanges |
-| `CHANNEL` | Omnichannel exposure, user journeys |
-| `DATA_ANALYTIQUE` | Data governance, BI, AI |
+| `/implementation-pipeline` | Status across all capabilities; advance to next pending stage |
+| `/process <CAP_ID>` | Stage 0 — interactive DDD modelling; opens PR on `process/<CAP_ID>` branch |
+| `/sketch-miro` | Render every `process/CAP.*/` as a Miro Event Storming board |
+| `/plan` | Stage 1 — `roadmap.md` for a capability |
+| `/task` | Stage 2 — `TASK-NNN-*.md` for a capability |
+| `/sort-task` | Refresh `tasks/BOARD.md` (read-only) |
+| `/launch-task` | Pick a ready task, spawn `/code` in an isolated worktree |
+| `/launch-task auto` | Parallel autonomous launch of all ready tasks |
+| `/code TASK-NNN` | Stage 4-5 for one task (zone-aware dispatch) |
+| `/test-business-capability TASK-NNN` | Stage 5 — Path A (backend microservice) |
+| `/test-app TASK-NNN` | Stage 5 — Path B (CHANNEL frontend + BFF) |
+| `/harness-backend <CAP_ID>` | Add OpenAPI + AsyncAPI contract harness to a Mode-A service |
+| `/fix <PR# \| TASK-NNN \| logs>` | Remediate a failing PR or post-merge breakage on the existing branch |
+| `/task-refinement TASK-NNN` | Resolve open questions on a task |
+| `/continue-work TASK-NNN [--max-loops N]` | Resume a `stalled` task with reset loop counter |
+| `/pr-merge-watcher` | `in_review` → `done` after PR merge; auto-dispatch `/fix` on red CI |
+| `/agent-watch [TASK-NNN]` | Live tmux view of a running `/code` agent |
+| `/commit` | Conventional-commit + push (+ optional PR draft) |
 
-### Capability Levels
+## Invariants
 
-- **L1** — strategic domains, no `parent` field
-- **L2** — pivot for urbanization; each L2 is a microservice/bounded context boundary; every L2 must have a governing FUNC ADR
-- **L3** — optional local decomposition within an L2; parent must be an L2
+- **Upstream is read-only.** Never read `/bcm/`, `/adr/`, `/func-adr/`,
+  `/strategic-vision/`, `/product-vision/`, `/tech-vision/`, `/tech-adr/`
+  from disk — they don't live here. Use `bcm-pack pack <CAP_ID> [--deep] [--compact]`.
+- **`process/<CAP_ID>/` is owned by `/process` alone.** A PreToolUse hook
+  (`process-folder-guard.py`) blocks every Write/Edit under `process/**`
+  from any other skill or agent. Changes flow through a dedicated
+  `process/<CAP_ID>` PR; `/plan`, `/task`, `/launch-task`, `/code`, `/fix`
+  refuse to run until that PR is merged into `main`.
+- **One authoring skill per folder.** `/process` → `process/`, `/plan` → `roadmap/`,
+  `/task` → `tasks/<CAP_ID>/`, `/sort-task` → `tasks/BOARD.md`, `/code` → `sources/`
+  and `src/`, the test skills → `tests/`. No skill writes outside its lane.
+- **Branch isolation is end-to-end.** One branch (`feat/TASK-NNN-{slug}`) and
+  one worktree (`/tmp/kanban-worktrees/TASK-NNN-{slug}/`) per task. RabbitMQ
+  exchanges/queues, ports, OTel `environment` tag, and frontend branch badge
+  all carry the branch slug — concurrent worktrees never collide.
+- **One `/code` agent per task; one active task per capability.**
+- **Loop counters live on the TASK file**, not on the board.
+- **Every artifact traces back** to a TASK → roadmap epic → process model →
+  BCM capability → FUNC ADR → URBA constraints. The chain is unbreakable.
 
-Capability IDs follow `CAP.<ZONE_PREFIX>.<NNN>` for L1 and `CAP.<ZONE_PREFIX>.<NNN>.<SUB>` for L2/L3.
+## Task states
 
-### BCM Asset Chain
+| Glyph | State | Meaning | Resolution |
+|---|---|---|---|
+| 🟢 | `ready` | All deps `done`, no open questions | `/launch-task` picks it up |
+| 🟡 | `in_progress` | A `/code` agent is working in a worktree | `/agent-watch TASK-NNN` |
+| 🟣 | `in_review` | PR open, awaiting merge | `/pr-merge-watcher` flips to `done` on merge |
+| ⚫ | `stalled` | `max_loops` exhausted with failing tests | `/continue-work TASK-NNN [--max-loops N]` |
+| 🟠 | `needs_info` | Open questions in TASK file | resolve inline or `/task-refinement TASK-NNN` |
+| 🔵 | `blocked` | A dep is not `done` | wait, or unblock the dep |
+| ✅ | `done` | PR merged | — |
 
-The full chain from capability to event subscription:
+## When you don't know where to start
 
-```
-capabilities-*.yaml
-  └─ business-object-*.yaml      (business objects owned by L2)
-       └─ business-event-*.yaml  (events emitted by L2/L3)
-            └─ resource-*.yaml   (technical projection of a business object)
-                 └─ resource-event-*.yaml     (technical event carrying the resource)
-                      └─ business-subscription-*.yaml  (business consumption contract)
-                           └─ resource-subscription-*.yaml  (technical subscription)
-```
-
-Key coherence rules enforced by `validate_repo.py`:
-- Business events must be emitted by L2 or L3 capabilities
-- Resource events must carry exactly one resource pointing to the same business object as the linked business event
-- Every business subscription must be referenced by at least one resource subscription
-
-### Implementation Workflow
-
-Capabilities are implemented using Claude Code skills in this order:
-
-```
-bcm-pack (knowledge) → /process → /plan → /task → /launch-task → /code → /test-business-capability | /test-app
-```
-
-Local artefact layout:
-- **Process Modelling** (DDD tactical layer, written by `/process` only): `process/<CAP-ID>/` — `aggregates.yaml`, `commands.yaml`, `policies.yaml`, `read-models.yaml`, `bus.yaml`, `api.yaml`, `schemas/*.schema.json`. `/process` works on a dedicated `process/<CAP-ID>` branch + worktree and publishes via PR; downstream skills are gated until that PR merges.
-- **Roadmap** (epics / milestones, written by `/plan`): `roadmap/<CAP-ID>/roadmap.md`.
-- **Tasks** (implementation work items, written by `/task`): `tasks/<CAP-ID>/TASK-NNN-*.md` with frontmatter fields `task_id`, `status`, `priority`, `depends_on`, `loop_count`, `max_loops`.
-- **Kanban board**: `tasks/BOARD.md` — auto-refreshed by `/sort-task` via PostToolUse hooks whenever a TASK file changes; `/launch-task` is the orchestrator that launches code agents in isolated worktrees under `/tmp/kanban-worktrees/`.
-
-### Build Output
-
-`./build.sh` generates `views/FOODAROO-Metier/` and `views/FOODAROO-SI/` (EventCatalog instances) and `context.txt` (full model concatenation). Skip context generation with `SKIP_CONTEXT=1 ./build.sh`.
+- New capability, never modelled here → `/implementation-pipeline` (it will
+  tell you to run `/process <CAP_ID>` first, after checking `bcm-pack` readiness).
+- Process model merged, no roadmap yet → `/plan`.
+- Roadmap merged, no tasks → `/task`.
+- Tasks exist → `/launch-task` (or `/launch-task auto`).
+- Something is red → `/fix` with the PR number, branch, or log paste.
