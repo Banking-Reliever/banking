@@ -43,7 +43,7 @@ A component that reads incoming RVT messages from the three queues and maintains
 - The active tier (fed by `RVT.BSP.001.TIER_UPGRADE_RECORDED` payloads)
 - The open envelopes per spending category, with available balance derived as `cap_amount - consumed_amount` (fed by `RVT.BSP.004.CONSUMPTION_RECORDED` payloads)
 
-The consumer **must validate every incoming payload against the runtime JSON Schema published by the producer capability** (`RVT.*.schema.json` files under `plan/CAP.BSP.001.SCO/contracts/`, `plan/CAP.BSP.001.TIE/contracts/`, `plan/CAP.BSP.004.ENV/contracts/`). Any payload that does not validate is rejected with a structured error (no silent acceptance of malformed events). The `EVT.*.schema.json` files are design-time documentation only and are **not** used at runtime by this consumer.
+The consumer **must validate every incoming payload against the runtime JSON Schema published by the producer capability** (`RVT.*.schema.json` files under `process/CAP.BSP.001.SCO/schemas/`, `process/CAP.BSP.001.TIE/schemas/`, `process/CAP.BSP.004.ENV/schemas/`). Any payload that does not validate is rejected with a structured error (no silent acceptance of malformed events). Per ADR-TECH-STRAT-001 Rule 2, business events appear on the wire only as routing-key prefixes — no `EVT.*.schema.json` files are used at runtime.
 
 The read model is the sole data source for the views built in TASK-003, TASK-004, TASK-005.
 

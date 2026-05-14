@@ -108,4 +108,4 @@ sources/CAP.BSP.004.ENV/stub/
 
 ## Source-of-truth schema reconciliation
 
-The runtime schema shipped in this folder is a copy of the design-time schema authored under [`plan/CAP.BSP.004.ENV/contracts/RVT.BSP.004.CONSUMPTION_RECORDED.schema.json`](../../../plan/CAP.BSP.004.ENV/contracts/RVT.BSP.004.CONSUMPTION_RECORDED.schema.json). The two files are identical — the copy under `src/.../schemas/` exists only because .NET's `CopyToOutputDirectory` rule needs the file to live next to the csproj. Any contract evolution MUST be driven from the `plan/` source first; the in-stub copy is regenerated alongside.
+The runtime schema shipped in this folder is a copy of the canonical schema authored under [`process/CAP.BSP.004.ENV/schemas/RVT.BSP.004.CONSUMPTION_RECORDED.schema.json`](../../../process/CAP.BSP.004.ENV/schemas/RVT.BSP.004.CONSUMPTION_RECORDED.schema.json) by `/process`. The two files are identical — the copy under `src/.../schemas/` exists only because .NET's `CopyToOutputDirectory` rule needs the file to live next to the csproj. Any contract evolution MUST be driven from the `process/` source first; the in-stub copy is regenerated alongside.

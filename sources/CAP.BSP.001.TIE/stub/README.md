@@ -15,7 +15,7 @@ The stub is a sibling of the future `sources/CAP.BSP.001.TIE/backend/` (the real
 | Routing key | `EVT.BSP.001.TIER_UPGRADED.RVT.BSP.001.TIER_UPGRADE_RECORDED` (Rule 4) |
 | Resource event | `RVT.BSP.001.TIER_UPGRADE_RECORDED` (only this — no autonomous EVT message, Rule 2) |
 | Payload form | Domain event DDD — atomic transition data (Rule 3) |
-| Schema | `../../plan/CAP.BSP.001.TIE/contracts/RVT.BSP.001.TIER_UPGRADE_RECORDED.schema.json` |
+| Schema | `../../../process/CAP.BSP.001.TIE/schemas/RVT.BSP.001.TIER_UPGRADE_RECORDED.schema.json` |
 | direction | Always `UPGRADE` (upward only — Epic 1 scope) |
 | Cadence | 1–10 events/min (default 6); outside requires explicit override |
 | Activation | Inactive by default (`STUB_ACTIVE=false`); MUST remain inactive in production |

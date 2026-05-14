@@ -23,7 +23,7 @@ This task therefore handles only the **consumer-side validation and supervision*
 ## What needs to be produced
 
 ### Consumer-side schema validation
-Confirm that the events emitted by the real CORE producers continue to validate against the JSON Schemas under `plan/CAP.BSP.001.SCO/contracts/`, `plan/CAP.BSP.001.TIE/contracts/`, `plan/CAP.BSP.004.ENV/contracts/`. The validation logic is the one wired in TASK-002 — this task just exercises it against real producers and confirms zero rejections in the cutover window.
+Confirm that the events emitted by the real CORE producers continue to validate against the JSON Schemas under `process/CAP.BSP.001.SCO/schemas/`, `process/CAP.BSP.001.TIE/schemas/`, `process/CAP.BSP.004.ENV/schemas/`. The validation logic is the one wired in TASK-002 — this task just exercises it against real producers and confirms zero rejections in the cutover window.
 
 If a real producer emits a payload that does not validate, the divergence is a **producer-side incident**. This task does not absorb it; it surfaces it back to the producer's owners. The CAP.CHN.001.DSH consumption code remains untouched.
 

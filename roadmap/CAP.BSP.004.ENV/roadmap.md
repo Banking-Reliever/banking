@@ -26,7 +26,7 @@
 **Entry condition**: The two events are declared in the BCM (`bcm/business-event-reliever.yaml`, `bcm/resource-event-reliever.yaml`) — already the case.
 
 **Exit condition (DoD)**:
-- 2 JSON Schemas (Draft 2020-12) produced under `plan/CAP.BSP.004.ENV/contracts/`, aligned with the BCM
+- JSON Schemas (Draft 2020-12) under `process/CAP.BSP.004.ENV/schemas/`, aligned with the BCM (authored by `/process`)
 - A development stub publishes both events with simulated envelope consumption on the agreed subscription point
 - The stub is activatable/deactivatable via environment configuration (inactive in production)
 - `validate_repo.py` and `validate_events.py` pass
