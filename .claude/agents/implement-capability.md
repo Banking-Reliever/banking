@@ -11,14 +11,20 @@ description: |
     messaging, REST API, full Clean Architecture.
   - **Mode B — Contract and development stub** (when
     `task_type: contract-stub` is set): produces a runnable development stub
-    publishing the events on the agreed bus topology — for use when only the
-    contract is given and the full implementation is deferred. The wire-
-    format JSON Schemas are NOT regenerated here — they are read from
-    `process/{capability-id}/schemas/RVT.*.schema.json` (already authored
-    by `/process`). Mode B output is therefore narrow: a minimal .NET
-    worker service under `sources/{cap-name}/stub/`. No full microservice
-    scaffold; no schema files written anywhere (they live under
-    `process/{capability-id}/schemas/`, owned by `/process`).
+    that covers the full consumer-facing surface of the capability — both
+    publishes `RVT.*` events on the agreed bus topology AND serves the
+    HTTP query operations declared in `process/{cap}/api.yaml` with canned
+    cold-data fixtures. For use when only the contract is given and the
+    full implementation is deferred. The wire-format JSON Schemas are NOT
+    regenerated here — they are read from
+    `process/{capability-id}/schemas/` (already authored by `/process`).
+    Mode B output is a minimal .NET host under `sources/{cap-name}/stub/`
+    combining a Minimal-API surface and a BackgroundService publisher.
+    No full microservice scaffold; no schema files written anywhere
+    (they live under `process/{capability-id}/schemas/`, owned by
+    `/process`). If `process/{cap}/api.yaml` is empty, only the event
+    half ships; if `process/{cap}/bus.yaml` is empty, only the query
+    half ships; if both are empty, Mode B aborts with a structured gap.
 
   In both modes, the agent reasons from the functional context (TASK file,
   FUNC ADR, plan, tactical ADR, BCM YAML, strategic tech ADRs) rather than
@@ -156,7 +162,7 @@ Read the TASK file frontmatter and extract the `task_type` field:
 | `task_type` value | Mode | Output |
 |---|---|---|
 | (absent) or `full-microservice` | **Mode A** — full microservice scaffold | `sources/{capability-name}/backend/` with the full Clean Architecture tree |
-| `contract-stub` | **Mode B** — contract + development stub | `sources/{capability-name}/stub/` (minimal .NET worker publishing on RabbitMQ). JSON Schemas are NOT generated — Mode B reads them from `process/{capability-id}/schemas/RVT.*.schema.json` (already authored by `/process`). |
+| `contract-stub` | **Mode B** — contract + development stub | `sources/{capability-name}/stub/` (minimal .NET host: Minimal-API serving canned `process/{cap}/api.yaml` responses + BackgroundService publishing `process/{cap}/bus.yaml` events on RabbitMQ). JSON Schemas are NOT generated — Mode B reads them from `process/{capability-id}/schemas/` (already authored by `/process`). |
 
 Announce the chosen mode to the caller before any further action:
 
@@ -248,8 +254,11 @@ You are a senior engineer, not a transcription machine. Refuse to scaffold when:
   CHANNEL capability *can* legitimately have a `task_type: contract-stub` task
   (it would emit events in its own right), in which case Mode B applies and
   this agent handles it.
-- Mode B was requested but the BCM does not declare any business event or
-  resource event for the target capability — there is nothing to contract.
+- Mode B was requested but the capability has **no consumer-facing surface
+  at all** — `process/{cap}/bus.yaml` declares no emitted events AND
+  `process/{cap}/api.yaml` declares no query operations. There is nothing
+  to stub. (A capability with only one of the two halves is still
+  scaffold-able — Mode B materialises whichever half exists.)
 
 In all these cases, return a structured failure report to the caller with the gap to resolve.
 
@@ -371,9 +380,22 @@ The `GET /health` endpoint added to `{AggregateName}ReadController` is required 
 ## Mode B — Contract and Development Stub
 
 When the TASK has `task_type: contract-stub`, replace the Mode A patterns
-above with the following. The task's purpose is to publish a normative
-event contract for the capability and a development stub honoring it —
-not to build the real domain logic.
+above with the following. The task's purpose is to materialise the full
+consumer-facing surface of the capability — events on the bus AND query
+endpoints over HTTP — with canned cold data, so any downstream consumer
+(BFFs, frontends, other capabilities) can develop in complete isolation.
+This is not the place to build real domain logic.
+
+The stub has **two halves** driven by `process/{cap}/`:
+
+| Half | Driven by | Output |
+|---|---|---|
+| Event publisher | `process/{cap}/bus.yaml` + `process/{cap}/schemas/RVT.*.schema.json` | `BackgroundService` that publishes simulated `RVT.*` payloads on the owned topic exchange at configurable cadence |
+| Query API | `process/{cap}/api.yaml` + `process/{cap}/schemas/*.schema.json` (response schemas) + canned fixtures | ASP.NET Core Minimal-API serving each operation with deterministic canned responses |
+
+Both halves run in the **same .NET host** (one process, one solution).
+Either half may be empty when its source YAML declares nothing — ship
+whatever is non-empty; abort only when both are empty.
 
 ### B.1 — Read the bus topology contract
 
@@ -427,20 +449,23 @@ The pack is the source of truth for field names and types. The JSON
 Schemas mirror these. Never read `/bcm/*.yaml` directly — go through
 `bcm-pack`.
 
-### B.3 — Read the JSON Schemas (do NOT regenerate them)
+### B.3 — Read the process model — bus, api, schemas (do NOT regenerate)
 
-The wire-format schemas already exist under
-`process/{capability-id}/schemas/` — they were authored by the `/process`
-skill from the BCM corpus. Mode B is a **consumer** of those files; it
-never writes schemas itself.
+The wire-format schemas and the surface declarations both live under
+`process/{capability-id}/` — authored by the `/process` skill from the
+BCM corpus. Mode B is a **consumer** of those files; it never writes
+under `process/`.
 
-For each emitted `RVT.*` of the capability, read:
+**B.3.a — Event surface (publish side)**
+
+Read `process/{capability-id}/bus.yaml` and enumerate every emitted
+`RVT.*` entry. For each, read the paired schema:
 
 ```
 process/{capability-id}/schemas/RVT.{capability-id}.{event}.schema.json
 ```
 
-Required for the stub:
+Required for the publisher:
 - the `$id` URL (used as the message envelope's `$schemaRef`)
 - the `x-bcm-version` annotation (mirrored on every published message)
 - the `properties` (the stub fills these with realistic randomised values
@@ -448,34 +473,98 @@ Required for the stub:
 - the correlation-key field (typically `identifiant_dossier`) — the stub
   produces a fresh value per message and never carries the canonical
   referential identifier (consumers resolve via the relevant referential).
+- the routing key declared in `bus.yaml` for that event (must follow
+  `{BusinessEventName}.{ResourceEventName}` — ADR-TECH-STRAT-001 Rule 4).
 
-If a schema is missing or stale relative to the FUNC ADR, **stop**:
+**B.3.b — Query surface (HTTP side)**
+
+Read `process/{capability-id}/api.yaml` and enumerate every operation
+(query / read endpoint). For each, capture:
+- HTTP method + path (e.g. `GET /beneficiaries/{id}`)
+- The operation's response schema reference — read the file from
+  `process/{capability-id}/schemas/{schema-name}.schema.json`
+- Any path / query parameters and their types
+- The status codes the API declares (e.g. 200, 404)
+
+The response schema is the canonical shape the canned fixtures must
+match — same role as the RVT schema for the publisher half.
+
+**B.3.c — Gap handling**
+
+If any schema referenced by `bus.yaml` or `api.yaml` is missing, **stop**:
 that is a `/process` problem. Tell the caller to run `/process <CAP_ID>`
 to refresh the model and merge the resulting PR before re-running this
-task. Do NOT attempt to write a fallback schema anywhere — the schemas are
-owned by `/process` and live under `process/{capability-id}/schemas/`.
+task. Do NOT attempt to write a fallback schema anywhere — the schemas
+are owned by `/process` and live under `process/{capability-id}/schemas/`.
+
+If `bus.yaml` declares no emitted events: skip the publisher half and
+note it in the assumptions block (B.6). If `api.yaml` declares no
+operations: skip the query half and note it. If **both** are empty:
+abort with a structured gap (see step 4 of the Decision Framework).
 
 ### B.4 — Generate the development stub
 
-Output: `sources/{capability-name}/stub/`. The stub is a minimal **.NET 10
-worker service** that:
+Output: `sources/{capability-name}/stub/`. The stub is a single **.NET 10
+host** combining an ASP.NET Core Minimal-API for the query half and a
+`BackgroundService` for the publisher half. Both halves share the same
+solution, the same `appsettings.json`, the same JSON-Schema validator,
+and the same `STUB_ACTIVE` kill-switch.
 
-- Connects to RabbitMQ via the same configuration mechanism the future
-  real implementation will use (env vars + `appsettings.json`).
-- Declares a single topic exchange owned by this capability, named per the
-  project convention (e.g. `bsp.001.sco-events`, derived from the
-  `capability-id` lowercased and dotted).
-- Publishes the contracted **resource events only** (no autonomous EVT
-  message — Rule 2) on the routing key the task names.
-- Generates simulated payloads that validate against the RVT JSON Schema
-  produced in step B.3 — load the schema at startup, validate each
-  outgoing payload before publishing, fail-fast if validation fails.
-- Honors a configurable cadence in the range stated by the task (e.g. **1
-  to 10 events / minute** by default; outside that range requires explicit
-  override).
-- Honors a configurable list of simulated case IDs (`identifiant_dossier`).
-- Is activatable/deactivatable via an environment variable (e.g.
-  `STUB_ACTIVE=true|false`). Inactive in production.
+The host:
+
+- **Publisher half** (when `bus.yaml` is non-empty):
+  - Connects to RabbitMQ via env vars + `appsettings.json`.
+  - Declares a single topic exchange owned by this capability, named per
+    the project convention (e.g. `bsp.001.sco-events`, derived from the
+    `capability-id` lowercased and dotted).
+  - Publishes the contracted **resource events only** (no autonomous
+    `EVT.*` message — ADR-TECH-STRAT-001 Rule 2) on the routing key
+    declared in `bus.yaml`.
+  - Generates simulated payloads that validate against the RVT JSON
+    Schema — load the schema at startup, validate each outgoing payload
+    before publishing, fail-fast if validation fails.
+  - Honors a configurable cadence in the range stated by the task (e.g.
+    **1 to 10 events / minute** by default; outside that range requires
+    explicit override).
+  - Honors a configurable list of simulated case IDs.
+- **Query half** (when `api.yaml` is non-empty):
+  - Exposes one Minimal-API endpoint per operation declared in
+    `api.yaml`, route and method literal-matched to the YAML.
+  - Returns deterministic canned data loaded from fixtures under
+    `sources/{capability-name}/stub/fixtures/` (see fixture rules below).
+  - Loads every response schema at startup and validates each fixture
+    on load — startup fails fast if a fixture violates its schema. A
+    fixture validated at startup is trusted at request time; do not
+    re-validate per request.
+  - For lookup endpoints (`GET /resource/{id}`): match by the path
+    parameter; return `404` when the ID is not in the fixture set.
+  - For list endpoints (`GET /resource`): return the full fixture set
+    (or a pagination slice if `api.yaml` declares query parameters).
+  - For unknown query parameters: return `400`. Mode B does not invent
+    filter semantics the contract doesn't declare.
+
+Both halves are activatable/deactivatable via `STUB_ACTIVE=true|false`
+(inactive in production). When `STUB_ACTIVE=false`, the BackgroundService
+stays idle but the HTTP server still answers — set `STUB_HTTP_ACTIVE`
+separately if you need to shut the query side independently (default:
+follows `STUB_ACTIVE`).
+
+**Fixture rules**
+
+- Store fixtures as JSON files under
+  `sources/{capability-name}/stub/fixtures/{operation-slug}.json`. One
+  file per operation; each file contains an array of canned response
+  objects.
+- At least **3 representative fixtures per operation** — covering the
+  obvious happy paths AND at least one edge case (e.g. minimum-required
+  fields only). The fixture-set should be deterministic so consumer
+  tests can rely on stable IDs.
+- Fixture IDs must be stable across stub restarts. Hardcode them; do
+  not generate them at boot.
+- Every fixture is validated at startup against the operation's
+  response schema. If a fixture violates the schema, log the violation
+  and exit with non-zero status — better to fail fast than serve
+  contract-violating data.
 
 **Output layout (Mode B)**:
 
@@ -485,16 +574,27 @@ sources/{capability-name}/stub/
 ├── docker-compose.yml                           ← RabbitMQ only (no MongoDB)
 ├── {Namespace}.{CapabilityName}.Stub.sln
 ├── config/
-│   └── stub.json                                ← cadence, case IDs, exchange name, schema path
+│   └── stub.json                                ← cadence, case IDs, exchange name, schema paths, fixture paths
+├── fixtures/
+│   ├── {operation-slug-1}.json                  ← canned responses per api.yaml operation
+│   └── {operation-slug-2}.json
 └── src/
     └── {Namespace}.{CapabilityName}.Stub/
         ├── {Namespace}.{CapabilityName}.Stub.csproj
-        ├── Program.cs                           ← Host + Worker registration
+        ├── Program.cs                           ← WebApplication host + Minimal-API + BackgroundService registration
+        ├── Endpoints/{AggregateName}Endpoints.cs ← one MapGet/MapPost per api.yaml operation
         ├── Worker.cs                            ← BackgroundService publishing on RabbitMQ
-        ├── PayloadFactory.cs                    ← simulated transition data
-        ├── SchemaValidator.cs                   ← loads JSON Schema, validates
+        ├── PayloadFactory.cs                    ← simulated transition data (publisher half)
+        ├── FixtureStore.cs                      ← loads & validates fixtures at startup; serves at request time
+        ├── SchemaValidator.cs                   ← loads JSON Schemas, validates payloads + fixtures
         └── appsettings.json                     ← references config/stub.json
 ```
+
+If `api.yaml` is empty, omit `fixtures/` and `Endpoints/` and drop the
+WebApplication host in favour of a `Host.CreateApplicationBuilder`
+worker-only build (matching the historical Mode B shape). If `bus.yaml`
+is empty, omit `Worker.cs` and `PayloadFactory.cs` and skip the RabbitMQ
+container in `docker-compose.yml`.
 
 **Pattern Z — wiring**:
 
@@ -504,22 +604,33 @@ dotnet new sln -n "{Namespace}.{CapabilityName}.Stub"
 dotnet sln add src/{Namespace}.{CapabilityName}.Stub
 ```
 
-The stub uses standard .NET libraries: `RabbitMQ.Client` for the broker,
+The stub uses standard .NET libraries: ASP.NET Core Minimal-API for the
+HTTP half, `RabbitMQ.Client` for the broker (publisher half),
 `NJsonSchema` (or equivalent) for runtime JSON Schema validation. No
 MongoDB, no Clean Architecture layers, no domain model — this is a
 narrow scaffold.
 
 ### B.5 — Ports allocation (Mode B)
 
-Mode B needs only a RabbitMQ port. Allocate via:
+Mode B may need an HTTP port (query half) and/or a RabbitMQ port
+(publisher half). Allocate only the ports the stub actually uses:
 
 ```bash
-RABBIT_PORT=$(shuf -i 10000-59999 -n 1)
-RABBIT_MGMT_PORT=$((RABBIT_PORT + 1))
+# Always allocate a base port — easier than conditional logic.
+LOCAL_PORT=$(shuf -i 10000-59999 -n 1)
+RABBIT_PORT=$((LOCAL_PORT + 200))
+RABBIT_MGMT_PORT=$((LOCAL_PORT + 201))
 ```
 
-No `LOCAL_PORT` (no REST API), no `MONGO_PORT` (no persistence). The
-`docker-compose.yml` exposes only RabbitMQ (AMQP + management).
+- If the query half is materialised: `LOCAL_PORT` is the Kestrel
+  listener for the Minimal-API.
+- If the publisher half is materialised: `RABBIT_PORT` / `RABBIT_MGMT_PORT`
+  are the RabbitMQ AMQP and management ports in `docker-compose.yml`.
+- Unused ports are not bound; do not start an HTTP listener if the query
+  half is empty, and do not bring up RabbitMQ if the publisher half is
+  empty.
+
+No `MONGO_PORT` (no persistence — fixtures are in-memory).
 
 ### B.6 — State your assumptions (Mode B variant)
 
@@ -527,17 +638,24 @@ Before writing files, output:
 
 ```
 🛠 Mode B implementation plan for [CAP.ID — Name]
-- Mode:                   Contract + development stub
+- Mode:                   Contract + development stub (events + query API)
 - Capability:             [name]
-- Events to publish:      [list of RVT.* read from process/{capability-id}/schemas/]
-- Schemas (read-only):    process/{capability-id}/schemas/RVT.*.schema.json
+- Publisher half:         [enabled | disabled — bus.yaml empty]
+  - Events to publish:    [list of RVT.* from process/{cap}/bus.yaml]
+  - Routing keys:         [list, format BusinessEventName.ResourceEventName]
+  - Bus exchange:         [name derived from capability-id]
+  - Cadence default:      [N to M events / minute, from task DoD]
+- Query half:             [enabled | disabled — api.yaml empty]
+  - Operations to stub:   [list of {method} {path} from process/{cap}/api.yaml]
+  - Response schemas:     [list of schema files read from process/{cap}/schemas/]
+  - Fixtures planned:     [N fixtures per operation (≥3 required)]
+- Schemas (read-only):    process/{capability-id}/schemas/*.schema.json
 - Output (stub):          sources/{capability-name}/stub/
-- Bus exchange:           [name derived from capability-id]
-- Routing keys:           [list]
-- Cadence default:        [N to M events / minute, from task DoD]
-- RabbitMQ ports:         AMQP=[N], MGMT=[N+1]
+- Ports:                  HTTP=[LOCAL_PORT or n/a], AMQP=[RABBIT_PORT or n/a], MGMT=[RABBIT_MGMT_PORT or n/a]
 
-Sources of truth used: [list of files read — BCM YAML, ADR-TECH-STRAT-001, FUNC ADR]
+Sources of truth used: [list of files read — process/{cap}/bus.yaml,
+                       process/{cap}/api.yaml, process/{cap}/schemas/*,
+                       ADR-TECH-STRAT-001, FUNC ADR]
 Assumptions taken:     [list, or "none"]
 ```
 
@@ -549,21 +667,30 @@ When Mode B succeeds:
 ✓ Contract + stub scaffolded for [CAP.ID — Name]
 
   Capability:           [CAP.ID — Name]
-  Mode:                 Contract + development stub
+  Mode:                 Contract + development stub (events + query API)
   Schemas consumed (read-only, owned by /process):
-    process/{capability-id}/schemas/RVT.*.schema.json
+    process/{capability-id}/schemas/*.schema.json
   Stub:                 sources/{capability-name}/stub/
-  Bus exchange:         [name]
-  Routing keys:         [list]
-  Cadence:              [range] events / minute (configurable)
-  RabbitMQ ports:       AMQP=[N], MGMT=[N+1]
+
+  Publisher half:       [enabled | disabled]
+    Bus exchange:       [name]
+    Routing keys:       [list]
+    Cadence:            [range] events / minute (configurable)
+    RabbitMQ ports:     AMQP=[N], MGMT=[N+1]
+
+  Query half:           [enabled | disabled]
+    Endpoints:          [list of {method} {path}]
+    Fixtures:           sources/{capability-name}/stub/fixtures/ ([N] per operation)
+    HTTP port:          [LOCAL_PORT]
 
 To start the stub locally:
   cd sources/{capability-name}/stub
-  docker compose up -d
+  docker compose up -d                              # only if publisher half enabled
   dotnet run --project src/{Namespace}.{CapabilityName}.Stub
 
-⚠ Set STUB_ACTIVE=true to enable publication. Default off.
+⚠ Set STUB_ACTIVE=true to enable event publication. Default off.
+   The query half answers regardless of STUB_ACTIVE (toggle independently
+   with STUB_HTTP_ACTIVE=false to silence it).
 
 Assumptions documented: [list, or "none"]
 ```

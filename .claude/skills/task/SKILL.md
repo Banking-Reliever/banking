@@ -115,12 +115,60 @@ re-run `/task`.
 
 ---
 
+## Hard rule — TASK-001 is ALWAYS the contract & stub task
+
+Every capability, regardless of zone or roadmap shape, gets a mandatory
+**TASK-001 = contract and development stub**. It is the first task to do
+for any business capability, and the entry point for downstream consumers
+that need *cold data* (canned events, canned query responses) before the
+real implementation lands.
+
+Rationale:
+- Per `ADR-BCM-URBA-0009`, each capability owns the contract of every
+  event it emits and every API surface it exposes. The stub is the
+  earliest runnable embodiment of that contract.
+- Consumers (other L2/L3 capabilities, BFFs, frontends) can subscribe to
+  the bus AND call the HTTP API immediately, developing against canned
+  data while the real domain logic is built in parallel.
+- The stub never blocks the real implementation: TASK-002+ run in
+  parallel and replace the stub piece by piece. The stub is
+  decommissioned (or kept inert via `STUB_ACTIVE=false`) once the real
+  implementation reaches feature parity for the surface in question.
+
+Properties of TASK-001:
+
+| Property | Value |
+|---|---|
+| `task_id` | `TASK-001` (always) |
+| `task_type` | `contract-stub` (always) |
+| `depends_on` | `[]` (always — self-founding) |
+| Surface covered | **Events + Query API** — every `RVT.*` listed in `process/<CAP_ID>/bus.yaml` (publish side) AND every HTTP operation listed in `process/<CAP_ID>/api.yaml` (query side) |
+| Output location | `sources/<CAP_ID>/stub/` (single .NET worker that both publishes RVT events on RabbitMQ AND serves the HTTP query surface with canned data) |
+| Schemas | Read-only from `process/<CAP_ID>/schemas/` — the stub validates outgoing payloads against them; it does **not** author them |
+| Decommissioning | DoD includes an explicit decommission bullet — the stub is retired or toggled off when the real implementation reaches feature parity |
+
+Subsequent tasks (TASK-002+) are the real-implementation epics from the
+roadmap. They do **not** declare `depends_on: [TASK-001]` — the stub is a
+parallel consumer-facing safety net, not a prerequisite. Real tasks may
+still declare dependencies on each other (and on tasks in upstream
+capabilities).
+
+If `process/<CAP_ID>/api.yaml` is empty (no query surface) the stub still
+ships, but only the event-publishing half is materialised. If
+`process/<CAP_ID>/bus.yaml` declares no emitted events (consumer-only
+capability) the stub serves only the HTTP query surface. If both are
+empty, stop and surface a gap — there is nothing to stub.
+
+---
+
 ## Task Structure
 
 Each task is a markdown file in `/tasks/{capability-id}/TASK-NNN-short-slug.md`
 (flat per-capability folder — no nested `tasks/` subdirectory).
 
-Tasks are grouped by epic. Number them sequentially across the capability (TASK-001, TASK-002, etc.).
+Tasks are grouped by epic. Number them sequentially across the capability:
+**TASK-001 is reserved for the mandatory contract-and-stub task** (see the
+hard rule above); the first real-implementation task starts at TASK-002.
 
 ### What makes a good task?
 
@@ -144,6 +192,7 @@ epic: [Epic N — Epic Name]
 status: todo
 priority: high | medium | low
 depends_on: [TASK-NNN, TASK-NNN]  # empty list if none
+task_type: full-microservice      # OR: contract-stub (TASK-001 only — see hard rule above)
 ---
 
 # TASK-[NNN] — [Short descriptive title]
@@ -191,13 +240,114 @@ capability must be able to do when this task is done]
 
 > **Important — Open Questions format:** every entry in `## Open Questions` MUST be written as a Markdown checkbox `- [ ]`. The `/sort-task` skill detects unresolved questions by counting unchecked checkboxes in this section. A plain bullet `-` will NOT be detected and the task will be wrongly classified as `ready`. When a question is resolved, tick it (`- [x]`) instead of deleting it, to preserve the audit trail.
 
+### TASK-001 stub template
+
+This template is what TASK-001 should look like for every capability.
+Adapt the surface lists (`RVT.*` events, HTTP operations) to what
+`process/<CAP_ID>/bus.yaml` and `process/<CAP_ID>/api.yaml` actually
+declare. The stub may need to serve only events, only queries, or both —
+shape the DoD accordingly.
+
+```markdown
+---
+task_id: TASK-001
+capability_id: CAP.[ZONE].[NNN].[SUB]
+capability_name: [Name]
+epic: Epic 0 — Contract and Development Stub
+status: todo
+priority: high
+depends_on: []
+task_type: contract-stub
+---
+
+# TASK-001 — Contract and development stub for [Capability Name]
+
+## Context
+`CAP.[ZONE].[NNN].[SUB]` exposes [N] resource events on the operational
+bus and [M] HTTP operations on its query surface. Per `ADR-BCM-URBA-0009`
+this capability owns the contract of both. As long as the real
+implementation is not in place, this stub publishes the contracted events
+with simulated values AND serves the query surface with canned cold data,
+so any downstream consumer (BFFs, frontends, other capabilities) can
+develop in complete isolation.
+
+The bus topology (RabbitMQ topic exchange owned by this capability,
+routing key `{BusinessEventName}.{ResourceEventName}`, payload form
+= domain event DDD) is fixed by `ADR-TECH-STRAT-001`. The HTTP surface
+follows `ADR-TECH-STRAT-003`.
+
+## Capability Reference
+- Capability: [Name] (CAP.[ZONE].[NNN].[SUB])
+- Zone: [TOGAF zone]
+- Governing FUNC ADR(s): [ADR-BCM-FUNC-NNNN]
+- Strategic-tech anchors: ADR-TECH-STRAT-001 (bus), ADR-TECH-STRAT-003 (API), ADR-TECH-STRAT-004 (referential / PII when applicable)
+
+## What to Build
+A runnable development stub under `sources/<CAP_ID>/stub/` that:
+
+1. **Publishes resource events** for every `RVT.*` declared in
+   `process/<CAP_ID>/bus.yaml` — on the capability's owned topic exchange,
+   with the routing key convention from ADR-TECH-STRAT-001, at a
+   configurable cadence (default 1–10 events/min). Payloads validate
+   against `process/<CAP_ID>/schemas/RVT.*.schema.json`.
+2. **Serves the query surface** for every operation declared in
+   `process/<CAP_ID>/api.yaml` — returning canned cold data shaped to the
+   declared response schema. Pre-seeded with at least 3 representative
+   fixtures that consumers can reliably retrieve.
+3. **Is activatable / deactivatable** via `STUB_ACTIVE=true|false`
+   (inactive in production).
+4. **Is self-validating** — every outgoing payload (event or HTTP
+   response) is validated against the schema before emission.
+
+## Events to Stub
+- `RVT.[CAP].EVENT_NAME` — published at cadence X with simulated values from fixture set Y
+- ...
+
+## Query Operations to Stub
+- `GET /[resource]` — returns canned list of N fixtures
+- `GET /[resource]/{id}` — returns the matching fixture, or 404 for unknown IDs
+- ...
+
+## Business Objects Involved
+- `OBJ.[CAP].[OBJECT]` — carried by the events / returned by the queries
+
+## Required Event Subscriptions
+None — the stub is a producer + query server, not a consumer.
+
+## Definition of Done
+- [ ] Stub source code under `sources/<CAP_ID>/stub/`
+- [ ] For every `RVT.*` in `process/<CAP_ID>/bus.yaml`: stub publishes on the owned topic exchange with the ADR-TECH-STRAT-001 routing key; every payload validates against the corresponding `process/<CAP_ID>/schemas/RVT.*.schema.json`
+- [ ] For every operation in `process/<CAP_ID>/api.yaml`: stub serves canned responses validating against the declared response schema
+- [ ] At least 3 representative fixtures are pre-seeded and retrievable by stable IDs (so consumers can write deterministic integration tests against the stub)
+- [ ] Cadence configurable in 1–10 events/min by default (override + justification needed outside this range)
+- [ ] `STUB_ACTIVE` env var gates the stub (off in production)
+- [ ] An automated self-validation check exists (CI unit test recommended) — independent of bus / HTTP availability
+- [ ] **Decommissioning** — the stub is documented as retired (or permanently kept inert) once the real implementation (TASK-002+) reaches feature parity for the surface in question. A note in the stub's README states the criteria for decommissioning.
+
+## Acceptance Criteria (Business)
+A developer working on any consumer of this capability can, with only the
+artifacts produced by this task: (a) subscribe a queue to the owned topic
+exchange and receive validating event payloads, AND (b) call every HTTP
+operation and receive validating canned responses. No dependency on the
+real implementation. When the real implementation lands later, no
+schema-driven or contract-driven consumer change is required.
+
+## Dependencies
+None. This task is self-founding for the capability.
+
+## Open Questions
+- [ ] [Any unresolved question — schemas missing, bus topology unclear, etc.]
+```
+
 ---
 
 ## Step 1 — Review the Roadmap with the User
 
 Before generating tasks, present the epic breakdown from the roadmap and ask:
-> "I'll generate tasks for [capability]. The roadmap has [N] epics. Should I generate tasks 
-> for all epics, or start with a specific one?"
+> "I'll generate tasks for [capability]. TASK-001 will be the mandatory
+> contract-and-stub task (consumer-facing cold data). The roadmap has [N]
+> epics for the real implementation. Should I generate tasks for all
+> epics, or start with a specific one?"
 
 For each epic:
 - Confirm the exit condition is clear enough to generate verifiable tasks
@@ -206,9 +356,32 @@ For each epic:
 
 ---
 
-## Step 2 — Generate Tasks
+## Step 2 — Generate the mandatory TASK-001 stub
 
-For each epic, generate the minimum set of tasks that together achieve the epic's exit condition. 
+Always emit TASK-001 first, using the **TASK-001 stub template** above.
+Populate it from `process/<CAP_ID>/`:
+
+- Enumerate every `RVT.*` declared in `process/<CAP_ID>/bus.yaml` (publish
+  side) — list them under "Events to Stub" with the routing key the bus
+  topology mandates.
+- Enumerate every operation declared in `process/<CAP_ID>/api.yaml` —
+  list them under "Query Operations to Stub" with their canned-response
+  shape.
+- Reference the JSON Schemas under `process/<CAP_ID>/schemas/` (read-only
+  — the stub validates against them, never authors them).
+
+The TASK-001 file lives in `tasks/<CAP_ID>/TASK-001-contract-and-stub-*.md`
+(slug describes the capability surface, e.g.
+`TASK-001-contract-and-stub-beneficiary-referential.md`).
+
+If `process/<CAP_ID>/` is missing or stale, **stop** and tell the user to
+run `/process <CAP_ID>` first.
+
+---
+
+## Step 3 — Generate the real-implementation tasks (TASK-002+)
+
+For each epic in the roadmap, generate the minimum set of tasks that together achieve the epic's exit condition. 
 Avoid both:
 - **Over-splitting**: don't create 10 micro-tasks where 3 coherent tasks suffice
 - **Under-splitting**: don't create one task so large it requires multiple implement-capability 
@@ -218,12 +391,15 @@ A good rule of thumb: one task = one bounded context in the implement-capability
 epic spans multiple bounded contexts, it should become multiple tasks.
 
 Assign tasks:
-- Sequential numbering: TASK-001, TASK-002, etc.
+- Sequential numbering starting at TASK-002 (TASK-001 is reserved for the stub)
+- Do **not** add `depends_on: [TASK-001]` — real-implementation tasks
+  run in parallel with the stub, not behind it. They may still declare
+  dependencies on each other or on upstream capabilities.
 - Epic grouping: all tasks within an epic get a comment block header in the tasks directory listing
 
 ---
 
-## Step 3 — Write the Task Files
+## Step 4 — Write the Task Files
 
 Write each task file to `/tasks/{capability-id}/TASK-NNN-[slug].md` — a flat
 per-capability folder, no nested `tasks/` subdirectory. Create the
@@ -236,7 +412,9 @@ files, and contract folders all live elsewhere — see the layout rules in
 the `/roadmap` (→ `/roadmap/`) and `/process` (→ `process/`) skills.
 
 After writing all tasks, tell the user:
-> "Tasks for [capability] are committed to `/tasks/[capability-id]/`. 
-> To implement a task, use the implement-capability agent and reference the task file.
-> Start with TASK-001 (or any task with no dependencies). The kanban view at
-> `/tasks/BOARD.md` is refreshed automatically by `/sort-task`."
+> "Tasks for [capability] are committed to `/tasks/[capability-id]/`.
+> TASK-001 is the mandatory contract-and-stub task — implement it first
+> to unblock downstream consumers with cold data. TASK-002+ are the
+> real-implementation tasks and can run in parallel with TASK-001.
+> Use `/launch-task` (or `/launch-task auto`) to dequeue and the kanban
+> view at `/tasks/BOARD.md` is refreshed automatically by `/sort-task`."

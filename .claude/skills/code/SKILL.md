@@ -148,7 +148,7 @@ implementation agent. Once the PR is merged, re-run `/code TASK-NNN`.
 
    | `task_type` value | Routing path | Notes |
    |-------------------|--------------|-------|
-   | `contract-stub`   | **Path C — Contract+Stub** | spawns `implement-capability` in **Mode B** (JSON Schemas + minimal RabbitMQ-publishing stub). See agent doc for the Mode A vs Mode B branching. |
+   | `contract-stub`   | **Path C — Contract+Stub** | spawns `implement-capability` in **Mode B** — a minimal .NET host materialising the full consumer-facing surface: a `BackgroundService` publishing `RVT.*` events on RabbitMQ AND an ASP.NET Core Minimal-API serving the operations declared in `process/<CAP_ID>/api.yaml` with canned fixtures. Either half may be empty when its source YAML declares nothing. See agent doc for the Mode A vs Mode B branching. |
    | (absent) or `full-microservice` | Fall through to 6b | standard zone-aware routing |
 
    **6b — Zone (when `task_type` does not force Path C)**
@@ -272,12 +272,18 @@ The context to pass includes:
 - An explicit mention that `task_type: contract-stub` is set (so the agent
   knows which mode to take, even before reading the file)
 - The governing FUNC ADR(s)
-- The events to contract (the EVT/RVT pairs named in the task)
-- The carried business objects / resources
+- The events to contract (the EVT/RVT pairs named in the task) — drives
+  the publisher half
+- The query operations to stub — every entry in `process/<CAP_ID>/api.yaml`,
+  with their response schemas. Drives the HTTP half.
+- The carried business objects / resources (event payloads + canned
+  fixture shapes)
 - `ADR-TECH-STRAT-001` content (or pointer + summary) — the agent needs the
-  bus topology rules to scaffold the stub correctly
-- The DoD with its versioning encoding, cadence range, and validation site
-  conventions
+  bus topology rules to scaffold the publisher half correctly
+- `ADR-TECH-STRAT-003` content (or pointer + summary) — the agent needs
+  the REST conventions to scaffold the query half correctly
+- The DoD with its versioning encoding, cadence range, fixture count
+  requirement, and validation site conventions
 
 Use:
 ```
@@ -294,16 +300,24 @@ Say:
 > "Spawning implement-capability agent in Mode B (contract+stub) for [capability name] with task TASK-[NNN]..."
 
 The agent produces:
-- A minimal .NET worker stub under `sources/{capability-name}/stub/`
-- The wire-format JSON Schemas it publishes are NOT regenerated — the agent
-  reads them directly from `process/{capability-id}/schemas/RVT.*.schema.json`
-  (already authored by `/process`). No schema files are written outside `process/`.
-- No full microservice scaffold (Domain / Application / Infrastructure / Presentation / Contracts projects), no MongoDB, no REST API
+- A single minimal .NET host under `sources/{capability-name}/stub/`,
+  combining a `BackgroundService` event publisher (when
+  `process/<CAP_ID>/bus.yaml` is non-empty) and an ASP.NET Core
+  Minimal-API query server (when `process/<CAP_ID>/api.yaml` is non-empty)
+- Canned fixtures under `sources/{capability-name}/stub/fixtures/`
+  (≥3 per query operation, deterministic IDs)
+- The wire-format JSON Schemas it consumes are NOT regenerated — the
+  agent reads them directly from `process/{capability-id}/schemas/`
+  (already authored by `/process`). No schema files are written outside
+  `process/`.
+- No full microservice scaffold (Domain / Application / Infrastructure /
+  Presentation / Contracts projects), no MongoDB, no domain model
 
-The agent may push back if the BCM does not declare any business or
-resource event for the target capability, if `ADR-TECH-STRAT-001` is
-missing, or if the FUNC ADR contradicts the task. Surface that to the
-user as the gap to resolve.
+The agent may push back if the capability has **no consumer-facing
+surface at all** (both `bus.yaml` and `api.yaml` empty), if
+`ADR-TECH-STRAT-001` is missing while events are declared, or if the
+FUNC ADR contradicts the task. Surface that to the user as the gap
+to resolve.
 
 ---
 
@@ -404,8 +418,9 @@ that to the user as the gap to resolve.
 > contract surface via `create-bff`. A future `harness-bff` skill will extend
 > the same lineage pattern there.
 >
-> **Skip this step for Path C (contract-stub).** Mode B produces only JSON
-> schemas + a worker stub; the full OpenAPI/AsyncAPI harness is overkill for
+> **Skip this step for Path C (contract-stub).** Mode B's scaffold is a
+> minimal host (event publisher + canned-fixture query API); the full
+> OpenAPI/AsyncAPI harness with bidirectional lineage is overkill for
 > that scaffold. Re-introduce when the contract-stub matures into a full
 > microservice (which will route back through Path A and trigger Step 2.5).
 
