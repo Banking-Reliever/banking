@@ -39,6 +39,15 @@ description: >
   — those skills enforce a readiness gate that refuses to run when the
   capability has either no `process/<CAP_ID>/` on `main` or an open
   unmerged process PR.
+
+  Upstream readiness rule: `/process` refuses to run unless **at least one
+  tactical tech ADR (`ADR-TECH-TACT-*`) scopes the capability** — i.e. the
+  `tactical_stack` slice returned by `bcm-pack pack <CAP_ID> --deep` is
+  non-empty. Tactical tech ADRs are the bridge between TECH-STRAT (zone-wide
+  rules) and the tactical DDD model produced here; without one, there is no
+  ratified per-capability stack decision to ground aggregate / bus / schema
+  choices on. The skill aborts before creating the branch / worktree in that
+  case and sends the user upstream to author the ADR in `banking-knowledge`.
 ---
 
 # Process — Tactical DDD Process Modelling
@@ -63,6 +72,67 @@ agent's job downstream.
 > `/task` → `/launch-task` → `/code` → `/test-business-capability` or
 > `/test-app`. `/roadmap` no longer derives aggregates/commands itself — it reads
 > them from this folder.
+
+---
+
+## Readiness gates (run before Step 0)
+
+Two upstream conditions must hold before this skill is allowed to create the
+branch / worktree and start writing. Check them in this order; if either
+fails, abort with a clear message and do **not** touch the filesystem or
+network. No worktree, no sentinel, no commit — the user must fix the gap in
+`banking-knowledge` first.
+
+1. **BCM corpus is complete for `<CAP_ID>`.** `bcm-pack pack <CAP_ID> --deep`
+   returns `warnings: []` and every required structural slice
+   (`capability_self`, `capability_definition`, `emitted_resource_events`,
+   `carried_objects`, `governing_urba`, `governing_tech_strat`) is non-empty.
+2. **At least one tactical tech ADR scopes the capability.** The
+   `tactical_stack` slice contains ≥ 1 ADR. Each item has
+   `family: TECH`, `tech_domain: TACTICAL_STACK`, an `id` matching
+   `ADR-TECH-TACT-*`, and a `capability_id` equal to `<CAP_ID>`. Empty list
+   ⇒ abort.
+
+The second gate is hard. Tactical tech ADRs ratify the per-capability stack
+choices that this skill's YAML output materialises (event-store flavour,
+outbox / snapshotting / projection strategy, schema-evolution policy, …).
+Without one, `/process` would invent those decisions silently — which is
+exactly the failure mode the ADR system exists to prevent.
+
+Concrete gate (implemented in **Step 0.1.b** below — runs after capability
+resolution at Step 0.1 and before Step 0.2 creates the worktree; this
+section restates the logic so the rule is visible up-front):
+
+```bash
+bcm-pack pack "$CAP_ID" --deep --compact > /tmp/pack-process.json
+
+# Gate 1 — corpus completeness
+WARN_COUNT=$(jq '.warnings | length'                              /tmp/pack-process.json)
+HAS_SELF=$(jq    '.slices.capability_self        | length > 0'    /tmp/pack-process.json)
+HAS_DEF=$(jq     '.slices.capability_definition  | length > 0'    /tmp/pack-process.json)
+HAS_RVT=$(jq     '.slices.emitted_resource_events| length > 0'    /tmp/pack-process.json)
+HAS_OBJ=$(jq     '.slices.carried_objects        | length > 0'    /tmp/pack-process.json)
+HAS_URBA=$(jq    '.slices.governing_urba         | length > 0'    /tmp/pack-process.json)
+HAS_STRAT=$(jq   '.slices.governing_tech_strat   | length > 0'    /tmp/pack-process.json)
+
+# Gate 2 — tactical tech ADR scopes this capability
+TACT_COUNT=$(jq --arg cap "$CAP_ID" '
+  [.slices.tactical_stack[]
+    | select(.family == "TECH"
+             and .tech_domain == "TACTICAL_STACK"
+             and .capability_id == $cap)] | length
+' /tmp/pack-process.json)
+
+if [ "$TACT_COUNT" -eq 0 ]; then
+  echo "✗ No tactical tech ADR scopes $CAP_ID."
+  echo "  /process refuses to run. Author an ADR-TECH-TACT-* in banking-knowledge first."
+  exit 1
+fi
+```
+
+If either gate fails, stop here. Tell the user *which* gate failed and
+*what* to author upstream (corpus fix, FUNC ADR completion, or a new
+`ADR-TECH-TACT-*` scoped to this capability). Do not proceed to Step 0.
 
 ---
 
@@ -120,6 +190,45 @@ CAP_ID="<CAPABILITY_ID>"                              # e.g. CAP.BSP.001.SCO
 BRANCH_NAME="process/${CAP_ID}"
 WORKTREE_PATH="/tmp/process-worktrees/${CAP_ID}"
 ```
+
+### 0.1.b — Enforce the readiness gates (mandatory)
+
+Run the two readiness gates from the "Readiness gates" section above
+**before** creating the branch or the worktree. Pull the deep pack once
+and reuse it for the rest of the session:
+
+```bash
+bcm-pack pack "$CAP_ID" --deep --compact > /tmp/pack-process.json
+
+TACT_COUNT=$(jq --arg cap "$CAP_ID" '
+  [.slices.tactical_stack[]
+    | select(.family == "TECH"
+             and .tech_domain == "TACTICAL_STACK"
+             and .capability_id == $cap)] | length
+' /tmp/pack-process.json)
+
+if [ "$TACT_COUNT" -eq 0 ]; then
+  echo "✗ /process refuses to run: no ADR-TECH-TACT-* scopes $CAP_ID."
+  echo "  Author one in banking-knowledge (family=TECH, tech_domain=TACTICAL_STACK,"
+  echo "  capability_id=$CAP_ID), publish it, then retry."
+  exit 1
+fi
+
+jq --arg cap "$CAP_ID" '
+  [.slices.tactical_stack[]
+    | select(.capability_id == $cap)
+    | { id, title, status, date }]
+' /tmp/pack-process.json
+```
+
+If `TACT_COUNT == 0`, **stop here**: announce the failure to the user, point
+them at the upstream `banking-knowledge` repo to author an
+`ADR-TECH-TACT-*` scoped to this capability, and exit. Do **not** create the
+worktree, do **not** touch the sentinel, do **not** open any PR. The
+filesystem and the network must be untouched after this abort.
+
+Also re-run the corpus-completeness checks (`warnings == []`, required
+slices non-empty) and abort with an equally explicit message if any fail.
 
 ### 0.2 — Create or reuse the branch + worktree
 
@@ -181,17 +290,18 @@ older than 30 minutes as expired, but explicit cleanup is preferred.
 
 ---
 
-## Step 1 — Identify the Capability and Pull the Knowledge Pack
+## Step 1 — Identify the Capability and Inspect the Knowledge Pack
 
 The user gives a capability ID (e.g. `CAP.BSP.001.SCO`) or a name. If
 ambiguous, run `bcm-pack list --level L2` (and `--level L3` if relevant) and
-ask them to pick.
+ask them to pick. Capability resolution must happen *before* Step 0.1.b
+because the readiness gates need a concrete `$CAP_ID`.
 
-Then pull the **deep** pack — process modelling needs the rationale ADRs in
-addition to the structural slices:
+The deep pack has already been pulled to `/tmp/pack-process.json` by Step
+0.1.b (the readiness gate). Reuse that file — do **not** re-invoke
+`bcm-pack`. Walk the slices that drive each artefact:
 
 ```bash
-bcm-pack pack <CAPABILITY_ID> --deep --compact > /tmp/pack-process.json
 jq '.warnings'                            /tmp/pack-process.json
 jq '.slices.capability_self[0]'           /tmp/pack-process.json
 jq '.slices.capability_definition'        /tmp/pack-process.json
@@ -220,11 +330,14 @@ Slice → process artefact mapping:
 | `carried_concepts`          | Vocabulary grounding for command intents and errors    |
 | `governing_urba`            | Naming, event meta-model, identifier conventions       |
 | `governing_tech_strat`      | Bus topology rules (`bus.yaml`) — `ADR-TECH-STRAT-001` is normative |
-| `tactical_stack`            | Cross-checks (idempotency / outbox / snapshotting hints) |
+| `tactical_stack` **(required — gate)** | Per-capability `ADR-TECH-TACT-*` ratifying the stack choices this model materialises (event-store flavour, outbox / snapshotting / projection strategy, schema-evolution policy). **Empty list ⇒ `/process` aborts at Step 0.1.b.** |
 
-If `pack.warnings` is non-empty or any required slice is empty, surface the
-gap to the user and stop — `/process` cannot run on an incomplete corpus. Send
-them upstream to `banking-knowledge` to fix the BCM/FUNC ADR before retrying.
+If `pack.warnings` is non-empty, or any required slice is empty, or
+`tactical_stack` has no entry scoping `$CAP_ID`, **stop** — `/process` cannot
+run on an incomplete corpus. The first two failures point at the BCM / FUNC
+ADR; the third points at a missing `ADR-TECH-TACT-*`. In every case send
+the user upstream to `banking-knowledge` to author or complete the artefact
+before retrying.
 
 ---
 
