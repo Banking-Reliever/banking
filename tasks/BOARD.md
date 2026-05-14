@@ -36,10 +36,11 @@ _No ready tasks_
 
 | Task | Capability | Title | Open Questions |
 |------|-----------|-------|----------------|
-| TASK-001 | CAP.REF.001.BEN | Golden-record foundation: REGISTER + GET + RVT publication | 3 pending question(s) |
-| TASK-002 | CAP.REF.001.BEN | Identity maintenance with sticky-PII semantics (UPDATE) | 2 pending question(s) |
-| TASK-003 | CAP.REF.001.BEN | Lifecycle transitions: ARCHIVE and RESTORE | 3 pending question(s) |
-| TASK-004 | CAP.REF.001.BEN | Audit history projection and secondary lookups | 4 pending question(s) |
+| TASK-001 *(contract-stub)* | CAP.REF.001.BEN | Contract and development stub for the Beneficiary Referential | 3 pending question(s) |
+| TASK-002 *(full-microservice)* | CAP.REF.001.BEN | Golden-record foundation: REGISTER + GET + RVT publication | 3 pending question(s) |
+| TASK-003 *(full-microservice)* | CAP.REF.001.BEN | Identity maintenance with sticky-PII semantics (UPDATE) | 2 pending question(s) |
+| TASK-004 *(full-microservice)* | CAP.REF.001.BEN | Lifecycle transitions: ARCHIVE and RESTORE | 3 pending question(s) |
+| TASK-005 *(full-microservice)* | CAP.REF.001.BEN | Audit history projection and secondary lookups | 4 pending question(s) |
 | TASK-002 | CAP.CHN.001.DSH | Subscription point and consumption layer for CAP.CHN.001.DSH | 1 pending question(s) |
 | TASK-004 | CAP.CHN.001.DSH | BSP.004.AUT stub and transaction history web view | 2 pending question(s) |
 | TASK-005 | CAP.CHN.001.DSH | Mobile view — nomadic dashboard consultation | 2 pending question(s) |
@@ -71,9 +72,9 @@ _No stalled tasks_
 
 | Task | Capability | Title |
 |------|-----------|-------|
-| TASK-001 | CAP.BSP.001.SCO | Contract and development stub for `EVT.BSP.001.SCORE_RECALCULE` (contract-stub) |
-| TASK-001 | CAP.BSP.001.TIE | Contract and development stub for `EVT.BSP.001.TIER_UPGRADED` (contract-stub) |
-| TASK-001 | CAP.BSP.004.ENV | Contract and development stub for `EVT.BSP.004.ENVELOPE_CONSUMED` (contract-stub) |
+| TASK-001 *(contract-stub)* | CAP.BSP.001.SCO | Contract and development stub for `EVT.BSP.001.SCORE_RECALCULE` |
+| TASK-001 *(contract-stub)* | CAP.BSP.001.TIE | Contract and development stub for `EVT.BSP.001.TIER_UPGRADED` |
+| TASK-001 *(contract-stub)* | CAP.BSP.004.ENV | Contract and development stub for `EVT.BSP.004.ENVELOPE_CONSUMED` |
 
 ---
 
@@ -84,24 +85,27 @@ CAP.BSP.001.SCO/TASK-001 ✅ done ─┐
 CAP.BSP.001.TIE/TASK-001 ✅ done ─┼─► CHN/TASK-002 🟠 → TASK-003 🔴 ─┬─► TASK-004 🟠 ─┐
 CAP.BSP.004.ENV/TASK-001 ✅ done ─┘                                  └─► TASK-005 🟠 ─┴─► TASK-006 🟠
 
-CAP.REF.001.BEN/TASK-001 🟠 (foundation — gates the entire REF.001.BEN chain
+CAP.REF.001.BEN/TASK-001 🟠 (contract-stub — exposes wire contract for the entire
+                              programme; runs in parallel with real impl)
+CAP.REF.001.BEN/TASK-002 🟠 (foundation — gates the rest of the REF chain
                               AND every downstream L2 that needs internal_id)
-   ├─► CAP.REF.001.BEN/TASK-002 🟠 (UPDATE / sticky-PII)
-   ├─► CAP.REF.001.BEN/TASK-003 🟠 (ARCHIVE + RESTORE)
-   └─► CAP.REF.001.BEN/TASK-004 🟠 (history + secondary lookups)
+   ├─► CAP.REF.001.BEN/TASK-003 🟠 (UPDATE / sticky-PII)
+   ├─► CAP.REF.001.BEN/TASK-004 🟠 (ARCHIVE + RESTORE)
+   └─► CAP.REF.001.BEN/TASK-005 🟠 (history + secondary lookups)
 ```
 
 **Next to launch:** none — every active task carries unresolved open questions.
 
-- The highest-leverage head is **CAP.REF.001.BEN/TASK-001** (3 questions on
-  upstream caller, TECH-TACT ADR, and `internal_id` flavour). It is the
-  programme-wide foundation called out as the critical path by the
-  CAP.REF.001.BEN roadmap — every downstream L2 that needs `internal_id`
-  resolution is gated on it. Resolving its open questions unlocks the
-  remaining three REF.001.BEN tasks.
-- The second head is **CAP.CHN.001.DSH/TASK-002** (1 question on identity
-  resolution against CAP.REF.001.BEN — note that the BEN roadmap now exists,
-  which partially answers the question by confirming the producer side
-  will be built).
+- The highest-leverage heads are **CAP.REF.001.BEN/TASK-001** (the stub —
+  3 questions on fixture ID format, history schema source, synthesised
+  command_id prefix) and **CAP.REF.001.BEN/TASK-002** (the real
+  foundation — 3 questions on upstream REGISTER caller, TECH-TACT ADR,
+  and `internal_id` flavour). Both have no dependencies and run in
+  parallel — resolving their questions unlocks every downstream L2 in
+  the programme that needs `internal_id` resolution.
+- The next head is **CAP.CHN.001.DSH/TASK-002** (1 question on identity
+  resolution against CAP.REF.001.BEN — note that CAP.REF.001.BEN's
+  contract-stub plan now exists, which partially answers the question
+  by confirming the producer side will be available in cold form).
 
 Run `/task-refinement <path-to-task>` on each 🟠 head to resolve open questions.
