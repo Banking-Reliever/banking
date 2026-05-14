@@ -1,4 +1,4 @@
-# Plan — Budget Envelope Management (CAP.BSP.004.ENV)
+# Roadmap — Budget Envelope Management (CAP.BSP.004.ENV)
 
 ## Capability Summary
 > Allocate categorised budget envelopes for a beneficiary according to their current tier, track their consumption, and emit consumption signals so that downstream capabilities (dashboard, notifications) can update available balances and react to behavioural patterns (consumption, non-consumption).

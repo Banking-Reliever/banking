@@ -1,4 +1,4 @@
-# Plan — Tier Management (CAP.BSP.001.TIE)
+# Roadmap — Tier Management (CAP.BSP.001.TIE)
 
 ## Capability Summary
 > Manage the autonomy-tier transitions of a beneficiary based on behavioural score thresholds and prescriber overrides. Emit each transition as a business event so that downstream capabilities (dashboard, notifications, card rules, envelope allocation) can react.

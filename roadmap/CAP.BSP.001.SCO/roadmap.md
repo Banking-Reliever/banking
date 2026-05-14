@@ -1,4 +1,4 @@
-# Plan — Behavioural Score (CAP.BSP.001.SCO)
+# Roadmap — Behavioural Score (CAP.BSP.001.SCO)
 
 ## Capability Summary
 > Compute the behavioural score of a beneficiary from transactions and behavioural signals, and emit the resulting evaluation as business and resource events for downstream capabilities (tier management, dashboards, notifications).

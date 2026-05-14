@@ -223,4 +223,4 @@ re-runs O(n) and avoids fragile content-prefix tagging.
 requirement is "located at the root of process under name banking-miro.*".
 Allowing the skill to write a tightly scoped allowlist (two filenames, at
 root only) preserves the read-only contract for capability subfolders that
-`/plan`, `/task`, `/code`, `/fix` rely on.
+`/roadmap`, `/task`, `/code`, `/fix` rely on.

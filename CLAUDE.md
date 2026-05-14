@@ -21,7 +21,7 @@ Six stages, each owned by a single skill, each writing to a single folder:
 
 ```
 [0] /process       process/<CAP_ID>/          DDD tactical model (PR-gated)
-[1] /plan          roadmap/<CAP_ID>/          epics + milestones
+[1] /roadmap       roadmap/<CAP_ID>/          epics + milestones
 [2] /task          tasks/<CAP_ID>/            unit-of-work TASK-NNN-*.md
 [3] /sort-task     tasks/BOARD.md             read-only kanban (hook-driven)
     /launch-task   /tmp/kanban-worktrees/…    scheduler — spawns /code agents
@@ -94,7 +94,7 @@ Post-implementation:
 | `/implementation-pipeline` | Status across all capabilities; advance to next pending stage |
 | `/process <CAP_ID>` | Stage 0 — interactive DDD modelling; opens PR on `process/<CAP_ID>` branch |
 | `/sketch-miro` | Render every `process/CAP.*/` as a Miro Event Storming board |
-| `/plan` | Stage 1 — `roadmap.md` for a capability |
+| `/roadmap` | Stage 1 — `roadmap.md` for a capability |
 | `/task` | Stage 2 — `TASK-NNN-*.md` for a capability |
 | `/sort-task` | Refresh `tasks/BOARD.md` (read-only) |
 | `/launch-task` | Pick a ready task, spawn `/code` in an isolated worktree |
@@ -118,9 +118,9 @@ Post-implementation:
 - **`process/<CAP_ID>/` is owned by `/process` alone.** A PreToolUse hook
   (`process-folder-guard.py`) blocks every Write/Edit under `process/**`
   from any other skill or agent. Changes flow through a dedicated
-  `process/<CAP_ID>` PR; `/plan`, `/task`, `/launch-task`, `/code`, `/fix`
+  `process/<CAP_ID>` PR; `/roadmap`, `/task`, `/launch-task`, `/code`, `/fix`
   refuse to run until that PR is merged into `main`.
-- **One authoring skill per folder.** `/process` → `process/`, `/plan` → `roadmap/`,
+- **One authoring skill per folder.** `/process` → `process/`, `/roadmap` → `roadmap/`,
   `/task` → `tasks/<CAP_ID>/`, `/sort-task` → `tasks/BOARD.md`, `/code` → `sources/`
   and `src/`, the test skills → `tests/`. No skill writes outside its lane.
 - **Branch isolation is end-to-end.** One branch (`feat/TASK-NNN-{slug}`) and
@@ -148,7 +148,7 @@ Post-implementation:
 
 - New capability, never modelled here → `/implementation-pipeline` (it will
   tell you to run `/process <CAP_ID>` first, after checking `bcm-pack` readiness).
-- Process model merged, no roadmap yet → `/plan`.
+- Process model merged, no roadmap yet → `/roadmap`.
 - Roadmap merged, no tasks → `/task`.
 - Tasks exist → `/launch-task` (or `/launch-task auto`).
 - Something is red → `/fix` with the PR number, branch, or log paste.

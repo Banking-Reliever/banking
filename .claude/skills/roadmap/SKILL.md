@@ -1,24 +1,24 @@
 ---
-name: plan
+name: roadmap
 description: >
   Breaks a validated L2 or L3 business capability into an implementation roadmap expressed as 
   epics and milestones. Produces /roadmap/{capability-id}/roadmap.md for each capability. Use this 
-  skill whenever the user wants to plan how to implement a capability, create an epic breakdown, 
-  define milestones for a capability, or produce a capability roadmap. Trigger on: "plan this 
-  capability", "create a plan", "epic breakdown", "roadmap for capability", "how do we implement 
-  [capability]", "plan phase", or any time the BCM YAML exists and the user is ready to plan 
+  skill whenever the user wants to roadmap how to implement a capability, create an epic breakdown, 
+  define milestones for a capability, or produce a capability roadmap. Trigger on: "roadmap this 
+  capability", "create a roadmap", "epic breakdown", "roadmap for capability", "how do we implement 
+  [capability]", "roadmap phase", or any time the BCM YAML exists and the user is ready to plan 
   implementation. Also trigger proactively after the BCM writer produces validated YAML for 
   a new capability.
 ---
 
-# Plan Skill
+# Roadmap Skill
 
-You are producing an **implementation plan** for one or more business capabilities. The plan 
+You are producing an **implementation roadmap** for one or more business capabilities. The roadmap 
 expresses what must be built (in business terms), in what order, with what dependencies — 
-without specifying how it is built technically. The plan bridges the capability definition 
+without specifying how it is built technically. The roadmap bridges the capability definition 
 (from the BCM/ADRs + the `/process` Process Modelling layer) and the task generation phase.
 
-**Absolute constraint**: No code, no technical architecture. The plan is in business capability 
+**Absolute constraint**: No code, no technical architecture. The roadmap is in business capability 
 language. The "how" emerges in the task phase.
 
 ---
@@ -35,7 +35,7 @@ attempt under `process/**` outside the `/process` skill is rejected.
 If the `process/{capability-id}/` folder is missing or stale relative to the FUNC
 ADR returned by `bcm-pack`, **stop and tell the user to run `/process
 <CAPABILITY_ID>` first**. Do not attempt to derive aggregates or commands inside
-the plan; that is a category violation.
+the roadmap; that is a category violation.
 
 ---
 
@@ -56,7 +56,7 @@ git -C "$PROJECT_ROOT" ls-tree --name-only main -- "process/$CAP_ID" \
     > /tmp/process-main-check.txt
 if [ ! -s /tmp/process-main-check.txt ]; then
   echo "GATE-FAIL: process/$CAP_ID/ is not on main."
-  echo "Run /process $CAP_ID, then merge the resulting PR before retrying /plan."
+  echo "Run /process $CAP_ID, then merge the resulting PR before retrying /roadmap."
   exit 1
 fi
 
@@ -65,14 +65,14 @@ OPEN_COUNT=$(gh pr list --head "process/$CAP_ID" --state open --json number --jq
 if [ "$OPEN_COUNT" != "0" ]; then
   PR_URL=$(gh pr list --head "process/$CAP_ID" --state open --json url --jq '.[0].url')
   echo "GATE-FAIL: an open process PR ($PR_URL) is still pending review."
-  echo "Wait for it to be merged into main before running /plan."
+  echo "Wait for it to be merged into main before running /roadmap."
   exit 1
 fi
 ```
 
 If either check fails, **stop and surface the failure to the user with the
-redirect message above** — do not proceed to draft the plan. Once the PR is
-merged and `process/<CAP_ID>/` appears on `main`, re-run `/plan`.
+redirect message above** — do not proceed to draft the roadmap. Once the PR is
+merged and `process/<CAP_ID>/` appears on `main`, re-run `/roadmap`.
 
 ---
 
@@ -97,13 +97,13 @@ bcm-pack pack <CAPABILITY_ID> --deep --compact
 ```
 
 Always pass `--deep` from this skill: it pulls in the rationale ADRs (URBA, governance,
-tech-strategic) behind the `*-vision.md` narratives, which the plan needs for strategic 
+tech-strategic) behind the `*-vision.md` narratives, which the roadmap needs for strategic 
 alignment. Add `--compact` to keep the JSON on a single line — easier to pipe into `jq` or
 `python3 -c`.
 
-The pack JSON exposes these slices under `slices.*` — map them to the plan sections:
+The pack JSON exposes these slices under `slices.*` — map them to the roadmap sections:
 
-| Slice                       | What it gives you                                      | Plan section it feeds                |
+| Slice                       | What it gives you                                      | Roadmap section it feeds             |
 |-----------------------------|--------------------------------------------------------|--------------------------------------|
 | `capability_self`           | The L2/L3 itself (description, owner, ADRs)            | Capability Summary                   |
 | `capability_ancestors`      | Parent L1 (and grandparent if L3)                      | Strategic Alignment                  |
@@ -124,7 +124,7 @@ The pack JSON exposes these slices under `slices.*` — map them to the plan sec
 | `vocab`                     | Allowed levels and zoning values                       | Validation only                      |
 
 Always check `pack.warnings` after invocation — non-empty means the corpus has gaps that
-should land in the plan's **Open Questions** section.
+should land in the roadmap's **Open Questions** section.
 
 ### Repo ref and offline behaviour
 
@@ -138,7 +138,7 @@ should land in the plan's **Open Questions** section.
 ### Recommended invocation pattern
 
 ```bash
-# One JSON object → parse it once, then drive the plan from the parsed slices.
+# One JSON object → parse it once, then drive the roadmap from the parsed slices.
 bcm-pack pack CAP.BSP.001.PAL --deep --compact > /tmp/pack.json
 jq '.slices.capability_self[0]'         /tmp/pack.json
 jq '.slices.capability_definition[0]'   /tmp/pack.json
@@ -153,7 +153,7 @@ files — surface the error to the user and ask them to confirm the ID against `
 
 ## Before You Begin
 
-1. **Identify which capability to plan.** The user should specify the capability ID (e.g., 
+1. **Identify which capability to roadmap.** The user should specify the capability ID (e.g., 
    `CAP.BSP.001.PAL`) or a name. If ambiguous, run `bcm-pack list --level L2` (and 
    `--level L3` if relevant), present the matches, and ask the user to select.
 
@@ -166,7 +166,7 @@ files — surface the error to the user and ask them to confirm the ID against `
    `aggregates.yaml`, `commands.yaml`, `policies.yaml`, `read-models.yaml`, and
    `bus.yaml`. These are produced by the `/process` skill and are the canonical
    source of:
-   - the **aggregates** (consistency boundaries) the plan must deliver,
+   - the **aggregates** (consistency boundaries) the roadmap must deliver,
    - the **commands** the capability accepts,
    - the **policies** wiring consumed events to commands,
    - the **read-models** and queries the capability exposes,
@@ -185,14 +185,14 @@ files — surface the error to the user and ask them to confirm the ID against `
    exists, ask: "A roadmap already exists. Do you want to update it or start fresh?"
 
    The folder `/tasks/` is reserved for the kanban (`/tasks/BOARD.md` and the
-   per-capability `/tasks/<CAP_ID>/TASK-*.md` cards) — the `/plan` skill writes
+   per-capability `/tasks/<CAP_ID>/TASK-*.md` cards) — the `/roadmap` skill writes
    only to `/roadmap/`, never to `/tasks/`.
 
 ---
 
 ## Planning Framework
 
-A capability plan is organized around **epics** — coherent chunks of business functionality 
+A capability roadmap is organized around **epics** — coherent chunks of business functionality 
 that can be delivered incrementally. An epic:
 - Delivers a meaningful business outcome (not a technical deliverable)
 - Has a clear start and end condition
@@ -213,7 +213,7 @@ deliverable when it's done.
 
 ## Step 1 — Understand the Capability
 
-Before drafting the plan, ground yourself in the pack's `capability_self`,
+Before drafting the roadmap, ground yourself in the pack's `capability_self`,
 `capability_definition`, and the `emitted_business_events` slices, then ask the user to 
 validate the framing:
 
@@ -254,11 +254,11 @@ Ask the user to validate the epic sequence before writing the file:
 
 ## Step 3 — Risk and Dependencies
 
-For the full plan, identify:
+For the full roadmap, identify:
 - **Cross-capability dependencies**: from `consumed_business_events` — which other L2s does 
-  this plan depend on? (Reference by capability ID.)
+  this roadmap depend on? (Reference by capability ID.)
 - **External dependencies**: third-party systems, data sources, regulatory approvals
-- **Key risks**: the 2-3 assumptions that, if wrong, would derail this plan. Cross-check 
+- **Key risks**: the 2-3 assumptions that, if wrong, would derail this roadmap. Cross-check 
   against `governance_adrs` and `governing_urba` for hard constraints.
 - **Recommended sequencing constraint**: which epics are truly sequential vs. which could 
   be run in parallel?

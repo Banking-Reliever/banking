@@ -29,7 +29,7 @@ authors or modifies upstream artifacts.
    ┌────────────────────────────────────────────────────────────────────────┐
    │ This repo — the implementation pipeline                                 │
    │                                                                         │
-   │  [0] process   [1] plan    [2] task    [3] sort-task    [4] code        │
+   │  [0] process   [1] roadmap [2] task    [3] sort-task    [4] code        │
    │      ─────▶        ─────▶      ─────▶      / launch         ─────▶      │
    │      │             │           │           │                │           │
    │   process/      roadmap/    tasks/      tasks/           worktree       │
@@ -84,7 +84,7 @@ When you invoke the skill it:
    | Pending state | Action |
    |---|---|
    | Capabilities with a complete `bcm-pack` slice but no `process/<CAP_ID>/` on `main` | Tells you to run `/process <CAP_ID>` (interactive — drives the modelling session and opens a PR) |
-   | Capabilities with `process/` merged but no `roadmap.md` | Spawns one `/plan` subagent per capability, in parallel |
+   | Capabilities with `process/` merged but no `roadmap.md` | Spawns one `/roadmap` subagent per capability, in parallel |
    | Capabilities with a roadmap but no tasks | Spawns one `/task` subagent per capability, in parallel |
    | Tasks exist | Hands off to `/launch-task` (which calls `/sort-task` first) |
 
@@ -116,16 +116,16 @@ consumed — all in architecture-neutral YAML.
 hook (`process-folder-guard.py`) blocks every Write/Edit attempt under
 `process/**` from any other skill or agent.
 
-**Readiness gate** — `/plan`, `/task`, `/launch-task`, `/code`, and `/fix`
+**Readiness gate** — `/roadmap`, `/task`, `/launch-task`, `/code`, and `/fix`
 all refuse to run for a capability whose `process/<CAP_ID>/` is missing on
 `main` or whose `process/<CAP_ID>` PR is still open. Downstream stages only
 consume process models that have been reviewed and merged.
 
-### Stage 1 — Plan
+### Stage 1 — Roadmap
 
 | | |
 |---|---|
-| **Skill** | `/plan` |
+| **Skill** | `/roadmap` |
 | **Reads** | `bcm-pack pack <CAP_ID> --deep` + `process/<CAP_ID>/` (read-only) |
 | **Writes** | `roadmap/<CAP_ID>/roadmap.md` (epics, milestones, exit conditions) |
 | **Parallelism** | one subagent per capability |
@@ -255,7 +255,7 @@ pushed, `gh pr create` with DoD checklist + local-stack instructions
    skills/                            Claude Code skills (this orchestrator + the workers)
       implementation-pipeline/        the orchestrator
       process/                        Stage 0 — interactive modelling + PR
-      plan/  task/  sort-task/        stages 1-3a
+      roadmap/  task/  sort-task/     stages 1-3a
       launch-task/  code/             stages 3b-4
       test-business-capability/       stage 5 — Path A
       test-app/                       stage 5 — Path B
@@ -288,7 +288,7 @@ pushed, `gh pr create` with DoD checklist + local-stack instructions
 | `/implementation-pipeline` | Status + advance to next pending stage |
 | `/process <CAP_ID>` | Stage 0 — interactive DDD modelling, opens a PR on `process/<CAP_ID>` branch |
 | `/sketch-miro` | Render every `process/CAP.*/` as a Miro Event Storming board |
-| `/plan` | Stage 1 — generate `roadmap.md` for current capability |
+| `/roadmap` | Stage 1 — generate `roadmap.md` for current capability |
 | `/task` | Stage 2 — generate `TASK-NNN-*.md` for a capability |
 | `/sort-task` | Refresh `tasks/BOARD.md` (read-only) |
 | `/launch-task` | Stage 3+ — pick a ready task, spawn `/code` |
@@ -314,11 +314,11 @@ pushed, `gh pr create` with DoD checklist + local-stack instructions
 - **`process/<CAP_ID>/` is owned by `/process`.** No other skill or agent may
   modify it; a `PreToolUse` hook enforces this. Changes flow through a
   dedicated `process/<CAP_ID>` PR and must be merged before downstream stages
-  can consume the model — `/plan`, `/task`, `/launch-task`, `/code`, and
+  can consume the model — `/roadmap`, `/task`, `/launch-task`, `/code`, and
   `/fix` all gate on this.
-- **Folder layout is strict.** `/plan/` no longer exists. `/process/` (Stage 0),
-  `/roadmap/` (Stage 1), `/tasks/` (Stages 2–3) each have a single authoring
-  skill. No skill writes outside its lane.
+- **Folder layout is strict.** The legacy `/plan/` output folder no longer
+  exists. `/process/` (Stage 0), `/roadmap/` (Stage 1), `/tasks/` (Stages 2–3)
+  each have a single authoring skill. No skill writes outside its lane.
 - **Every task traces back** to a roadmap epic → process model → BCM capability →
   FUNC ADR → URBA constraints. The chain is unbreakable.
 - **Every implementation artifact** (microservice / BFF / frontend / stub) is

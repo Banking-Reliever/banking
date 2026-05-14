@@ -17,7 +17,7 @@ Limites :
   - Le hook ne lit pas les commandes Bash. Les contournements via
     `cat > process/foo`, `sed -i`, `tee`, etc. ne sont pas filtrés. Les
     instructions du skill /process et celles des skills consommateurs
-    (/plan, /task, /code, /fix, /launch-task, /continue-work) imposent
+    (/roadmap, /task, /code, /fix, /launch-task, /continue-work) imposent
     l'usage des outils Write/Edit/MultiEdit/NotebookEdit pour toute écriture
     de fichier — c'est la frontière de confiance.
   - Le sentinelle est partagé par session. Pour un usage multi-session
@@ -185,7 +185,7 @@ def main() -> int:
         f"   Outil : {tool_name}\n"
         f"   Cible : {file_path}\n"
         "   process/{capability-id}/ est en LECTURE SEULE en dehors du skill /process.\n"
-        "   Ni /plan, /task, /code, /fix, /launch-task, /continue-work, ni les agents\n"
+        "   Ni /roadmap, /task, /code, /fix, /launch-task, /continue-work, ni les agents\n"
         "   qu'ils spawnent (implement-capability, create-bff, code-web-frontend,\n"
         "   test-business-capability, test-app) ne peuvent modifier ce dossier.\n"
         "   Les PR/CI-CD ouverts par /launch-task, /code ou /fix ne doivent pas\n"

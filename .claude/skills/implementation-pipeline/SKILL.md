@@ -1,7 +1,7 @@
 ---
 name: implementation-pipeline
 description: >
-  Orchestrates the local implementation pipeline: process → plan → task →
+  Orchestrates the local implementation pipeline: process → roadmap → task →
   sort-task / launch-task → code → test. Upstream knowledge (BCM YAML,
   FUNC/URBA/GOV/TECH ADRs, product/business/tech visions) is fetched on demand
   from the external `bcm-pack` CLI — this skill no longer drives any modeling
@@ -21,12 +21,12 @@ description: >
   spawns autonomous code agents in isolated worktrees.
 
   Use this skill to run the local pipeline, resume at any stage, check pipeline
-  status, or coordinate process/plan/task generation across multiple
-  capabilities. Spawns parallel subagents to run process / plan / task
+  status, or coordinate process/roadmap/task generation across multiple
+  capabilities. Spawns parallel subagents to run process / roadmap / task
   generation concurrently across capabilities.
 
   Trigger on: "run the pipeline", "where are we in the pipeline", "what's next",
-  "resume the pipeline", "run all the plans", "generate all tasks",
+  "resume the pipeline", "run all the roadmaps", "generate all tasks",
   "implementation pipeline", "full pipeline", or any time the user wants to
   advance through the local process-to-runtime journey.
 ---
@@ -62,12 +62,12 @@ upstream artifacts — it consumes them.
         ↓              process/** is read-only outside the /process skill.
         ↓              Stages 1–5 below are FORBIDDEN from writing to process/.
 
-[1] Plan                            (plan skill)                              [PARALLELIZABLE per L2 capability]
+[1] Roadmap                         (roadmap skill)                           [PARALLELIZABLE per L2 capability]
         ↓ reads:    `bcm-pack pack <CAP_ID> --deep` + process/{capability-id}/ (read-only)
         ↓           + local `/roadmap/{capability-id}/roadmap.md` if updating an existing roadmap
         ↓ produces: /roadmap/{capability-id}/roadmap.md  (epics, milestones, exit conditions)
         ↓ NOTE: /tasks/ folder is reserved for the kanban (BOARD.md + <CAP_ID>/TASK-*.md) —
-        ↓       the plan skill writes to /roadmap/, never to /tasks/.
+        ↓       the roadmap skill writes to /roadmap/, never to /tasks/.
 
 [2] Task                            (task skill)                              [PARALLELIZABLE per capability]
         ↓ reads:    /roadmap/{capability-id}/roadmap.md (local) + process/{capability-id}/ (read-only)
@@ -147,7 +147,7 @@ upstream artifacts — it consumes them.
 ```
 
 **Stages 0–2 can be fully parallelized** across capabilities (process modelling,
-plan, task generation). **Stages 3–5 are driven by `/sort-task` (read-only
+roadmap, task generation). **Stages 3–5 are driven by `/sort-task` (read-only
 board) and `/launch-task` (orchestrator)** — this skill does not launch
 implementation agents directly.
 
@@ -258,12 +258,12 @@ process-folder-guard.py PreToolUse hook enforces this.
 Process Modelling for one capability is INDEPENDENT of other capabilities —
 launch one subagent per target capability in the same turn for parallelism.
 
-### Stage 1 — Plan generation (parallelizable per capability)
+### Stage 1 — Roadmap generation (parallelizable per capability)
 
 For each L2 capability without a `roadmap.md`, spawn one subagent:
 
 ```
-Use the plan skill to generate a roadmap for capability [CAP.ZONE.NNN — Name].
+Use the roadmap skill to generate a roadmap for capability [CAP.ZONE.NNN — Name].
 
 Knowledge access (mandatory):
 - Source ALL BCM, ADR, and vision context from the `bcm-pack` CLI:
@@ -430,7 +430,7 @@ Runs in a **temporary, isolated `/tmp/test-{cap-id}-XXXXXX` directory**:
      on `RABBIT_PORT`, `pymongo.MongoClient` on `MONGO_PORT`.
    - `test_dod.py` — one test per `[ ]` item in the task's "Definition of Done"
      (REST endpoint, persistence assertion, event emission).
-   - `test_business_rules.py` — aggregate invariants and plan scoping rules.
+   - `test_business_rules.py` — aggregate invariants and roadmap scoping rules.
    - `test_strategic.py` — vocabulary heuristics on event payloads / errors.
    - `test_backend.py` — `/health`, OTel `environment` tag, branch-scoped exchange
      existence in RabbitMQ.
@@ -447,7 +447,7 @@ Runs in a **temporary, isolated `/tmp/test-app-{cap-id}-XXXXXX` directory**:
    - `conftest.py` — Playwright fixtures, mocked routes derived from `STUB_DATA`,
      `?beneficiaireId=` and `?consentement=refuse` URL injection.
    - `test_dod.py` — one test per `[ ]` item in the task's "Definition of Done".
-   - `test_business_rules.py` — derived from FUNC ADRs and plan scoping decisions
+   - `test_business_rules.py` — derived from FUNC ADRs and roadmap scoping decisions
      (dignity rule order, V0-without-gamification, business-language errors).
    - `test_strategic.py` — alignment with the product vision (French labels, encouraging
      vocabulary).
@@ -473,7 +473,7 @@ under the same `tests/{capability-id}/TASK-NNN-{slug}/` directory.
 | Stage | Prerequisite |
 |-------|--------------|
 | 0 (Process) | `bcm-pack pack <CAP_ID> --deep` returns non-empty `capability_self`, `capability_definition`, `tactical_stack`, `governing_urba`, `governing_tech_strat`, `product_vision`, `business_vision`, `tech_vision`, and `pack.warnings` is empty. The full upstream chain (product → strategic business → strategic tech → FUNC ADR → tactical ADR → BCM YAML) must be in place in the `banking-knowledge` repo. |
-| 1 (Plan) | Stage 0 prerequisites + `process/{capability-id}/` exists with at least `README.md`, `aggregates.yaml`, `commands.yaml`, `policies.yaml`, `read-models.yaml`, `bus.yaml`. |
+| 1 (Roadmap) | Stage 0 prerequisites + `process/{capability-id}/` exists with at least `README.md`, `aggregates.yaml`, `commands.yaml`, `policies.yaml`, `read-models.yaml`, `bus.yaml`. |
 | 2 (Task) | Stage 1 prerequisite + local `/roadmap/{capability-id}/roadmap.md` has at least one epic with an exit condition |
 | 3 (sort-task / launch-task) | At least one `TASK-NNN-*.md` in local `/tasks/*/` with valid frontmatter |
 | 4 (Code) | Task status is `todo` (or `in_progress` re-entry); all `depends_on` are `done`; no open questions; not `stalled`; `process/{capability-id}/` is present (task references AGG/CMD/POL/PRJ/QRY identifiers from there) |
@@ -491,11 +491,11 @@ the user to the `banking-knowledge` repository — this skill cannot fix it.
   TACTICAL ADRs and BCM YAML live in the `banking-knowledge` repo and are
   consumed via `bcm-pack` only. To author or update them, work in that
   repository directly.
-- Every task must trace back to a plan epic, which traces back to an L2
+- Every task must trace back to a roadmap epic, which traces back to an L2
   capability whose `bcm-pack` slice is complete (capability_self,
   capability_definition, tactical_stack).
 - Every implementation artifact (microservice, BFF, frontend) must be
-  reachable from a TASK-NNN, which is itself reachable from a plan epic.
+  reachable from a TASK-NNN, which is itself reachable from a roadmap epic.
 
 **The traceability chain is unbreakable:**
 
@@ -505,7 +505,7 @@ the user to the `banking-knowledge` repository — this skill cannot fix it.
   Tactical Tech (TECH-TACT) → BCM YAML
                           ↓
 [local — this repo]
-  Process Modelling (process/) → Plan Epic → Task → Code → Tests → PR
+  Process Modelling (process/) → Roadmap Epic → Task → Code → Tests → PR
 ```
 
 Any stage that cannot establish this chain must stop and surface the gap to

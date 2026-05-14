@@ -1,4 +1,4 @@
-# Plan — Beneficiary Referential (CAP.REF.001.BEN)
+# Roadmap — Beneficiary Referential (CAP.REF.001.BEN)
 
 ## Capability Summary
 > Hold and maintain the canonical beneficiary identity — single source of

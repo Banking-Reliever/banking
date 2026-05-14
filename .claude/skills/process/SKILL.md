@@ -4,7 +4,7 @@ description: >
   Generates the **Process Modelling** layer of a business capability — the DDD
   tactical layer that sits between Big-Picture Event Storming (BCM YAML, FUNC
   ADR, URBA/TECH-STRAT ADRs, product/business/tech visions consumed via
-  `bcm-pack`) and Software Design (the `/plan` → `/task` → `/code` pipeline that
+  `bcm-pack`) and Software Design (the `/roadmap` → `/task` → `/code` pipeline that
   consumes it). Produces `process/{capability-id}/` as a durable, re-plan-resistant
   set of YAML artifacts: aggregates, commands, policies, read-models, bus
   topology, derived REST surface, JSON Schemas. Use this skill whenever the
@@ -15,12 +15,12 @@ description: >
   "aggregates and commands for X", "domain events for X", "Event Storming for
   X", "design the bus for X", "tactical DDD for X", "design the aggregates for
   X", or any time a BCM-validated capability is ready to be modelled before
-  `/plan` runs. Also trigger proactively after `bcm-pack pack <CAP_ID>` returns a
-  complete corpus and the user is about to start `/plan` — `/plan` should always
+  `/roadmap` runs. Also trigger proactively after `bcm-pack pack <CAP_ID>` returns a
+  complete corpus and the user is about to start `/roadmap` — `/roadmap` should always
   read a `process/{capability-id}/` folder, never re-derive it.
 
   Authorship rule: `/process` is the **only** authority on `process/{capability-id}/`.
-  No other skill — `/plan`, `/task`, `/code`, `/fix`, `/launch-task`, `/continue-work`
+  No other skill — `/roadmap`, `/task`, `/code`, `/fix`, `/launch-task`, `/continue-work`
   — and no agent spawned by them (`implement-capability`, `create-bff`,
   `code-web-frontend`, `test-business-capability`, `test-app`) may modify any
   file under `process/`. PR / CI-CD branches opened by `/launch-task`, `/code`,
@@ -34,7 +34,7 @@ description: >
   `process/<CAP_ID>` inside an isolated worktree at
   `/tmp/process-worktrees/<CAP_ID>/`. It commits, pushes, and opens (or
   refreshes) a Pull Request titled `process(<CAP_ID>): …` against `main`.
-  The PR must be reviewed and merged before any downstream skill (`/plan`,
+  The PR must be reviewed and merged before any downstream skill (`/roadmap`,
   `/task`, `/launch-task`, `/code`, `/fix`) can consume the model on `main`
   — those skills enforce a readiness gate that refuses to run when the
   capability has either no `process/<CAP_ID>/` on `main` or an open
@@ -45,7 +45,7 @@ description: >
 
 You are running an **Event-Storming-style modelling session** for one business
 capability and committing the result as a durable model under
-`process/{capability-id}/`. This layer is what every downstream skill (`/plan`,
+`process/{capability-id}/`. This layer is what every downstream skill (`/roadmap`,
 `/task`, `/code`, `/fix`, `/launch-task`) reads to know what aggregates exist,
 what commands they accept, what policies wire consumed events to commands, what
 read-models project the domain events, and what bus topology the capability
@@ -58,10 +58,10 @@ The output is **architecture-neutral** within the strategic-tech corridor:
 agent's job downstream.
 
 > **Position in the pipeline.** `/process` runs **after** `bcm-pack` has a
-> complete corpus for the capability and **before** `/plan`. The skill chain is
-> now: `bcm-pack pack <CAP_ID> --deep` → **`/process <CAP_ID>`** → `/plan` →
+> complete corpus for the capability and **before** `/roadmap`. The skill chain is
+> now: `bcm-pack pack <CAP_ID> --deep` → **`/process <CAP_ID>`** → `/roadmap` →
 > `/task` → `/launch-task` → `/code` → `/test-business-capability` or
-> `/test-app`. `/plan` no longer derives aggregates/commands itself — it reads
+> `/test-app`. `/roadmap` no longer derives aggregates/commands itself — it reads
 > them from this folder.
 
 ---
@@ -96,7 +96,7 @@ agent's job downstream.
   the modelling session (aggregates / commands / policies / read-models /
   bus topology decisions, plus open questions).
 - The PR must be reviewed and merged through GitHub before any downstream
-  skill (`/plan`, `/task`, `/launch-task`, `/code`, `/fix`) can consume the
+  skill (`/roadmap`, `/task`, `/launch-task`, `/code`, `/fix`) can consume the
   model on `main`. Those skills enforce a readiness gate (see "Readiness
   gate" section in each downstream SKILL.md).
 - Re-running `/process <CAP_ID>` while the branch and worktree already exist
@@ -563,8 +563,8 @@ PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --state open --json number --jq '.[
   <copy the README's "Open process-level questions" section>
 
   ## Downstream impact
-  Once merged, `/plan <CAP_ID>` becomes runnable. Until then the readiness
-  gate in `/plan`, `/task`, `/launch-task`, `/code`, and `/fix` will refuse
+  Once merged, `/roadmap <CAP_ID>` becomes runnable. Until then the readiness
+  gate in `/roadmap`, `/task`, `/launch-task`, `/code`, and `/fix` will refuse
   to consume this capability.
 
   🤖 Generated with [Claude Code](https://claude.com/claude-code)
@@ -597,7 +597,7 @@ Then announce:
 > `main` before any downstream skill can consume the model.
 >
 > While the PR is open:
-> - `/plan`, `/task`, `/launch-task`, `/code`, and `/fix` will refuse to
+> - `/roadmap`, `/task`, `/launch-task`, `/code`, and `/fix` will refuse to
 >   run on this capability (readiness gate).
 > - To refine the model, re-run `/process <CAPABILITY_ID>` — this skill
 >   will reuse the existing branch and worktree and append a new commit
@@ -607,7 +607,7 @@ Then announce:
 > - The worktree at `/tmp/process-worktrees/<CAP_ID>/` can be removed with
 >   `git worktree remove /tmp/process-worktrees/<CAP_ID> --force` (the user
 >   does this — this skill never deletes a worktree it might still need).
-> - `/plan <CAPABILITY_ID>` becomes runnable."
+> - `/roadmap <CAPABILITY_ID>` becomes runnable."
 
 ---
 
@@ -623,7 +623,7 @@ Then announce:
   zoning rule), stop and tell the user to author an ADR upstream in
   `banking-knowledge` first. Do not write the decision into a YAML and hope.
 - **Never rename a stable identifier.** AGG / CMD / POL / PRJ / QRY ids are
-  contracts. Once committed and consumed by `/plan`, `/task`, or `/code`,
+  contracts. Once committed and consumed by `/roadmap`, `/task`, or `/code`,
   they cannot be renamed without a coordinated change across consumers. If a
   rename is unavoidable, treat it as a deprecation: add the new id, mark the
   old one `deprecated: true` with a `replaced_by`, and surface the migration

@@ -1,4 +1,4 @@
-# Plan — Beneficiary Dashboard (CAP.CHN.001.DSH)
+# Roadmap — Beneficiary Dashboard (CAP.CHN.001.DSH)
 
 ## Capability Summary
 > Expose to the beneficiary a synthetic view of their financial situation adapted to their tier: available balance, envelopes, transaction history. The interface is calibrated to encourage without infantilizing — dignity is a functional constraint.
