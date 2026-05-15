@@ -68,15 +68,23 @@ pr_url: <set by /code on PR creation>
 
 `/code` is the sole writer of `loop_count`, `max_loops`, `stalled_reason`, `pr_url`.
 
-## Stage 4 routing (zone- and type-aware)
+## Stage 4 routing (zone-, type-, and language-aware)
+
+Zone is read from `bcm-pack pack <CAP_ID>` (`slices.capability_self[0].zoning`) —
+never inferred from the capability ID prefix. The implementation
+language for Path A and Path C is read from the **TECH-TACT ADR** of
+the capability (`slices.tactical_stack[0].tags`) — `python` /
+`fastapi` route to the Python agent, `dotnet` / `csharp` / `aspnet`
+route to the .NET agent. If no TECH-TACT ADR is published yet, `/code`
+falls back to the .NET agent with a warning.
 
 | Trigger | Agent(s) | Output |
 |---|---|---|
-| `task_type: contract-stub` (any zone) | `implement-capability` (Mode B) | `sources/<CAP_ID>/stub/` — minimal .NET worker publishing RVT events; reads schemas from `process/<CAP_ID>/schemas/RVT.*.schema.json` (does NOT regenerate them) |
-| zone ∈ {`BUSINESS_SERVICE_PRODUCTION`, `SUPPORT`, `REFERENTIAL`, `EXCHANGE_B2B`, `DATA_ANALYTIQUE`, `STEERING`} | `implement-capability` (Mode A) | `sources/<CAP_ID>/backend/` — .NET 10 microservice (Domain / Application / Infrastructure / Presentation / Contracts), MongoDB, RabbitMQ |
-| zone = `CHANNEL` | `create-bff` ∥ `code-web-frontend` (parallel) | `src/<zone>/<CAP_ID>-bff/` (.NET 10 Minimal API BFF) + `sources/<CAP_ID>/frontend/` (vanilla HTML5/CSS3/JS) |
-
-Zone is read from `bcm-pack pack <CAP_ID>` — never inferred from the capability ID prefix.
+| `task_type: contract-stub` + TECH-TACT tag `python` | `implement-capability-python` (Mode B) | `sources/<CAP_ID>/stub/` — FastAPI app publishing RVT events via `aio-pika` + canned-fixture query API; reads schemas from `process/<CAP_ID>/schemas/` (does NOT regenerate them) |
+| `task_type: contract-stub` + TECH-TACT tag `dotnet` (default) | `implement-capability` (Mode B) | `sources/<CAP_ID>/stub/` — minimal .NET worker + Minimal-API host; schemas read from `process/<CAP_ID>/schemas/` |
+| zone ∈ {`BUSINESS_SERVICE_PRODUCTION`, `SUPPORT`, `REFERENTIAL`, `EXCHANGE_B2B`, `DATA_ANALYTIQUE`, `STEERING`} + TECH-TACT tag `python` | `implement-capability-python` (Mode A) | `sources/<CAP_ID>/backend/` — Python 3.12+ microservice (Domain / Application / Infrastructure / Presentation / Contracts packages), FastAPI, motor or psycopg/asyncpg, aio-pika |
+| same zones + TECH-TACT tag `dotnet` (default) | `implement-capability` (Mode A) | `sources/<CAP_ID>/backend/` — .NET 10 microservice (Domain / Application / Infrastructure / Presentation / Contracts), MongoDB, RabbitMQ |
+| zone = `CHANNEL` | `create-bff` ∥ `code-web-frontend` (parallel) | `src/<zone>/<CAP_ID>-bff/` (.NET 10 Minimal API BFF) + `sources/<CAP_ID>/frontend/` (vanilla HTML5/CSS3/JS) — language fixed; TECH-TACT tags ignored for CHANNEL |
 
 Post-implementation:
 - Stage 5 runs automatically (`test-business-capability` for non-CHANNEL,

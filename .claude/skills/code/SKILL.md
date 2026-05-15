@@ -139,7 +139,7 @@ implementation agent. Once the PR is merged, re-run `/code TASK-NNN`.
    max_loops: 10
    ```
 
-6. **Detect the routing path.** Two signals are inspected, in order:
+6. **Detect the routing path.** Three signals are inspected, in order:
 
    **6a — `task_type` frontmatter (highest priority)**
 
@@ -148,7 +148,7 @@ implementation agent. Once the PR is merged, re-run `/code TASK-NNN`.
 
    | `task_type` value | Routing path | Notes |
    |-------------------|--------------|-------|
-   | `contract-stub`   | **Path C — Contract+Stub** | spawns `implement-capability` in **Mode B** — a minimal .NET host materialising the full consumer-facing surface: a `BackgroundService` publishing `RVT.*` events on RabbitMQ AND an ASP.NET Core Minimal-API serving the operations declared in `process/<CAP_ID>/api.yaml` with canned fixtures. Either half may be empty when its source YAML declares nothing. See agent doc for the Mode A vs Mode B branching. |
+   | `contract-stub`   | **Path C — Contract+Stub** | spawns the matching `implement-capability*` agent in **Mode B** — a minimal host materialising the full consumer-facing surface: an event publisher emitting `RVT.*` on RabbitMQ AND an HTTP server serving the operations declared in `process/<CAP_ID>/api.yaml` with canned fixtures. Either half may be empty when its source YAML declares nothing. The language of the host (.NET vs Python) is decided in **6c** below. |
    | (absent) or `full-microservice` | Fall through to 6b | standard zone-aware routing |
 
    **6b — Zone (when `task_type` does not force Path C)**
@@ -159,18 +159,65 @@ implementation agent. Once the PR is merged, re-run `/code TASK-NNN`.
 
    | YAML `zoning` value          | Zone family       | Implementation path |
    |------------------------------|-------------------|---------------------|
-   | `BUSINESS_SERVICE_PRODUCTION`| Core domain       | **Path A** — `implement-capability` (Mode A — full microservice) |
-   | `SUPPORT`                    | Transverse IT     | Path A — `implement-capability` (Mode A) |
-   | `REFERENTIAL`                | Master data       | Path A — `implement-capability` (Mode A) |
-   | `EXCHANGE_B2B`               | Ecosystem B2B     | Path A — `implement-capability` (Mode A) |
-   | `DATA_ANALYTIQUE`            | Data / BI / AI    | Path A — `implement-capability` (Mode A) |
-   | `STEERING`                   | Pilotage          | Path A — `implement-capability` (Mode A) |
-   | `CHANNEL`                    | Omnichannel       | **Path B** — `create-bff` + `code-web-frontend` (parallel) |
+   | `BUSINESS_SERVICE_PRODUCTION`| Core domain       | **Path A** — `implement-capability*` (Mode A — full microservice; language picked in 6c) |
+   | `SUPPORT`                    | Transverse IT     | Path A — `implement-capability*` (Mode A) |
+   | `REFERENTIAL`                | Master data       | Path A — `implement-capability*` (Mode A) |
+   | `EXCHANGE_B2B`               | Ecosystem B2B     | Path A — `implement-capability*` (Mode A) |
+   | `DATA_ANALYTIQUE`            | Data / BI / AI    | Path A — `implement-capability*` (Mode A) |
+   | `STEERING`                   | Pilotage          | Path A — `implement-capability*` (Mode A) |
+   | `CHANNEL`                    | Omnichannel       | **Path B** — `create-bff` + `code-web-frontend` (parallel) — language is fixed (.NET BFF + vanilla JS frontend); skip 6c |
 
-   **Summary** — three routing paths:
-   - **Path C** (Contract+Stub) — triggered by `task_type: contract-stub`, any zone
-   - **Path A** (Full microservice) — non-CHANNEL zone, `task_type` unset / `full-microservice`
-   - **Path B** (BFF + Frontend) — CHANNEL zone, `task_type` unset / `full-microservice`
+   **6c — Language (TECH-TACT-driven, Path A & Path C only)**
+
+   For Path A and Path C, inspect the **tactical_stack** slice of the
+   `bcm-pack` output to pick the concrete implementation agent. The
+   TECH-TACT ADR (`ADR-TECH-TACT-{NNN}`) is authored per L2 capability
+   and pins the runtime; its `tags` array carries the language signal:
+
+   ```bash
+   python3 - <<'PY'
+   import json, sys
+   p = json.load(open('/tmp/pack-code.json'))
+   stack = p['slices'].get('tactical_stack', [])
+   if not stack:
+       print("LANG=UNKNOWN")
+       print("REASON=no-tech-tact-adr")
+       sys.exit(0)
+   tags = {t.lower() for t in stack[0].get('tags', [])}
+   if tags & {"python", "fastapi", "starlette"}:
+       print("LANG=python")
+   elif tags & {"dotnet", ".net", "csharp", "aspnet"}:
+       print("LANG=dotnet")
+   else:
+       print("LANG=UNKNOWN")
+       print(f"REASON=no-language-tag tags={sorted(tags)}")
+   PY
+   ```
+
+   Map the result to an agent:
+
+   | `LANG` value | Agent (`subagent_type`)       | Output root                                 |
+   |--------------|-------------------------------|---------------------------------------------|
+   | `python`     | `implement-capability-python` | `sources/{capability-name}/backend/` (Mode A) or `sources/{capability-name}/stub/` (Mode B) — Python package layout |
+   | `dotnet`     | `implement-capability`        | `sources/{capability-name}/backend/` (Mode A) or `sources/{capability-name}/stub/` (Mode B) — .NET 10 solution |
+   | `UNKNOWN`    | `implement-capability` (fallback) | as above — **and** surface the warning below to the user |
+
+   Fallback warning (only when `LANG=UNKNOWN`):
+
+   > ⚠ No TECH-TACT ADR (or no language tag) found for `{CAP_ID}`. Falling
+   > back to the .NET `implement-capability` agent. To change the runtime,
+   > author `ADR-TECH-TACT-{NNN}` in `banking-knowledge` with a `tags:`
+   > list that names the language (`python`, `dotnet`, …) and merge it
+   > upstream; `/code` will re-route on the next run.
+
+   The selected agent re-validates the tag on entry (its step 0.6) and
+   refuses to scaffold a mismatch — that is a defence-in-depth check, not
+   a substitute for getting the routing right here.
+
+   **Summary** — three routing paths × two languages:
+   - **Path C** (Contract+Stub) — triggered by `task_type: contract-stub`, any zone; language picked in 6c
+   - **Path A** (Full microservice) — non-CHANNEL zone, `task_type` unset / `full-microservice`; language picked in 6c
+   - **Path B** (BFF + Frontend) — CHANNEL zone, `task_type` unset / `full-microservice`; language fixed (.NET BFF + vanilla JS)
 
 ---
 
@@ -262,9 +309,11 @@ Wait for the user's confirmation before proceeding.
 
 ### Path C — Contract+Stub (`task_type: contract-stub`, any zone)
 
-Spawn the `implement-capability` agent in **Mode B** via the `Agent` tool.
-The agent itself reads the `task_type` from the TASK file and switches to
-Mode B accordingly — your job here is just to feed it the right context.
+Spawn the language-matching agent (from step 6c —
+`implement-capability` for `.NET`, `implement-capability-python` for
+Python) in **Mode B** via the `Agent` tool. The agent itself reads the
+`task_type` from the TASK file and switches to Mode B accordingly —
+your job here is just to feed it the right context.
 
 The context to pass includes:
 
@@ -288,16 +337,18 @@ The context to pass includes:
 Use:
 ```
 Agent({
-  subagent_type: "implement-capability",
+  subagent_type: "<implement-capability | implement-capability-python>",   // from step 6c
   description: "Contract+stub for [capability name]",
   prompt: <full context block including the task_type signal,
+           the LANG resolved in step 6c (so the agent's own check
+           matches), the TECH-TACT ADR id and tags,
            BCM YAML excerpts for the events to contract,
            ADR-TECH-STRAT-001 rules, DoD>
 })
 ```
 
 Say:
-> "Spawning implement-capability agent in Mode B (contract+stub) for [capability name] with task TASK-[NNN]..."
+> "Spawning [implement-capability | implement-capability-python] agent in Mode B (contract+stub) for [capability name] with task TASK-[NNN]..."
 
 The agent produces:
 - A single minimal .NET host under `sources/{capability-name}/stub/`,
@@ -326,34 +377,48 @@ to resolve.
 > Use this path **only** when `task_type` is absent or `full-microservice`.
 > If `task_type: contract-stub`, use **Path C** above instead, regardless of zone.
 
-Spawn the `implement-capability` agent via the `Agent` tool with the full task context
-assembled as input. The context to pass includes:
+Spawn the language-matching agent (from step 6c) via the `Agent` tool
+with the full task context assembled as input. The context to pass
+includes:
 
 - The capability ID, name, zone, and level
+- The **TECH-TACT ADR id** and its `tags` (so the agent can confirm
+  the routing on entry)
+- The `LANG` value resolved in step 6c (`python` or `dotnet`)
 - The governing FUNC ADR(s)
 - The business events to implement (names and trigger conditions)
 - The business objects involved
 - The event subscriptions required
 - The Definition of Done
 
-Use:
+Use (with `subagent_type` set from step 6c):
 ```
 Agent({
-  subagent_type: "implement-capability",
-  description: "Scaffold [capability name]",
+  subagent_type: "<implement-capability | implement-capability-python>",
+  description: "Scaffold [capability name] ([LANG])",
   prompt: <full context block as described above>
 })
 ```
 
 Say:
-> "Spawning implement-capability agent for [capability name] with task TASK-[NNN]..."
+> "Spawning [implement-capability | implement-capability-python] agent for [capability name] (LANG=[python|dotnet]) with task TASK-[NNN]..."
 
-The implement-capability agent handles all architectural and implementation decisions —
-Clean Architecture, DDD, microservice scaffolding, .NET patterns — and exercises judgment
-on aggregates, ports, and bus topology from the FUNC/tactical ADRs. Your job is to feed it
-the right business context from the task file. The agent may push back if the context is
-incoherent (missing FUNC ADR, cross-zone task, stack mismatch); surface that to the user
-as the gap to resolve.
+Both agents share the same decision framework — hexagonal /
+Clean-Architecture layering, DDD aggregates, explicit assumption block,
+read-only `process/` contract, Mode A / Mode B split — and differ only
+in the emitted artefacts:
+
+| Agent                          | Stack defaults                                          | Output language       |
+|--------------------------------|---------------------------------------------------------|-----------------------|
+| `implement-capability`         | .NET 10, ASP.NET Core, MongoDB, RabbitMQ (MassTransit)  | C#                    |
+| `implement-capability-python`  | Python 3.12+, FastAPI, motor (MongoDB) or psycopg/asyncpg (PostgreSQL when ADR tags `postgresql`), aio-pika | Python                |
+
+The chosen agent exercises judgment on aggregates, ports, bus topology,
+and library pinning from the FUNC + TECH-TACT ADRs. Your job here is to
+feed it the right business context from the task file. The agent may
+push back if the context is incoherent (missing FUNC ADR, cross-zone
+task, stack mismatch — including a Python agent invoked on a `.NET`-tagged
+capability or vice-versa); surface that to the user as the gap to resolve.
 
 ---
 
@@ -424,9 +489,12 @@ that to the user as the gap to resolve.
 > that scaffold. Re-introduce when the contract-stub matures into a full
 > microservice (which will route back through Path A and trigger Step 2.5).
 
-After `implement-capability` succeeds for a non-CHANNEL task, invoke the
-`/harness-backend` skill to add the contract harness to the freshly-scaffolded
-microservice. The harness produces, under
+After the language-matching agent (`implement-capability` or
+`implement-capability-python`) succeeds for a non-CHANNEL task, invoke
+the `/harness-backend` skill to add the contract harness to the
+freshly-scaffolded microservice. The harness derives its specs from
+`process/{capability-id}/` and `bcm-pack` — it is language-agnostic
+and works on both .NET and Python services. The harness produces, under
 `sources/{capability-name}/backend/contracts/specs/`:
 
 - `openapi.yaml` (OpenAPI 3.1) — derived strictly from
@@ -744,13 +812,19 @@ After all tests pass (or after the remediation loop concludes):
 ## Important Boundaries
 
 - **This skill does not write application code directly** — it delegates to the
-  `implement-capability`, `create-bff`, and `code-web-frontend` agents.
+  `implement-capability`, `implement-capability-python`, `create-bff`,
+  and `code-web-frontend` agents.
 - **This skill does not re-open design decisions** — the task file is the source of truth.
   If something in the task is wrong, the fix is to update the task file (via the task skill)
   before running code.
 - **One task at a time** — do not batch multiple tasks in one invocation. Each TASK-NNN
   is an independent unit of work.
-- **Zone detection is mandatory** — never spawn the `implement-capability` agent for a CHANNEL task,
-  and never spawn the `create-bff` or `code-web-frontend` agents for a non-CHANNEL task.
+- **Zone detection is mandatory** — never spawn `implement-capability*`
+  for a CHANNEL task, and never spawn `create-bff` or `code-web-frontend`
+  for a non-CHANNEL task.
+- **Language detection is mandatory for Path A & Path C** — the
+  `implement-capability*` agent variant is selected from the TECH-TACT
+  ADR `tags` (step 6c). Never pick the agent from the capability id
+  prefix or the zone alone.
 - **Tests are not optional** — the matching test agent (test-business-capability for non-CHANNEL, test-app for CHANNEL) always runs after implementation.
   The only exception is when Playwright cannot be installed (fallback to manual checklist).

@@ -9,9 +9,14 @@ description: >
   the DDD tactical Process Modelling layer (`process/{capability-id}/`:
   aggregates, commands, policies, read-models, bus topology, JSON Schemas),
   which every downstream stage reads as a read-only contract. The code stage is
-  zone-aware: non-CHANNEL capabilities go to the implement-capability agent
-  (.NET microservice), CHANNEL capabilities go to create-bff + code-web-frontend
-  in parallel. The matching test agent then validates the result against the
+  zone-aware AND language-aware: non-CHANNEL capabilities go to a
+  language-matching implement-capability* agent — `implement-capability`
+  (.NET 10 microservice) when the TECH-TACT ADR tags `dotnet` /
+  `csharp` / `aspnet` (the default fallback), or `implement-capability-python`
+  (FastAPI + motor / psycopg + aio-pika) when the TECH-TACT ADR tags
+  `python` / `fastapi`. CHANNEL capabilities go to create-bff +
+  code-web-frontend in parallel (language fixed: .NET BFF + vanilla JS
+  frontend). The matching test agent then validates the result against the
   Definition of Done — test-business-capability (entry point:
   /test-business-capability) for non-CHANNEL backend microservices, test-app
   (entry point: /test-app) for CHANNEL frontend + BFF — with an automatic
@@ -341,18 +346,25 @@ When `/launch-task` (or the user via `/code TASK-NNN`) launches a task, the code
 1. **Verifies prerequisites** — status is `todo`/`in_progress`, all `depends_on` are `done`,
    no open questions, status not `stalled`.
 2. **Reads loop counters** — initializes `loop_count: 0`, `max_loops: 10` if absent.
-3. **Detects the capability zone** from the `bcm-pack` slice (`capability_self.zoning`)
-   for the target capability. The zone determines the implementation path:
+3. **Detects the capability zone AND the implementation language.**
+   Zone is read from the `bcm-pack` slice (`capability_self.zoning`).
+   Language is read from `tactical_stack[0].tags` (the TECH-TACT ADR):
+   `python` / `fastapi` route to `implement-capability-python`,
+   `dotnet` / `csharp` / `aspnet` route to `implement-capability`, and
+   a missing / silent tactical_stack falls back to `implement-capability`
+   with a warning. Together they determine the implementation path:
 
-   | `zoning`                     | Path | Skill(s) invoked                              |
-   |------------------------------|------|-----------------------------------------------|
-   | `BUSINESS_SERVICE_PRODUCTION`| A    | `implement-capability`                        |
-   | `SUPPORT`                    | A    | `implement-capability`                        |
-   | `REFERENTIAL`                | A    | `implement-capability`                        |
-   | `EXCHANGE_B2B`               | A    | `implement-capability`                        |
-   | `DATA_ANALYTIQUE`            | A    | `implement-capability`                        |
-   | `STEERING`                   | A    | `implement-capability`                        |
-   | `CHANNEL`                    | B    | `create-bff` + `code-web-frontend` (parallel) |
+   | `zoning`                     | Path | TECH-TACT `tags`            | Agent invoked                                 |
+   |------------------------------|------|-----------------------------|-----------------------------------------------|
+   | `BUSINESS_SERVICE_PRODUCTION`| A    | `python` / `fastapi`        | `implement-capability-python`                 |
+   | `BUSINESS_SERVICE_PRODUCTION`| A    | `dotnet` / `csharp` / (none)| `implement-capability` (default)              |
+   | `SUPPORT`                    | A    | `python` / `fastapi`        | `implement-capability-python`                 |
+   | `SUPPORT`                    | A    | `dotnet` / `csharp` / (none)| `implement-capability` (default)              |
+   | `REFERENTIAL`                | A    | (same language matrix as above)                                              |||
+   | `EXCHANGE_B2B`               | A    | (same language matrix as above)                                              |||
+   | `DATA_ANALYTIQUE`            | A    | (same language matrix as above)                                              |||
+   | `STEERING`                   | A    | (same language matrix as above)                                              |||
+   | `CHANNEL`                    | B    | n/a — language fixed         | `create-bff` + `code-web-frontend` (parallel) |
 
 4. **Creates an isolation branch** `feat/TASK-NNN-{slug}` from `main` (or works in the
    pre-existing worktree under `/tmp/kanban-worktrees/`).
@@ -360,8 +372,14 @@ When `/launch-task` (or the user via `/code TASK-NNN`) launches a task, the code
    autonomous `/launch-task auto` mode).
 6. **Invokes the implementation skill(s)**:
 
-   - **Path A (non-CHANNEL)** — the `implement-capability` agent scaffolds a complete .NET 10 microservice
-     under `sources/{capability-name}/backend/`:
+   - **Path A (non-CHANNEL)** — the language-matching `implement-capability*` agent
+     scaffolds a complete microservice under `sources/{capability-name}/backend/`.
+     `implement-capability` emits a .NET 10 solution (Domain / Application /
+     Infrastructure / Presentation / Contracts projects, MongoDB, MassTransit on
+     RabbitMQ). `implement-capability-python` emits an equivalent Python 3.12+
+     hexagonal package (FastAPI + uvicorn, motor or psycopg, aio-pika, pydantic
+     v2, structlog, OpenTelemetry Day 0). Both share the same decision framework
+     and port-allocation conventions:
      - Allocates `LOCAL_PORT` from `shuf -i 10000-59999`; derives `MONGO_PORT = LOCAL_PORT+100`,
        `RABBIT_PORT = +200`, `RABBIT_MGMT_PORT = +201`.
      - Generates Domain / Application / Infrastructure / Presentation / Contracts projects
