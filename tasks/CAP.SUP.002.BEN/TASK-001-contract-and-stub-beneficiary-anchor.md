@@ -3,7 +3,7 @@ task_id: TASK-001
 capability_id: CAP.SUP.002.BEN
 capability_name: Beneficiary Identity Anchor
 epic: Epic 1 — Contract and Development Stub
-status: in_review
+status: done
 priority: high
 depends_on: []
 task_type: contract-stub
