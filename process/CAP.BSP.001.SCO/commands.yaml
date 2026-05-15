@@ -1,10 +1,12 @@
 meta:
   capability: CAP.BSP.001.SCO
   layer: process-modelling
-  version: 0.1.0
+  version: 0.2.0
   governing_adrs:
     - ADR-BCM-FUNC-0005
     - ADR-BCM-URBA-0009
+    - ADR-TECH-STRAT-007  # identifier strategy — UUIDv7 idempotency anchors
+    - ADR-TECH-TACT-003   # tactical stack — Python / FastAPI; api_binding feeds FastAPI routes
 
 # ──────────────────────────────────────────────────────────────
 # Commands — verbs this capability accepts. Each CMD is the
@@ -30,7 +32,11 @@ commands:
       - id: PRE.001
         rule: No prior evaluation exists for this case_id (entry score is a one-shot).
       - id: PRE.002
-        rule: case_id resolves to an active beneficiary record in CAP.REF.001.BEN.
+        rule: >-
+          case_id resolves to an active beneficiary anchor in CAP.SUP.002.BEN
+          (formerly CAP.REF.001.BEN — relocated 2026-05-15 per ADR-BCM-FUNC-0016).
+          The lookup is delegated; this capability does not embed beneficiary
+          PII.
     invariants_enforced:
       - INV.SCO.001  # see aggregates.yaml
     emits:
@@ -41,7 +47,7 @@ commands:
       - code: ENTRY_SCORE_ALREADY_EXISTS
         when: An evaluation already exists for case_id.
       - code: BENEFICIARY_UNKNOWN
-        when: case_id does not resolve in CAP.REF.001.BEN.
+        when: case_id does not resolve to an active anchor in CAP.SUP.002.BEN.
     idempotency:
       key: case_id
       window: lifetime

@@ -1,11 +1,13 @@
 meta:
   capability: CAP.BSP.001.SCO
   layer: process-modelling
-  version: 0.1.0
+  version: 0.2.0
   governing_adrs:
     - ADR-BCM-FUNC-0005
     - ADR-BCM-URBA-0009
     - ADR-TECH-STRAT-001  # Rule 3 — payload form is a domain event DDD (atomic transition)
+    - ADR-TECH-STRAT-007  # identifier strategy — case_id is a UUIDv7 minted upstream (likely CAP.BSP.002.ENR); never recycled
+    - ADR-TECH-TACT-003   # tactical stack — Python / FastAPI / PostgreSQL / RabbitMQ (operational rail) / Kafka (analytical rail)
 
 # ──────────────────────────────────────────────────────────────
 # Aggregates — the consistency boundaries of this capability.
@@ -30,6 +32,13 @@ aggregates:
     state:
       - field: case_id
         kind: identity
+        description: >-
+          UUIDv7 minted upstream by the participation-case capability (likely
+          CAP.BSP.002.ENR). Per ADR-TECH-STRAT-007 Rule 1 (federated minting)
+          and Rule 7.b (no-recycle-forever) it is opaque from this capability's
+          perspective and is never re-issued. Resolution to the canonical
+          beneficiary identity (UUIDv7 internal_id of OBJ.SUP.002.BENEFICIARY_RECORD)
+          is delegated to consumers via CAP.SUP.002.BEN — see bus.yaml.identity_resolution.
       - field: entry_score
         kind: snapshot
         nullable_until_initialised: true

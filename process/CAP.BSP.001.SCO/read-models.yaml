@@ -1,7 +1,12 @@
 meta:
   capability: CAP.BSP.001.SCO
   layer: process-modelling
-  version: 0.1.0
+  version: 0.2.0
+  governing_adrs:
+    - ADR-BCM-FUNC-0005
+    - ADR-TECH-STRAT-004  # dual-referential-access — REST QRY is the synchronous access path
+    - ADR-TECH-STRAT-008  # publication model — REST QRY completes the producer-sovereignty contract
+    - ADR-TECH-TACT-003   # tactical stack — projections live in PostgreSQL alongside the aggregate write store
 
 # ──────────────────────────────────────────────────────────────
 # Read models — projections built from this capability's domain

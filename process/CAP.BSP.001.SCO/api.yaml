@@ -1,12 +1,16 @@
 meta:
   capability: CAP.BSP.001.SCO
   layer: process-modelling
-  version: 0.1.0
+  version: 0.2.0
   derivation: >-
     This file is the synthesised HTTP/RPC surface of CAP.BSP.001.SCO. It is
     DERIVED from commands.yaml + read-models.yaml — the api_binding fields
     declared there. Keep in sync; the BFF/microservice scaffolding agents
     consume this view, not the raw command/query files.
+  governing_adrs:
+    - ADR-TECH-STRAT-003  # API contract strategy — REST/HTTP, JWT-borne actor
+    - ADR-TECH-STRAT-008  # publication model — REST is one of the two access paths
+    - ADR-TECH-TACT-003   # tactical stack — Python / FastAPI; operations map to FastAPI routes
 
 api:
   base_path: /capabilities/bsp/001/sco
