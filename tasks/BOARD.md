@@ -15,7 +15,8 @@ _No tasks in progress_
 
 | Task | Capability | Title | PR |
 |------|-----------|-------|----|
-| TASK-002 `contract-stub` | CAP.BSP.001.SCO | Replace .NET stub with Python publisher for all 3 RVTs | [#10](https://github.com/Banking-Reliever/banking/pull/10) |
+
+_No PR awaiting merge_
 
 ---
 
@@ -73,6 +74,7 @@ _No stalled tasks_
 | Task | Capability | Title |
 |------|-----------|-------|
 | TASK-001 | CAP.BSP.001.SCO | Contract and development stub for `EVT.BSP.001.SCORE_RECALCULE` ([PR #2](https://github.com/Banking-Reliever/banking/pull/2)) |
+| TASK-002 `contract-stub` | CAP.BSP.001.SCO | Python rewrite — stub publisher for all 3 RVTs ([PR #10](https://github.com/Banking-Reliever/banking/pull/10)) |
 | TASK-001 | CAP.BSP.001.TIE | Contract and development stub for `EVT.BSP.001.TIER_UPGRADED` ([PR #1](https://github.com/Banking-Reliever/banking/pull/1)) |
 | TASK-001 | CAP.BSP.004.ENV | Contract and development stub for `EVT.BSP.004.ENVELOPE_CONSUMED` ([PR #6](https://github.com/Banking-Reliever/banking/pull/6)) |
 | TASK-001 `contract-stub` | CAP.SUP.002.BEN | Contract and development stub for `RVT.SUP.002.BENEFICIARY_ANCHOR_UPDATED` ([PR #9](https://github.com/Banking-Reliever/banking/pull/9)) |
@@ -84,22 +86,26 @@ _No stalled tasks_
 ```
 CAP.BSP.001.SCO:
   TASK-001 (done) ──┐
-  TASK-002 (🟡 in_review — PR #10)
+  TASK-002 (done — PR #10 merged) ─┤ Epic 1 closed
   TASK-003 (needs_info: AUT/SIG/tier-cache) ──── Epic 2 (Flow B — algorithmic core)
   TASK-004 (needs_info: ENR HARD BLOCKER)    ──── Epic 3 (Flow A — entry baseline)
   TASK-005 (blocked on TASK-003)             ──── Epic 4 (queries + projections)
   TASK-006 (needs_info: NFRs)                ──── Epic 5 (hardening + contract harness)
 
 CAP.SUP.002.BEN:
-  TASK-001 (done) → TASK-002 (needs_info: external_id removal check) → TASK-003/004 → TASK-005 → TASK-006
+  TASK-001 (done) → TASK-002 (needs_info: external_id removal) → TASK-003/004 → TASK-005 → TASK-006
 
 CAP.CHN.001.DSH:
   TASK-002 (needs_info: BEN identity resolution) → TASK-003 (blocked) → TASK-004/5/6 (needs_info)
 ```
 
-**Awaiting merge:** PR #10 (TASK-002 `contract-stub` extension). Once merged, Epic 1 of CAP.BSP.001.SCO is fully closed.
+**Epic 1 (`CAP.BSP.001.SCO` contract stubs) is fully closed** — TASK-001 + TASK-002 done. Downstream consumers (ARB, TIE, DSH, VUE) can now develop against the full bus contract.
 
-**Next to refine (queue unlock after merge):**
+**Next to refine (queue unlock):**
 - `CAP.SUP.002.BEN/TASK-002` (OQ.BEN.002) — unlocks the entire SUP chain (4 tasks)
 - `CAP.CHN.001.DSH/TASK-002` (CAP.REF.001.BEN readiness) — unlocks the CHN chain
 - `CAP.BSP.001.SCO/TASK-003` (AUT/SIG/tier-cache) — unlocks TASK-005 (queries)
+- `CAP.BSP.001.SCO/TASK-004` (ENR hard blocker) — unblocks Flow A entry-score baseline
+- `CAP.BSP.001.SCO/TASK-006` (NFRs) — Epic 5 hardening + contract harness
+
+No `ready` task is unblocked by this merge — nothing in the dependency graph names `CAP.BSP.001.SCO/TASK-002` as a predecessor (the stub extension was strictly additive on the producer side).

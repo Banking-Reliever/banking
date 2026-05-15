@@ -3,7 +3,7 @@ task_id: TASK-002
 capability_id: CAP.BSP.001.SCO
 capability_name: Behavioural Score
 epic: Epic 1 — Contract and Development Stub (extension)
-status: in_review
+status: done
 priority: high
 depends_on: []
 task_type: contract-stub
@@ -14,6 +14,7 @@ pr_url: https://github.com/Banking-Reliever/banking/pull/10
 
 > **Started on:** 2026-05-15
 > **Submitted for review on:** 2026-05-15
+> **Merged on:** 2026-05-15 (PR #10)
 
 # TASK-002 — Extend the development stub to the two remaining RVTs
 
