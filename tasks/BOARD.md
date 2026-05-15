@@ -15,7 +15,7 @@ _No tasks in progress_
 
 | Task | Capability | Title | PR |
 |------|-----------|-------|----|
-| TASK-001 | CAP.SUP.002.BEN | Contract and development stub for `RVT.SUP.002.BENEFICIARY_ANCHOR_UPDATED` | (PR pending push) |
+| TASK-001 | CAP.SUP.002.BEN | Contract and development stub for `RVT.SUP.002.BENEFICIARY_ANCHOR_UPDATED` | [#9](https://github.com/Banking-Reliever/banking/pull/9) |
 
 ---
 
