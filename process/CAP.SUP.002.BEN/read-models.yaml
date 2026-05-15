@@ -1,0 +1,149 @@
+meta:
+  capability: CAP.SUP.002.BEN
+  layer: process-modelling
+  version: 0.1.0
+  governing_adrs:
+    - ADR-BCM-FUNC-0016
+    - ADR-TECH-STRAT-004  # dual referential access — the QRY API is the synchronous access path
+    - ADR-TECH-STRAT-007  # internal_id (UUIDv7) is the sole lookup key
+    - ADR-TECH-STRAT-008  # publication model — REST is one of the two access paths
+
+# ──────────────────────────────────────────────────────────────
+# Read-models — projections of the aggregate's emitted events.
+# Each projection backs one or more queries (QRY.*). Projections
+# are ALWAYS eventually-consistent (per ADR-TECH-STRAT-004) — a
+# QRY served immediately after a CMD may not yet observe the
+# transition, and the contract makes that explicit.
+#
+# Two projections for v1:
+#   PRJ.SUP.002.BEN.ANCHOR_DIRECTORY — the canonical lookup
+#     keyed on internal_id; one row per anchor (last-write-wins).
+#   PRJ.SUP.002.BEN.ANCHOR_HISTORY   — the audit trail of every
+#     transition (one row per RVT received); does NOT carry PII
+#     fields, so it survives PSEUDONYMISE intact and serves the
+#     audit + GDPR-compliance use cases.
+#
+# The prior CAP.REF.001.BEN model also exposed a secondary
+# lookup-by-external_id query. external_id is gone from the new
+# model (per ADR-BCM-FUNC-0016), so that QRY does not exist here
+# — see Open Question #2 in aggregates.yaml.
+# ──────────────────────────────────────────────────────────────
+
+read_models:
+
+  - id: PRJ.SUP.002.BEN.ANCHOR_DIRECTORY
+    name: Canonical anchor directory
+    backs_resource: RES.SUP.002.BENEFICIARY_IDENTITY
+    fed_by:
+      - RVT.SUP.002.BENEFICIARY_ANCHOR_UPDATED
+    update_strategy: >-
+      Last-write-wins on (internal_id, revision). Drops events whose
+      revision is ≤ the locally-observed revision (out-of-order delivery
+      protection). For PSEUDONYMISED events, overwrites the four PII
+      columns with NULL — the projection should not retain pre-pseudonymisation
+      PII.
+    fields:
+      - { name: internal_id,       kind: identity,  description: "UUIDv7, primary key" }
+      - { name: last_name,         kind: snapshot,  nullable: true, description: "NULL when anchor is PSEUDONYMISED" }
+      - { name: first_name,        kind: snapshot,  nullable: true }
+      - { name: date_of_birth,     kind: snapshot,  nullable: true }
+      - { name: contact_details,   kind: snapshot,  nullable: true }
+      - { name: anchor_status,     kind: snapshot,  description: "ACTIVE | ARCHIVED | PSEUDONYMISED" }
+      - { name: creation_date,     kind: snapshot }
+      - { name: pseudonymized_at,  kind: snapshot,  nullable: true }
+      - { name: revision,          kind: snapshot,  description: "Last applied revision; used for out-of-order detection" }
+      - { name: updated_at,        kind: snapshot,  description: "Wall-clock timestamp of the last applied event" }
+    consistency: eventual
+    retention: indefinite
+
+  - id: PRJ.SUP.002.BEN.ANCHOR_HISTORY
+    name: Anchor transition history (audit trail)
+    fed_by:
+      - RVT.SUP.002.BENEFICIARY_ANCHOR_UPDATED
+    update_strategy: >-
+      Append-only — one row per received RVT, keyed by (internal_id,
+      revision). Does NOT carry PII fields (only the transition_kind, the
+      command_id, the actor, and the wall-clock timestamp), so the audit
+      trail survives a PSEUDONYMISE transition without re-creating an
+      Article-17 violation.
+    fields:
+      - { name: internal_id,       kind: identity }
+      - { name: revision,          kind: snapshot,  description: "Composite primary key with internal_id" }
+      - { name: transition_kind,   kind: snapshot,  description: "MINTED | UPDATED | ARCHIVED | RESTORED | PSEUDONYMISED" }
+      - { name: command_id,        kind: snapshot,  nullable: true, description: "Caller-supplied command_id; null only for system-emitted events" }
+      - { name: right_exercise_id, kind: snapshot,  nullable: true, description: "Set only for PSEUDONYMISED transitions" }
+      - { name: actor,             kind: snapshot,  description: "Authenticated principal that issued the command (subject claim from the JWT, per ADR-TECH-STRAT-003)" }
+      - { name: occurred_at,       kind: snapshot }
+    consistency: eventual
+    retention: 7y
+    retention_rationale: >-
+      Aligns with the GDPR + AML retention floor for audit trails of
+      personal-data operations. The projection is PII-free by construction
+      (it carries the internal_id but no name / dob / contact), so it does
+      NOT need to be wiped on PSEUDONYMISATION.
+
+# ──────────────────────────────────────────────────────────────
+# Queries — the synchronous (QRY) access path of
+# ADR-TECH-STRAT-004's dual-referential-access rule. Each QRY
+# is served by exactly one PRJ.
+# ──────────────────────────────────────────────────────────────
+
+queries:
+
+  - id: QRY.SUP.002.BEN.GET_ANCHOR
+    name: Get an anchor by internal_id
+    served_by: PRJ.SUP.002.BEN.ANCHOR_DIRECTORY
+    request:
+      path_params:
+        - { name: internal_id, type: string, format: uuidv7, required: true }
+    response:
+      shape: BeneficiaryAnchor
+      fields_from_projection: ["internal_id", "last_name", "first_name", "date_of_birth", "contact_details", "anchor_status", "creation_date", "pseudonymized_at", "revision"]
+      pseudonymised_behaviour: >-
+        When anchor_status is PSEUDONYMISED, the four PII fields are returned
+        as null. The internal_id is still resolvable so historical references
+        do not break.
+    consumers:
+      - CAP.BSP.001.SCO    # behavioural scoring — needs canonical identity
+      - CAP.BSP.002.ENR    # enrolment — opens cases keyed on internal_id
+      - CAP.BSP.004.ENV    # budget envelopes — anchors identity
+      - CAP.CHN.001.DSH    # beneficiary dashboard — renders identity
+      - CAP.CHN.002.VIE    # prescriber view — names of supervised beneficiaries
+      - CAP.B2B.001.FLW    # card funding — KYC handover
+      - CAP.SUP.001.AUD    # audit — name resolution at audit-render time
+      - CAP.SUP.001.RET    # rights — links a right to a known anchor
+    api_binding: { method: GET, path: /anchors/{internal_id} }
+    cache:
+      etag: true
+      max_age_seconds: 60
+      rationale: >-
+        Anchors mutate infrequently (a few transitions per year per
+        beneficiary). A 60s freshness window plus ETag/304 keeps consumer
+        load low without lying about pseudonymisation — a PSEUDONYMISE
+        flips the ETag immediately.
+
+  - id: QRY.SUP.002.BEN.GET_ANCHOR_HISTORY
+    name: Get the transition history of an anchor
+    served_by: PRJ.SUP.002.BEN.ANCHOR_HISTORY
+    request:
+      path_params:
+        - { name: internal_id, type: string, format: uuidv7, required: true }
+      query_params:
+        - { name: since_revision, type: integer, required: false, description: "Filter to transitions with revision > since_revision" }
+    response:
+      shape: AnchorHistory
+      fields_from_projection: ["internal_id", "revision", "transition_kind", "command_id", "right_exercise_id", "actor", "occurred_at"]
+      pseudonymised_behaviour: >-
+        History rows are PII-free by construction. The transition_kind alone
+        signals that a PSEUDONYMISED event occurred — useful for compliance
+        reporting.
+    consumers:
+      - CAP.SUP.001.AUD    # audit — primary consumer
+      - CAP.SUP.001.RET    # rights — proof that a right was honoured
+    api_binding: { method: GET, path: /anchors/{internal_id}/history }
+    cache:
+      etag: true
+      max_age_seconds: 0
+      rationale: >-
+        Audit consumers need read-after-write semantics; ETag is provided
+        for bandwidth, max_age=0 means re-validation on every request.
