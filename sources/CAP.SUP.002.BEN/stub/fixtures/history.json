@@ -1,0 +1,91 @@
+{
+  "histories": {
+    "018f8e10-0000-7000-8000-000000000001": {
+      "internal_id": "018f8e10-0000-7000-8000-000000000001",
+      "rows": [
+        {
+          "revision": 1,
+          "transition_kind": "MINTED",
+          "command_id": "018f8e10-0000-7000-8000-000000000101",
+          "right_exercise_id": null,
+          "actor": "system@enr",
+          "occurred_at": "2026-01-15T08:00:00Z"
+        }
+      ]
+    },
+    "018f8e10-0000-7000-8000-000000000002": {
+      "internal_id": "018f8e10-0000-7000-8000-000000000002",
+      "rows": [
+        {
+          "revision": 1,
+          "transition_kind": "MINTED",
+          "command_id": "018f8e10-0000-7000-8000-000000000201",
+          "right_exercise_id": null,
+          "actor": "system@enr",
+          "occurred_at": "2025-08-22T10:11:12Z"
+        },
+        {
+          "revision": 2,
+          "transition_kind": "UPDATED",
+          "command_id": "018f8e10-0000-7000-8000-000000000202",
+          "right_exercise_id": null,
+          "actor": "agent@cscentre",
+          "occurred_at": "2025-12-01T14:30:00Z"
+        },
+        {
+          "revision": 3,
+          "transition_kind": "ARCHIVED",
+          "command_id": "018f8e10-0000-7000-8000-000000000203",
+          "right_exercise_id": null,
+          "actor": "agent@cscentre",
+          "occurred_at": "2026-02-18T09:00:00Z"
+        }
+      ]
+    },
+    "018f8e10-0000-7000-8000-000000000003": {
+      "internal_id": "018f8e10-0000-7000-8000-000000000003",
+      "rows": [
+        {
+          "revision": 1,
+          "transition_kind": "MINTED",
+          "command_id": "018f8e10-0000-7000-8000-000000000301",
+          "right_exercise_id": null,
+          "actor": "system@enr",
+          "occurred_at": "2024-04-10T07:45:00Z"
+        },
+        {
+          "revision": 2,
+          "transition_kind": "UPDATED",
+          "command_id": "018f8e10-0000-7000-8000-000000000302",
+          "right_exercise_id": null,
+          "actor": "agent@cscentre",
+          "occurred_at": "2024-09-12T11:20:00Z"
+        },
+        {
+          "revision": 3,
+          "transition_kind": "ARCHIVED",
+          "command_id": "018f8e10-0000-7000-8000-000000000303",
+          "right_exercise_id": null,
+          "actor": "agent@cscentre",
+          "occurred_at": "2025-06-30T16:00:00Z"
+        },
+        {
+          "revision": 4,
+          "transition_kind": "RESTORED",
+          "command_id": "018f8e10-0000-7000-8000-000000000304",
+          "right_exercise_id": null,
+          "actor": "agent@cscentre",
+          "occurred_at": "2025-11-04T09:15:00Z"
+        },
+        {
+          "revision": 5,
+          "transition_kind": "PSEUDONYMISED",
+          "command_id": "018f8e10-0000-7000-8000-000000000305",
+          "right_exercise_id": "018f8e10-0000-7000-8000-000000000395",
+          "actor": "system@ret",
+          "occurred_at": "2026-03-08T09:14:23Z"
+        }
+      ]
+    }
+  }
+}
