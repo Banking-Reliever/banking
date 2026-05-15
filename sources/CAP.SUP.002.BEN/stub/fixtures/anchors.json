@@ -1,0 +1,57 @@
+{
+  "anchors": [
+    {
+      "internal_id": "018f8e10-0000-7000-8000-000000000001",
+      "last_name": "Doe",
+      "first_name": "Alex",
+      "date_of_birth": "1985-06-15",
+      "contact_details": {
+        "email": "alex.doe+stub@example.invalid",
+        "phone": "+33100000001",
+        "postal_address": {
+          "line1": "1 stub street",
+          "line2": "apt 1",
+          "postal_code": "75001",
+          "city": "Paris",
+          "country": "FR"
+        }
+      },
+      "anchor_status": "ACTIVE",
+      "creation_date": "2026-01-15",
+      "pseudonymized_at": null,
+      "revision": 1
+    },
+    {
+      "internal_id": "018f8e10-0000-7000-8000-000000000002",
+      "last_name": "Smith",
+      "first_name": "Jordan",
+      "date_of_birth": "1972-11-03",
+      "contact_details": {
+        "email": "jordan.smith+stub@example.invalid",
+        "phone": "+33100000002",
+        "postal_address": {
+          "line1": "2 stub avenue",
+          "line2": "",
+          "postal_code": "69002",
+          "city": "Lyon",
+          "country": "FR"
+        }
+      },
+      "anchor_status": "ARCHIVED",
+      "creation_date": "2025-08-22",
+      "pseudonymized_at": null,
+      "revision": 3
+    },
+    {
+      "internal_id": "018f8e10-0000-7000-8000-000000000003",
+      "last_name": null,
+      "first_name": null,
+      "date_of_birth": null,
+      "contact_details": null,
+      "anchor_status": "PSEUDONYMISED",
+      "creation_date": "2024-04-10",
+      "pseudonymized_at": "2026-03-08T09:14:23Z",
+      "revision": 5
+    }
+  ]
+}

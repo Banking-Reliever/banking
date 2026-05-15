@@ -3,13 +3,15 @@ task_id: TASK-001
 capability_id: CAP.SUP.002.BEN
 capability_name: Beneficiary Identity Anchor
 epic: Epic 1 — Contract and Development Stub
-status: todo
+status: in_review
 priority: high
 depends_on: []
 task_type: contract-stub
 loop_count: 0
 max_loops: 10
 ---
+
+> **Started on:** 2026-05-15
 
 # TASK-001 — Contract and development stub for `RVT.SUP.002.BENEFICIARY_ANCHOR_UPDATED`
 

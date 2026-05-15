@@ -15,8 +15,7 @@ _No tasks in progress_
 
 | Task | Capability | Title | PR |
 |------|-----------|-------|----|
-
-_No PR awaiting merge_
+| TASK-001 | CAP.SUP.002.BEN | Contract and development stub for `RVT.SUP.002.BENEFICIARY_ANCHOR_UPDATED` | (PR pending push) |
 
 ---
 
@@ -24,7 +23,8 @@ _No PR awaiting merge_
 
 | # | Task | Capability | Title | Priority | Score | Unblocks |
 |---|------|-----------|-------|----------|-------|---------|
-| 1 | TASK-001 `contract-stub` | CAP.SUP.002.BEN | Contract and development stub for `RVT.SUP.002.BENEFICIARY_ANCHOR_UPDATED` | high | 3 | — (parallel safety-net) |
+
+_No ready tasks_
 
 ---
 
@@ -34,16 +34,19 @@ _No PR awaiting merge_
 > They cannot be launched until these questions are clarified.
 
 | Task | Capability | Title | Open Questions |
-|------|-----------|-------|----------------|
-| TASK-002 | CAP.CHN.001.DSH | Subscription point and consumption layer for CAP.CHN.001.DSH | 1 pending question |
-| TASK-004 | CAP.CHN.001.DSH | BSP.004.AUT stub and transaction history web view | 2 pending questions |
-| TASK-005 | CAP.CHN.001.DSH | Mobile view — nomadic dashboard consultation | 2 pending questions |
-| TASK-006 | CAP.CHN.001.DSH | Consumer-side validation against the real CORE event stream | 2 pending questions |
-| TASK-002 `full-microservice` | CAP.SUP.002.BEN | Foundation: mint anchor (UUIDv7) and serve synchronous lookup | 1 pending question (OQ.BEN.002 — `external_id` removal cross-consumer check) |
+|------|-----------|-------|--------------------|
+| TASK-002 | CAP.CHN.001.DSH | Subscription point and consumption layer for CAP.CHN.001.DSH | 1 pending question(s) |
+| TASK-004 | CAP.CHN.001.DSH | BSP.004.AUT stub and transaction history web view | 2 pending question(s) |
+| TASK-005 | CAP.CHN.001.DSH | Mobile view — nomadic dashboard consultation | 2 pending question(s) |
+| TASK-006 | CAP.CHN.001.DSH | Consumer-side validation against the real CORE event stream | 2 pending question(s) |
+| TASK-002 | CAP.SUP.002.BEN | Foundation: mint anchor (UUIDv7) and serve synchronous lookup | 1 pending question(s) |
 
 ---
 
 ## ⚫ Stalled (loop budget exhausted — human required)
+
+> These tasks exceeded their remediation loop budget. No further automated work will be
+> attempted. Run `/continue-work TASK-NNN` to reset the budget and relaunch.
 
 | Task | Capability | Title | Loops used | Last failing criteria |
 |------|-----------|-------|------------|----------------------|
@@ -57,10 +60,10 @@ _No stalled tasks_
 | Task | Capability | Title | Blocked By |
 |------|-----------|-------|------------|
 | TASK-003 | CAP.CHN.001.DSH | Consent gate and current situation web view | TASK-002 |
-| TASK-003 `full-microservice` | CAP.SUP.002.BEN | Update anchor PII with sticky-field semantics | TASK-002 |
-| TASK-004 `full-microservice` | CAP.SUP.002.BEN | Anchor lifecycle: archive and restore | TASK-002 |
-| TASK-005 `full-microservice` | CAP.SUP.002.BEN | GDPR Art. 17 pseudonymisation at the anchor | TASK-002, TASK-003, TASK-004 |
-| TASK-006 `full-microservice` | CAP.SUP.002.BEN | PII-free anchor history projection and audit-trail query | TASK-002, TASK-003, TASK-004, TASK-005 |
+| TASK-003 | CAP.SUP.002.BEN | Update anchor PII with sticky-field semantics | TASK-002 |
+| TASK-004 | CAP.SUP.002.BEN | Anchor lifecycle: archive and restore | TASK-002 |
+| TASK-005 | CAP.SUP.002.BEN | GDPR Art. 17 pseudonymisation at the anchor | TASK-002, TASK-003, TASK-004 |
+| TASK-006 | CAP.SUP.002.BEN | PII-free anchor history projection and audit-trail query | TASK-002, TASK-003, TASK-004, TASK-005 |
 
 ---
 
@@ -76,21 +79,4 @@ _No stalled tasks_
 
 ## Critical Path
 
-```
-CAP.SUP.002.BEN:
-  TASK-001 (stub — ready, parallel safety-net)
-
-  TASK-002 (foundation — needs_info: confirm external_id removal with consumers)
-    ├─ TASK-003 (UPDATE)        ─┐
-    ├─ TASK-004 (ARCHIVE/RESTORE)─┤
-    └─ TASK-005 (PSEUDONYMISE) ──┘
-                                  └─ TASK-006 (HISTORY)
-
-CAP.CHN.001.DSH:
-  TASK-002 (needs_info: deps to BSP stubs all done)
-    └─ TASK-003 (blocked) → TASK-004 / 005 / 006 (needs_info)
-```
-
-**Next to launch:** TASK-001 of CAP.SUP.002.BEN (score 3) — first non-.NET (Python) shake-down; unblocks downstream consumers with cold-data fixtures.
-
-**Next to refine:** TASK-002 of CAP.SUP.002.BEN — once `external_id` removal is confirmed harmless with `CAP.BSP.001.SCO`, `CAP.BSP.002.ENR`, `CAP.BSP.004.ENV`, this task becomes ready and unlocks the entire downstream chain (TASK-003..006).
+**Next to launch:** _none ready_
