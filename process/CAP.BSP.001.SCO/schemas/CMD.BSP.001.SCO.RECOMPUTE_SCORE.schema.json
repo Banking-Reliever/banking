@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://reliever.example.com/process/CAP.BSP.001.SCO/CMD.BSP.001.SCO.RECOMPUTE_SCORE/0.1.0/schema.json",
-  "x-process-version": "0.1.0",
+  "$id": "https://reliever.banking/process/CAP.BSP.001.SCO/schemas/CMD.BSP.001.SCO.RECOMPUTE_SCORE.schema.json",
+  "x-process-version": "0.2.0",
   "x-process-role": "command-payload",
   "x-process-capability": "CAP.BSP.001.SCO",
   "x-process-command": "CMD.BSP.001.SCO.RECOMPUTE_SCORE",
@@ -16,8 +16,9 @@
   "properties": {
     "case_id": {
       "type": "string",
-      "minLength": 1,
-      "description": "CORRELATION KEY. Reference to the participation case (Reliever case ID). Identity resolution to OBJ.REF.001.BENEFICIARY_RECORD.internal_id is delegated to consumers via CAP.REF.001.BEN lookup."
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "CORRELATION KEY. UUIDv7 of the participation case (per ADR-TECH-STRAT-007 Rule 1, minted upstream — likely by CAP.BSP.002.ENR). Identity resolution to OBJ.SUP.002.BENEFICIARY_RECORD.internal_id is delegated to consumers via CAP.SUP.002.BEN lookup (relocated from CAP.REF.001.BEN on 2026-05-15 per ADR-BCM-FUNC-0016)."
     },
     "trigger": {
       "type": "object",
@@ -26,8 +27,9 @@
       "properties": {
         "event_id": {
           "type": "string",
-          "minLength": 1,
-          "description": "IDEMPOTENCY KEY. Identifier of the upstream resource event that triggered this command. Causal link of the resulting domain event."
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "IDEMPOTENCY KEY. UUIDv7 of the upstream resource event that triggered this command (per ADR-TECH-STRAT-007 Rule 4 — bus-message identifier). Causal link of the resulting domain event."
         },
         "kind": {
           "type": "string",

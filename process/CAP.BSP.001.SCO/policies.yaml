@@ -1,9 +1,11 @@
 meta:
   capability: CAP.BSP.001.SCO
   layer: process-modelling
-  version: 0.1.0
+  version: 0.2.0
   governing_adrs:
     - ADR-BCM-FUNC-0005
+    - ADR-TECH-STRAT-001  # bus rules — operational rail subscription form
+    - ADR-TECH-TACT-003   # tactical stack — at-least-once Python consumer with DLQ
 
 # ──────────────────────────────────────────────────────────────
 # Policies — reactive rules. A policy listens to one or more
