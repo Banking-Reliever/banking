@@ -1,13 +1,28 @@
-# .NET build outputs
-bin/
-obj/
-*.user
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
-# IDE
-.vs/
+# Editors
 .idea/
+.vscode/
 *.swp
+*~
 
-# OS
-.DS_Store
-Thumbs.db
+# Env files
+.env
+.env.local
