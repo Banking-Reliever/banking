@@ -1,0 +1,6 @@
+# Runtime dependencies. Mirror pyproject.toml.
+aio-pika>=9.4,<10
+jsonschema>=4.21,<5
+python-dotenv>=1.0,<2
+
+# Test extras (install with: pip install -r requirements.txt -r requirements-test.txt)

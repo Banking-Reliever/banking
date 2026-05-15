@@ -6,7 +6,8 @@
 
 | Task | Capability | Title | Epic |
 |------|-----------|-------|------|
-| TASK-002 `contract-stub` | CAP.BSP.001.SCO | Extend the development stub to the two remaining RVTs | Epic 1 — Contract and Development Stub (extension) |
+
+_No tasks in progress_
 
 ---
 
@@ -14,8 +15,7 @@
 
 | Task | Capability | Title | PR |
 |------|-----------|-------|----|
-
-_No PR awaiting merge_
+| TASK-002 `contract-stub` | CAP.BSP.001.SCO | Replace .NET stub with Python publisher for all 3 RVTs | [#10](https://github.com/Banking-Reliever/banking/pull/10) |
 
 ---
 
@@ -84,27 +84,22 @@ _No stalled tasks_
 ```
 CAP.BSP.001.SCO:
   TASK-001 (done) ──┐
-  TASK-002 (🔵 in_progress) ─┤ Epic 1 — stub extension (ENTRY_SCORE_COMPUTED + SCORE_THRESHOLD_REACHED)
+  TASK-002 (🟡 in_review — PR #10)
   TASK-003 (needs_info: AUT/SIG/tier-cache) ──── Epic 2 (Flow B — algorithmic core)
   TASK-004 (needs_info: ENR HARD BLOCKER)    ──── Epic 3 (Flow A — entry baseline)
   TASK-005 (blocked on TASK-003)             ──── Epic 4 (queries + projections)
   TASK-006 (needs_info: NFRs)                ──── Epic 5 (hardening + contract harness)
 
 CAP.SUP.002.BEN:
-  TASK-001 (done) ───┐
-  TASK-002 (needs_info: external_id removal check)
-    ├─ TASK-003 (UPDATE)         ─┐
-    ├─ TASK-004 (ARCHIVE/RESTORE) ─┤
-    └─ TASK-005 (PSEUDONYMISE) ───┘
-                                   └─ TASK-006 (HISTORY)
+  TASK-001 (done) → TASK-002 (needs_info: external_id removal check) → TASK-003/004 → TASK-005 → TASK-006
 
 CAP.CHN.001.DSH:
   TASK-002 (needs_info: BEN identity resolution) → TASK-003 (blocked) → TASK-004/5/6 (needs_info)
 ```
 
-**In flight:** CAP.BSP.001.SCO/TASK-002 — `contract-stub` extension on `feat/TASK-002-stub-extension-entry-and-threshold`.
+**Awaiting merge:** PR #10 (TASK-002 `contract-stub` extension). Once merged, Epic 1 of CAP.BSP.001.SCO is fully closed.
 
-**Next to refine (queue unlock):**
+**Next to refine (queue unlock after merge):**
 - `CAP.SUP.002.BEN/TASK-002` (OQ.BEN.002) — unlocks the entire SUP chain (4 tasks)
 - `CAP.CHN.001.DSH/TASK-002` (CAP.REF.001.BEN readiness) — unlocks the CHN chain
 - `CAP.BSP.001.SCO/TASK-003` (AUT/SIG/tier-cache) — unlocks TASK-005 (queries)
