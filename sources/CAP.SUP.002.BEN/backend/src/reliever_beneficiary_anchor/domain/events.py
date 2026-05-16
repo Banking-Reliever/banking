@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime
+from typing import Union
 
 from .value_objects import (
     Actor,
@@ -37,3 +38,39 @@ class AnchorMinted:
     command_id: str  # carries the client_request_id (per RVT schema)
     occurred_at: datetime
     actor: Actor
+
+
+@dataclass(frozen=True, slots=True)
+class AnchorUpdated:
+    """Emitted by AGG.IDENTITY_ANCHOR when UPDATE_ANCHOR is accepted.
+
+    Carries the full POST-transition snapshot (INV.BEN.007 — snapshot
+    semantics on every transition). Sticky-PII is *already* resolved at the
+    aggregate: this event holds the merged anchor state, not the partial
+    delta. The application layer maps this 1:1 to the wire RVT with
+    ``transition_kind = "UPDATED"``.
+    """
+
+    internal_id: InternalId
+    # Full snapshot — same nullability rules as the RVT schema's
+    # MINTED / UPDATED / RESTORED branch (last_name / first_name / dob
+    # required; contact_details may be null).
+    last_name: str
+    first_name: str
+    date_of_birth: date
+    contact_details: ContactDetails | None
+    creation_date: date
+    revision: int
+    transition_kind: TransitionKind  # always "UPDATED" for this event
+    command_id: str  # caller-supplied command_id of CMD.UPDATE_ANCHOR
+    occurred_at: datetime
+    actor: Actor
+
+
+# Union of all transition events the aggregate can emit.
+# TASK-003 covers MINTED + UPDATED; ARCHIVED / RESTORED / PSEUDONYMISED
+# land at TASK-004 / TASK-005.
+TransitionEvent = Union[AnchorMinted, AnchorUpdated]
+
+
+__all__ = ["AnchorMinted", "AnchorUpdated", "TransitionEvent"]

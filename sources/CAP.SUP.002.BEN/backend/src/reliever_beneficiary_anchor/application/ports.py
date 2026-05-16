@@ -11,7 +11,6 @@ from datetime import datetime
 from typing import Any
 
 from ..domain.aggregate import IdentityAnchor
-from ..domain.events import AnchorMinted
 
 
 class UnitOfWork(ABC):
@@ -54,6 +53,24 @@ class AnchorRepository(ABC):
     @abstractmethod
     async def insert(self, anchor: IdentityAnchor) -> None:
         ...
+
+    @abstractmethod
+    async def get(self, internal_id: str) -> IdentityAnchor | None:
+        """Load the aggregate from the write-side ``anchor`` table.
+
+        Returns ``None`` when no row matches. Used by every lifecycle
+        handler (UPDATE / ARCHIVE / RESTORE / PSEUDONYMISE) to rehydrate
+        the aggregate before applying the command.
+        """
+
+    @abstractmethod
+    async def update(self, anchor: IdentityAnchor) -> None:
+        """Persist the post-transition state of an existing aggregate row.
+
+        Implementations must write the full set of mutable columns of
+        ``anchor`` (PII, anchor_status, revision, pseudonymized_at,
+        last_processed_command_id, updated_at) WHERE internal_id matches.
+        """
 
 
 class OutboxRepository(ABC):

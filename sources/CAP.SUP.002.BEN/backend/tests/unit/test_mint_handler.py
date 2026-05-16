@@ -34,6 +34,19 @@ class _InMemoryAnchorRepo(AnchorRepository):
     async def insert(self, anchor: IdentityAnchor) -> None:
         self.rows.append(anchor)
 
+    async def get(self, internal_id: str) -> IdentityAnchor | None:
+        for a in self.rows:
+            if str(a.internal_id) == internal_id:
+                return a
+        return None
+
+    async def update(self, anchor: IdentityAnchor) -> None:
+        for i, existing in enumerate(self.rows):
+            if existing.internal_id == anchor.internal_id:
+                self.rows[i] = anchor
+                return
+        raise AssertionError(f"update() called on missing anchor {anchor.internal_id}")
+
 
 class _InMemoryOutboxRepo(OutboxRepository):
     def __init__(self) -> None:

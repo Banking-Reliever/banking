@@ -17,6 +17,7 @@ from ..application.handlers import (
     GetAnchorHandler,
     MintAnchorHandler,
     ROUTING_KEY,
+    UpdateAnchorHandler,
 )
 from ..infrastructure.messaging.outbox_relay import OutboxRelay
 from ..infrastructure.messaging.projection_consumer import ProjectionConsumer
@@ -27,7 +28,7 @@ from ..infrastructure.persistence.projection import (
     PostgresAnchorDirectoryWriter,
 )
 from ..infrastructure.persistence.unit_of_work import PostgresUnitOfWorkFactory
-from ..infrastructure.schema_validation.loader import build_validators
+from ..infrastructure.schema_validation.loader import build_validators_bundle
 from .dependencies import AppState
 from .routers import install_exception_handlers, router as anchors_router
 from .settings import Settings
@@ -54,7 +55,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         log.info("startup.begin")
 
         # 1. Validators — fail-fast if a schema is missing/malformed.
-        mint_validator, rvt_validator = build_validators(settings.process_schemas_dir)
+        validators = build_validators_bundle(settings.process_schemas_dir)
+        mint_validator = validators.mint
+        update_validator = validators.update
+        rvt_validator = validators.rvt
         log.info("schemas.loaded", dir=str(settings.process_schemas_dir))
 
         # 2. Postgres pool.
@@ -112,6 +116,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             uow_factory=uow_factory,
             rvt_validator=rvt_validator,
         )
+        update_handler = UpdateAnchorHandler(
+            uow_factory=uow_factory,
+            rvt_validator=rvt_validator,
+        )
         get_handler = GetAnchorHandler(reader=reader)
 
         app.state.runtime = AppState(
@@ -121,9 +129,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             outbox_relay=outbox_relay,
             projection_consumer=projection_consumer,
             mint_validator=mint_validator,
+            update_validator=update_validator,
             rvt_validator=rvt_validator,
             uow_factory=uow_factory,
             mint_handler=mint_handler,
+            update_handler=update_handler,
             get_handler=get_handler,
         )
         log.info("startup.ready")
@@ -146,7 +156,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(
         title="CAP.SUP.002.BEN — Beneficiary Identity Anchor",
         version="0.1.0",
-        description="The canonical anchor for beneficiary identity in Reliever (TASK-002 — MINT + GET).",
+        description="The canonical anchor for beneficiary identity in Reliever (TASK-002 MINT + GET / TASK-003 UPDATE).",
         lifespan=lifespan,
     )
     app.include_router(anchors_router)
