@@ -3,7 +3,7 @@ task_id: TASK-003
 capability_id: CAP.SUP.002.BEN
 capability_name: Beneficiary Identity Anchor
 epic: Epic 3 — Identity update with sticky-PII semantics
-status: in_review
+status: done
 priority: high
 depends_on: [TASK-002]
 task_type: full-microservice
