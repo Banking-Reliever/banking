@@ -21,13 +21,12 @@ meta:
 #
 # Granularity: one aggregate per beneficiary, keyed by the
 # server-minted UUIDv7 anchor identifier (per ADR-TECH-STRAT-007).
-# external_id is intentionally NOT part of the model — the prior
-# CAP.REF.001.BEN model used external_id as an idempotency key
-# rooted in the upstream candidacy reference; ADR-BCM-FUNC-0016
-# removes that coupling and shifts the source of truth for
-# identity to this capability alone, with idempotency anchored
-# on a caller-supplied client_request_id (UUIDv7) for MINT and
-# on command_id for the lifecycle verbs.
+# Identity is owned by this capability alone (golden-record rule,
+# ADR-BCM-FUNC-0016): the aggregate accepts no caller-supplied
+# identifier on MINT and exposes no upstream-key-rooted idempotency
+# anchor. Idempotency is anchored on a caller-supplied UUIDv7
+# client_request_id for MINT and on command_id for the lifecycle
+# verbs (UPDATE / ARCHIVE / RESTORE / PSEUDONYMISE).
 #
 # The capability's BCM corpus declares ZERO consumed events
 # today (consumed_business_events / consumed_resource_events
@@ -99,8 +98,8 @@ aggregates:
         kind: idempotency
         description: >-
           Idempotency anchor for MINT — caller-supplied UUIDv7 client_request_id,
-          deduplicated over a 30-day window. Required because external_id no
-          longer exists in the model (see Open Question #2).
+          deduplicated over a 30-day window. The MINT verb exposes no other
+          idempotency surface (see Open Question #2).
       - field: revision
         kind: snapshot
         description: >-
@@ -251,14 +250,14 @@ aggregates:
 
       - id: OQ.BEN.002
         rule: >-
-          external_id is gone from the model. Downstream consumers that
-          previously looked up a beneficiary by external_id (the upstream
-          candidacy reference) now have no path to do so. Their migration
-          target is the new MINT_ANCHOR contract — they must observe the
-          MINTED RVT and key their local cache by internal_id from then on,
-          using their own correlation field on the way in.
+          The model exposes no secondary lookup path keyed on any caller-
+          supplied identifier — internal_id is the sole resolution key.
+          Downstream consumers must observe the MINTED RVT, key their local
+          cache by internal_id from then on, and use their own correlation
+          field on the way in.
         remediation: >-
           Confirm with each consumer (CAP.BSP.001.SCO, CAP.BSP.002.ENR,
-          CAP.BSP.004.ENV) that the external_id removal does not break a
-          necessary lookup path; if any consumer needs an alternate lookup
-          key, surface it as a new BCM business-event before re-modelling.
+          CAP.BSP.004.ENV) that the internal_id-only resolution rule does not
+          break a necessary lookup path; if any consumer needs an alternate
+          lookup key, surface it as a new BCM business-event before
+          re-modelling.

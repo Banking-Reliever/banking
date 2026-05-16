@@ -35,8 +35,9 @@ commands:
       UUIDv7 internal_id (per ADR-TECH-STRAT-007) and returns it; downstream
       capabilities key all future references on that internal_id. The caller
       supplies the natural identity (names, date of birth, contact details)
-      and a UUIDv7 client_request_id for idempotency. external_id is no
-      longer part of the contract (see Open Question #2 in aggregates.yaml).
+      and a UUIDv7 client_request_id for idempotency. No caller-supplied
+      identifier is accepted on the request (see Open Question #2 in
+      aggregates.yaml).
     accepted_by: AGG.SUP.002.BEN.IDENTITY_ANCHOR
     issued_by:
       - http-api-caller   # typically CAP.BSP.002.ENR (Enrolment) or admin tooling
