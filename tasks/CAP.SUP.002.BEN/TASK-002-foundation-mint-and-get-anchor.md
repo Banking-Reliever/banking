@@ -3,7 +3,7 @@ task_id: TASK-002
 capability_id: CAP.SUP.002.BEN
 capability_name: Beneficiary Identity Anchor
 epic: Epic 2 — Foundation (anchor minting and synchronous lookup)
-status: in_review
+status: done
 priority: high
 depends_on: []
 task_type: full-microservice
