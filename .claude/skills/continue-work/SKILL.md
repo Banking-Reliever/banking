@@ -22,6 +22,36 @@ fresh `code` session with the full original context.
 
 ---
 
+## Sentinel — acquire before writing TASK cards
+
+A PreToolUse hook (`tasks-folder-guard.py`) rejects every Write/Edit/MultiEdit/
+NotebookEdit call targeting `tasks/<CAP>/TASK-*.md` unless the shared
+task-pipeline sentinel `/tmp/.claude-task-pipeline.active` is present and
+≤30 min old. This skill is on the allowlist (together with `/task`,
+`/task-refinement`, `/launch-task`, `/code`, `/fix`, and
+`/pr-merge-watcher`). The `code` session this skill relaunches acquires
+its own sentinel inside its session — `/continue-work` only needs the
+sentinel for its own counter-reset edits.
+
+Before the first TASK-card write (resetting `loop_count`, `stalled_reason`,
+status):
+
+```bash
+touch /tmp/.claude-task-pipeline.active
+```
+
+At the very end (success or graceful abort):
+
+```bash
+rm -f /tmp/.claude-task-pipeline.active
+```
+
+A stale sentinel grants write access to the next agent — explicit `rm -f`
+on exit is preferred. The hook treats sentinels older than 30 minutes as
+expired.
+
+---
+
 ## Usage
 
 ```

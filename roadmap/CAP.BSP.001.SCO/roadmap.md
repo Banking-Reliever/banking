@@ -186,13 +186,13 @@
 
 ## Recommended Sequencing
 
-- **Critical path**: Epic 1 → Epic 2 → Epic 4 → Epic 5. Flow B carries the differentiating core-domain value of the capability.
-- **Parallelisable**: Epic 3 (entry-score baseline) is independent of Epic 2 once Epic 1 is done — it can start in parallel as soon as its hard blocker (`CAP.BSP.002.ENR` enrolment subscription registered in BCM) is resolved.
+- **Critical path**: Epic 1 → Epic 2 → Epic 4 → Epic 5. Flow B carries the differentiating core-domain value of the capability; the query surface and the operability hardening close the loop.
+- **Epic 3 — deferred, not parallelisable.** Epic 3 (entry-score baseline) is structurally independent of Epic 2 once Epic 1 is done, but it has a **hard blocker**: `CAP.BSP.002.ENR` has no process model yet, no enrolment business subscription is registered in `ADR-BCM-FUNC-0005`, and `POL.ON_ENROLMENT_COMPLETED` is `status: placeholder` in the process model. Until the BCM governance board produces that subscription, Epic 3 cannot enter — describing it as "parallelisable with Epic 2" would understate the blocker. The "Risks" section keeps it as a tracked dependency to flag at every BCM review cycle. When the blocker clears, Epic 3 can rejoin the wave alongside Epic 4.
 - **Suggested ordering on the kanban**:
   1. Finish Epic 1 (extend stub coverage to the two remaining RVTs — currently `TASK-001` covered `CURRENT_SCORE_RECOMPUTED` only).
   2. Start Epic 2 once upstream BSP.004.AUT and BSP.001.SIG stubs are merged.
-  3. Start Epic 3 in parallel **only** once the enrolment-trigger open question is resolved at the BCM level; until then, leave Epic 3 in the deferred bucket.
-  4. Epic 4 begins as soon as Epic 2 produces real `CURRENT_SCORE_RECOMPUTED` payloads.
+  3. Epic 4 begins as soon as Epic 2 produces real `CURRENT_SCORE_RECOMPUTED` payloads. Do not gate Epic 4 on Epic 3 — the query surface can read the projection with a null `entry_score` until Flow A unblocks.
+  4. Move Epic 3 from the **deferred** bucket to **ready** only when the enrolment-trigger open question is resolved at the BCM level. At that point Epic 3 can run in parallel with Epic 4.
   5. Epic 5 closes the loop with operability and contract harness.
 
 ---

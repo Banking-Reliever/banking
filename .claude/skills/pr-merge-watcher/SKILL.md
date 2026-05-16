@@ -25,6 +25,39 @@ Updates the kanban board accordingly.
 
 ---
 
+## Sentinel — acquire before writing TASK cards
+
+A PreToolUse hook (`tasks-folder-guard.py`) rejects every Write/Edit/MultiEdit/
+NotebookEdit call targeting `tasks/<CAP>/TASK-*.md` unless the shared
+task-pipeline sentinel `/tmp/.claude-task-pipeline.active` is present and
+≤30 min old. This skill is on the allowlist (together with `/task`,
+`/task-refinement`, `/launch-task`, `/code`, `/fix`, and `/continue-work`).
+The `/fix` dispatches this skill triggers on red CI run in their own
+sessions and acquire their own sentinel — `/pr-merge-watcher` only needs
+the sentinel for its own status transitions (`in_review` → `done`).
+
+Before the first TASK-card write:
+
+```bash
+touch /tmp/.claude-task-pipeline.active
+```
+
+At the very end (success or graceful abort):
+
+```bash
+rm -f /tmp/.claude-task-pipeline.active
+```
+
+If polling several PRs takes more than ~25 minutes, re-`touch` the
+sentinel just before each TASK-card edit. A stale sentinel grants write
+access to the next agent — explicit `rm -f` on exit is preferred.
+
+> BOARD.md is **not** guarded by this sentinel. `/pr-merge-watcher`
+> reflects its changes by editing TASK cards and then invoking
+> `/sort-task`, which holds the separate `tasks/BOARD.md` sentinel.
+
+---
+
 ## Step 1 — Find Tasks in Review
 
 ```bash

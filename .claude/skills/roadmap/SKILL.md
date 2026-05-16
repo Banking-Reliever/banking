@@ -265,6 +265,43 @@ For the full roadmap, identify:
 
 ---
 
+## Sentinel — acquire before writing under `roadmap/`
+
+The `roadmap/{capability-id}/` folder is owned by **this skill alone**. A
+PreToolUse hook (`roadmap-folder-guard.py`) rejects every `Write`, `Edit`,
+`MultiEdit`, and `NotebookEdit` call targeting `roadmap/**` unless the
+session sentinel `/tmp/.claude-roadmap-skill.active` is present (and fresh,
+i.e. touched within the last 30 minutes). This is what stops `/task`,
+`/code`, `/fix`, `/launch-task`, `/continue-work`, and the agents they
+spawn (`implement-capability`, `create-bff`, `code-web-frontend`,
+`test-business-capability`, `test-app`) from drifting the roadmap as a
+side-effect of an implementation loop.
+
+**Before** writing the first byte under `roadmap/`, mark the session as a
+`/roadmap` session by touching the sentinel file:
+
+```bash
+touch /tmp/.claude-roadmap-skill.active
+```
+
+The hook recognises both `<repo>/roadmap/...` and, if a worktree variant is
+ever introduced, `/tmp/roadmap-worktrees/<CAP_ID>/roadmap/...` as guarded
+paths, so the same sentinel covers both.
+
+**At the very end** of the skill (success or graceful abort), remove it:
+
+```bash
+rm -f /tmp/.claude-roadmap-skill.active
+```
+
+If you abort mid-session because of a hard error or because the user stops
+you, still attempt the `rm -f` in your final message. A stale sentinel
+grants write access to the next agent — that is undesirable. The hook
+treats sentinels older than 30 minutes as expired, but explicit cleanup is
+preferred.
+
+---
+
 ## Output
 
 **File**: `/roadmap/{capability-id}/roadmap.md` (create directory if needed)
@@ -330,7 +367,13 @@ For the full roadmap, identify:
 - Pack date: [today's date]
 ```
 
-After writing, tell the user:
+After writing, release the sentinel:
+
+```bash
+rm -f /tmp/.claude-roadmap-skill.active
+```
+
+Then tell the user:
 > "The roadmap for [capability] is committed to `/roadmap/[capability-id]/roadmap.md`. 
 > When you're ready, the task skill will break each epic into concrete tasks for 
 > the implement-capability agent (written under `/tasks/[capability-id]/`)."

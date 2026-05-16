@@ -1,0 +1,15 @@
+# Build outputs
+bin/
+obj/
+out/
+publish/
+
+# Local env
+.env.local
+
+# IDE / editors
+.vs/
+.idea/
+*.user
+*.suo
+*.userprefs

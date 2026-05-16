@@ -23,6 +23,39 @@ status transitions, worktrees), the user must call `/launch-task` separately.
 
 ---
 
+## Sentinel — acquire before writing `tasks/BOARD.md`
+
+A PreToolUse hook (`tasks-folder-guard.py`) rejects every Write/Edit call
+targeting `tasks/BOARD.md` unless the dedicated sentinel
+`/tmp/.claude-sort-task-skill.active` is present and ≤30 min old. This
+sentinel is exclusive to `/sort-task` — it codifies that `/sort-task` is
+the single rendering algorithm of the kanban. Other skills (`/launch-task`,
+`/pr-merge-watcher`, `/code`, `/fix`) reflect their changes by editing the
+TASK card frontmatter (guarded by the separate task-pipeline sentinel),
+then invoking `/sort-task` to regenerate the board from scratch.
+
+Before writing `tasks/BOARD.md`:
+
+```bash
+touch /tmp/.claude-sort-task-skill.active
+```
+
+At the very end (success or graceful abort):
+
+```bash
+rm -f /tmp/.claude-sort-task-skill.active
+```
+
+A stale sentinel grants write access to the next agent — explicit `rm -f`
+on exit is preferred. The hook treats sentinels older than 30 minutes as
+expired.
+
+> This skill **never** writes TASK cards — its self-description ("Pure
+> observation: never modifies TASK files") is enforced by the absence of a
+> task-pipeline sentinel touch here.
+
+---
+
 ## Step 1 — Scan the Task Universe
 
 Find all task files:
