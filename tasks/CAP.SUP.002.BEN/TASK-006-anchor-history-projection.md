@@ -40,13 +40,20 @@ Extend the microservice to project `PRJ.SUP.002.BEN.ANCHOR_HISTORY` and
 serve `QRY.SUP.002.BEN.GET_ANCHOR_HISTORY`.
 
 1. **Projection** — `PRJ.SUP.002.BEN.ANCHOR_HISTORY` per
-   `read-models.yaml`. Append-only, one row per received RVT, keyed on
-   `(internal_id, revision)`. Columns: `internal_id`, `revision`,
-   `transition_kind`, `command_id`, `right_exercise_id` (only on
-   PSEUDONYMISED transitions; null otherwise), `actor` (subject claim
-   from the JWT captured when the command was processed, per
-   `ADR-TECH-STRAT-003`), `occurred_at`.
-   **No PII columns are materialised** — verifiable by SQL schema dump.
+   `read-models.yaml` (process v0.2.0 with **explicit per-field
+   sourcing** under `PRJ.ANCHOR_HISTORY.fed_by`). Append-only, one row
+   per received RVT, keyed on `(internal_id, revision)`. Each column
+   sources from the wire-format field declared in `fed_by`:
+   `internal_id`, `revision`, `transition_kind`, `command_id`,
+   `right_exercise_id` (only on PSEUDONYMISED transitions; null
+   otherwise), `actor` (sourced from the **RVT envelope** `actor`
+   typed object per `bus.yaml.publication.envelope.actor` — NOT
+   re-captured at projection time; the kind/subject/on_behalf_of are
+   already on the wire, set by the producer per
+   `ADR-TECH-STRAT-003`), `occurred_at`. **No PII columns are
+   materialised** — verifiable by SQL schema dump. If the RVT schema
+   changes the source location of any field, the projection consumer
+   must be updated in lockstep — the `fed_by` block is the contract.
 2. **Projection consumer** — ingests every received
    `RVT.SUP.002.BENEFICIARY_ANCHOR_UPDATED` from
    `sup.002.ben-events` (or from the in-process domain event stream if

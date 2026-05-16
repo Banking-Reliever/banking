@@ -128,10 +128,18 @@ None. The capability has zero declared subscriptions in v1 (see
       milliseconds after `POST` may legitimately return `404` until the
       projection catches up; integration test covers both the immediate
       window and the post-catch-up window
-- [ ] Authentication: the subject claim from the JWT
-      (`ADR-TECH-STRAT-003`) is captured server-side as the `actor` for
-      downstream audit use (recorded in the outbox / event metadata —
-      not stored on the projection row in this task)
+- [ ] Authentication: the `actor` typed object is captured server-side
+      and written to the RVT envelope per `bus.yaml.publication.envelope.actor`
+      (v0.2.0 shape: `{kind: human|service|system, subject, on_behalf_of?}`).
+      For human callers, `kind = human` and `subject` = JWT `sub` claim
+      per `ADR-TECH-STRAT-003`; for service-to-service, `kind = service`
+      and `subject` = capability id of the caller; for outbox replay or
+      scheduled jobs, `kind = system` and `subject` = a stable
+      `system:*` token. `on_behalf_of` is set when the human is acting
+      for another principal (DPO admin tooling, support staff). The
+      `actor` is recorded in the outbox row and propagated into the
+      RVT envelope; downstream consumption into `PRJ.ANCHOR_HISTORY` is
+      TASK-006's concern.
 - [ ] No write to `process/CAP.SUP.002.BEN/` (read-only)
 - [ ] If a `sources/CAP.SUP.002.BEN/stub/` from TASK-001 is present,
       the README of the stub is updated to note that the MINT + GET
@@ -162,8 +170,12 @@ projection-catch-up window.
 - RabbitMQ available in the dev environment
 
 ## Open Questions
-- [ ] OQ.BEN.002 (`external_id` removal) — confirm with `CAP.BSP.001.SCO`,
-      `CAP.BSP.002.ENR`, `CAP.BSP.004.ENV` that the loss of
-      `external_id` does not break a necessary lookup path before this
-      task ships. If any consumer needs an alternate lookup key, surface
-      it as a new BCM business-event request before extending the model.
+- [x] OQ.BEN.002 (`external_id` removal) — RESOLVED upstream by PR #12
+      (`process(CAP.SUP.002.BEN): refine — drop external_id mentions`)
+      and PR #13 (`chore(roadmap): scrub external_id mentions from
+      non-EXB roadmaps`). The decision: `external_id` is not part of
+      the SUPPORT-zone model — consumers that previously used it as a
+      candidacy reference now key their own correlation field on the
+      way in and observe the MINTED RVT to learn the `internal_id`.
+      No new BCM business-event is required. The audit-trail entry is
+      preserved per the `/sort-task` convention.

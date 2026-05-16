@@ -24,8 +24,7 @@ _No PR awaiting merge_
 
 | # | Task | Capability | Title | Priority | Score | Unblocks |
 |---|------|-----------|-------|----------|-------|---------|
-
-_No ready tasks_
+| 1 | TASK-002 `full-microservice` | CAP.SUP.002.BEN | Foundation: mint anchor (UUIDv7) and serve synchronous lookup | high | 43 | TASK-003, TASK-004, TASK-005, TASK-006 (entire BEN downstream chain) |
 
 ---
 
@@ -36,14 +35,13 @@ _No ready tasks_
 
 | Task | Capability | Title | Open Questions |
 |------|-----------|-------|----------------|
-| TASK-003 `full-microservice` | CAP.BSP.001.SCO | Continuous recomputation (Flow B) | 3 pending (AUT readiness, SIG readiness, tier-thresholds cache invalidation) |
+| TASK-003 `full-microservice` | CAP.BSP.001.SCO | Continuous score recomputation (Flow B) | 3 pending (AUT readiness, SIG readiness, tier-thresholds cache invalidation) |
 | TASK-004 `full-microservice` | CAP.BSP.001.SCO | Entry-score baseline (Flow A) | 2 pending (HARD BLOCKER on `CAP.BSP.002.ENR`; `CAP.SUP.002.BEN/TASK-002` foundation readiness) |
-| TASK-006 `full-microservice` | CAP.BSP.001.SCO | Model versioning and operability hardening | 1 pending (recomputation throughput NFRs) |
+| TASK-006 `full-microservice` | CAP.BSP.001.SCO | Model versioning, operability hardening, and contract harness | 1 pending (recomputation throughput NFRs) |
 | TASK-002 | CAP.CHN.001.DSH | Subscription point and consumption layer for CAP.CHN.001.DSH | 1 pending |
 | TASK-004 | CAP.CHN.001.DSH | BSP.004.AUT stub and transaction history web view | 2 pending |
 | TASK-005 | CAP.CHN.001.DSH | Mobile view — nomadic dashboard consultation | 2 pending |
 | TASK-006 | CAP.CHN.001.DSH | Consumer-side validation against the real CORE event stream | 2 pending |
-| TASK-002 `full-microservice` | CAP.SUP.002.BEN | Foundation: mint anchor (UUIDv7) and serve synchronous lookup | 1 pending (OQ.BEN.002 — `external_id` removal cross-consumer check) |
 
 ---
 
@@ -60,12 +58,12 @@ _No stalled tasks_
 
 | Task | Capability | Title | Blocked By |
 |------|-----------|-------|------------|
-| TASK-005 `full-microservice` | CAP.BSP.001.SCO | Query surface and read-models | TASK-003 |
+| TASK-005 `full-microservice` | CAP.BSP.001.SCO | Query surface and event-sourced read-models | TASK-003 |
 | TASK-003 | CAP.CHN.001.DSH | Consent gate and current situation web view | TASK-002 |
-| TASK-003 `full-microservice` | CAP.SUP.002.BEN | Identity update with sticky-PII semantics | TASK-002 |
-| TASK-004 `full-microservice` | CAP.SUP.002.BEN | Anchor lifecycle (archive / restore) | TASK-002 |
-| TASK-005 `full-microservice` | CAP.SUP.002.BEN | GDPR Art. 17 pseudonymisation | TASK-002, TASK-003, TASK-004 |
-| TASK-006 `full-microservice` | CAP.SUP.002.BEN | Anchor history projection (audit trail) | TASK-002, TASK-003, TASK-004, TASK-005 |
+| TASK-003 `full-microservice` | CAP.SUP.002.BEN | Update anchor PII with sticky-field semantics | TASK-002 |
+| TASK-004 `full-microservice` | CAP.SUP.002.BEN | Anchor lifecycle: archive and restore | TASK-002 |
+| TASK-005 `full-microservice` | CAP.SUP.002.BEN | GDPR Art. 17 pseudonymisation at the anchor | TASK-002, TASK-003, TASK-004 |
+| TASK-006 `full-microservice` | CAP.SUP.002.BEN | PII-free anchor history projection and audit-trail query | TASK-002, TASK-003, TASK-004, TASK-005 |
 
 ---
 
@@ -74,7 +72,7 @@ _No stalled tasks_
 | Task | Capability | Title |
 |------|-----------|-------|
 | TASK-001 | CAP.BSP.001.SCO | Contract and development stub for `EVT.BSP.001.SCORE_RECALCULE` ([PR #2](https://github.com/Banking-Reliever/banking/pull/2)) |
-| TASK-002 `contract-stub` | CAP.BSP.001.SCO | Stub extension — entry and threshold events ([PR #10](https://github.com/Banking-Reliever/banking/pull/10)) |
+| TASK-002 `contract-stub` | CAP.BSP.001.SCO | Stub extension — entry-score + threshold events ([PR #10](https://github.com/Banking-Reliever/banking/pull/10)) |
 | TASK-001 | CAP.BSP.001.TIE | Contract and development stub for `EVT.BSP.001.TIER_UPGRADED` ([PR #1](https://github.com/Banking-Reliever/banking/pull/1)) |
 | TASK-001 | CAP.BSP.004.ENV | Contract and development stub for `EVT.BSP.004.ENVELOPE_CONSUMED` ([PR #6](https://github.com/Banking-Reliever/banking/pull/6)) |
 | TASK-001 `contract-stub` | CAP.SUP.002.BEN | Contract and development stub for `RVT.SUP.002.BENEFICIARY_ANCHOR_UPDATED` ([PR #9](https://github.com/Banking-Reliever/banking/pull/9)) |
@@ -84,31 +82,29 @@ _No stalled tasks_
 ## Critical Path
 
 ```
+CAP.SUP.002.BEN:                       ← OQ.BEN.002 resolved (PR #12/#13) — chain unblocked
+  TASK-001 ✅ done
+  TASK-002 🟢 ready ──┐               foundation (MINT + GET)
+                      ├─ TASK-003 🔴 UPDATE
+                      ├─ TASK-004 🔴 ARCHIVE/RESTORE
+                      └─ TASK-005 🔴 PSEUDONYMISE
+                                       └─ TASK-006 🔴 HISTORY
+
 CAP.BSP.001.SCO:
   TASK-001 ✅ done ──┐
-  TASK-002 ✅ done ──┤ Epic 1 — stub + extension (5 RVTs in flight)
-  TASK-003 🟠 (needs_info: AUT/SIG/tier-cache) ──── Epic 2 (Flow B — algorithmic core)
-  TASK-004 🟠 (needs_info: ENR HARD BLOCKER)    ──── Epic 3 (Flow A — entry baseline)
-  TASK-005 🔴 (blocked on TASK-003)             ──── Epic 4 (queries + projections)
-  TASK-006 🟠 (needs_info: NFRs)                ──── Epic 5 (hardening + contract harness)
-
-CAP.SUP.002.BEN:
-  TASK-001 ✅ done ───┐
-  TASK-002 🟠 (needs_info: external_id removal check)
-    ├─ TASK-003 🔴 (UPDATE)
-    ├─ TASK-004 🔴 (ARCHIVE/RESTORE)
-    └─ TASK-005 🔴 (PSEUDONYMISE)
-                 └─ TASK-006 🔴 (HISTORY)
+  TASK-002 ✅ done ──┤ Epic 1 — stub families complete
+  TASK-003 🟠 needs_info (AUT/SIG/tier-cache)  ─── Epic 2 (Flow B)
+  TASK-004 🟠 needs_info (ENR HARD BLOCKER)    ─── Epic 3 (Flow A)
+  TASK-005 🔴 blocked on TASK-003              ─── Epic 4 (queries)
+  TASK-006 🟠 needs_info (NFRs)                ─── Epic 5 (hardening)
 
 CAP.CHN.001.DSH:
-  TASK-002 🟠 (needs_info: BEN identity resolution) → TASK-003 🔴 → TASK-004/5/6 🟠
+  TASK-002 🟠 needs_info → TASK-003 🔴 → TASK-004/5/6 🟠
 ```
 
-**Next to launch:** _None_ — every active task carries unresolved open questions.
+**Next to launch:** `CAP.SUP.002.BEN/TASK-002` (score 43) — foundation MINT + GET; transitively unblocks the 4-task BEN downstream chain (UPDATE → ARCHIVE/RESTORE → PSEUDONYMISE → HISTORY). The freshly-ticked OQ.BEN.002 (external_id scrub via PR #12/#13) removed the only gate.
 
-**Next to refine (queue unlock):**
-- `CAP.SUP.002.BEN/TASK-002` (OQ.BEN.002) — unlocks the entire BEN downstream chain (4 tasks)
-- `CAP.CHN.001.DSH/TASK-002` (CAP.SUP.002.BEN readiness) — unlocks the entire CHN dashboard chain
-- `CAP.BSP.001.SCO/TASK-003` (AUT/SIG/tier-cache) — unlocks TASK-005 (queries) downstream
-- `CAP.BSP.001.SCO/TASK-004` (ENR HARD BLOCKER + BEN/TASK-002 foundation) — gated on producer modelling
-- `CAP.BSP.001.SCO/TASK-006` (recomputation NFRs) — needs product-owner sign-off
+**Next to refine:**
+- `CAP.BSP.001.SCO/TASK-003` (Flow B) — 3 OQs gated on AUT/SIG upstream modelling + tier-thresholds cache policy.
+- `CAP.BSP.001.SCO/TASK-004` (Flow A) — HARD BLOCKER on `CAP.BSP.002.ENR` not yet modelled.
+- `CAP.CHN.001.DSH/TASK-002` (1 OQ) — unlocks the entire CHN dashboard chain.
