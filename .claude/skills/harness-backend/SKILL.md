@@ -2,18 +2,30 @@
 name: harness-backend
 description: >
   Entry-point that adds (or refreshes) the **contract harness** of a backend
-  microservice produced by the `implement-capability` agent. Resolves the
-  capability, the active branch / worktree, locates the .NET solution under
-  `sources/{capability-name}/backend/`, then spawns the `harness-backend`
-  agent (a senior contract / API engineer) to scaffold a
-  `*.Contracts.Harness/` project, generate `openapi.yaml` (OpenAPI 3.1) and
-  `asyncapi.yaml` (AsyncAPI 2.6) under `contracts/specs/`, and validate
+  microservice produced by either the `implement-capability` agent (.NET 10)
+  or the `implement-capability-python` agent (Python 3.12+ / FastAPI).
+  Resolves the capability, the active branch / worktree, detects the target
+  stack from the TECH-TACT ADR (`tactical_stack[0].tags`) and the on-disk
+  layout under `sources/{capability-name}/backend/`, then spawns the
+  `harness-backend` agent (a senior contract / API engineer) to scaffold the
+  stack-specific harness project (a `*.Contracts.Harness/` .NET project on
+  .NET stacks, or a `{namespace}_{capability_module}_contracts_harness/`
+  Python package on Python stacks), generate `openapi.yaml` (OpenAPI 3.1)
+  and `asyncapi.yaml` (AsyncAPI 2.6) under `contracts/specs/`, and validate
   strict alignment between the specs, the Process Modelling layer
   (`process/{capability-id}/`: `commands.yaml`, `read-models.yaml`,
   `bus.yaml`, `api.yaml`, `schemas/*.schema.json`), and the BCM corpus
   consumed via `bcm-pack pack <CAP_ID> --deep` (resources, resource events,
   business events, business / resource subscriptions, carried objects, FUNC
   / URBA / TECH-STRAT ADRs).
+
+  The two generated spec files are stack-agnostic: regenerated from the
+  same process + BCM inputs, they are byte-identical across .NET and Python
+  implementations of the same capability (modulo the `servers.url` port and
+  the `generated.at` timestamp). Only the harness tool itself, its build
+  gate (MSBuild on .NET, pytest + `uv run` on Python), and the runtime
+  endpoint glue (`/openapi.yaml`, `/asyncapi.yaml`, `/contracts/lineage`)
+  are stack-specific.
 
   Both generated specs carry a top-level `x-lineage` block (capability +
   bcm + process + generated metadata) plus per-operation, per-message, and
@@ -48,9 +60,10 @@ description: >
 # Harness-backend — Contract Harness Entry-Point
 
 You are the entry-point that ensures a backend microservice produced by the
-`implement-capability` agent has a fresh, lineage-rich, strictly-aligned
-contract surface (OpenAPI 3.1 + AsyncAPI 2.6). You do not generate the
-specs yourself — you resolve the context and dispatch the
+`implement-capability` agent (.NET) or `implement-capability-python` agent
+(Python) has a fresh, lineage-rich, strictly-aligned contract surface
+(OpenAPI 3.1 + AsyncAPI 2.6). You do not generate the specs yourself — you
+resolve the context, detect the target stack, and dispatch the
 `harness-backend` agent.
 
 > **Hard rule — `process/{capability-id}/` is read-only.** This skill, and
@@ -94,12 +107,34 @@ End Step 0 with these resolved values:
 ls process/${CAPABILITY_ID}/{commands.yaml,bus.yaml,api.yaml,read-models.yaml}
 ls process/${CAPABILITY_ID}/schemas/
 
-# 2. The microservice must already be scaffolded by implement-capability
-ls "${BACKEND_DIR}/"*.sln
-ls "${BACKEND_DIR}/src/"*.Presentation/Program.cs
+# 2. The microservice must already be scaffolded by implement-capability* —
+#    detect the stack from on-disk layout
+if   ls "${BACKEND_DIR}/"*.sln 2>/dev/null | grep -q .; then
+  LANG=dotnet
+  ls "${BACKEND_DIR}/src/"*.Presentation/Program.cs
+elif test -f "${BACKEND_DIR}/pyproject.toml"; then
+  LANG=python
+  ls "${BACKEND_DIR}/src/"*/presentation/app.py
+else
+  echo "❌ No .NET solution or Python pyproject.toml under ${BACKEND_DIR} — run /code TASK-NNN first."
+  exit 1
+fi
+echo "Detected stack: ${LANG}"
 
-# 3. The capability must be non-CHANNEL
+# 3. Cross-check with the TECH-TACT hint (advisory — disk wins, but a
+#    contradiction means /code's language router has a bug worth surfacing)
 bcm-pack pack ${CAPABILITY_ID} --compact > /tmp/pack-harness.json
+TACT_TAGS=$(jq -r '.slices.tactical_stack[0].tags // [] | join(",")' /tmp/pack-harness.json)
+case "$TACT_TAGS" in
+  *python*|*fastapi*|*starlette*)        HINT=python ;;
+  *dotnet*|*.net*|*csharp*|*aspnet*)     HINT=dotnet ;;
+  *)                                     HINT=unknown ;;
+esac
+if [ "$HINT" != "unknown" ] && [ "$HINT" != "$LANG" ]; then
+  echo "⚠ TECH-TACT hint ($HINT) contradicts on-disk layout ($LANG) — likely a /code routing bug. Proceeding with $LANG."
+fi
+
+# 4. The capability must be non-CHANNEL
 ZONE=$(jq -r '.slices.capability_self[0].zoning' /tmp/pack-harness.json)
 case "$ZONE" in
   CHANNEL) echo "❌ harness-backend does not handle CHANNEL — use create-bff instead"; exit 1 ;;
@@ -107,7 +142,7 @@ case "$ZONE" in
   *) echo "❌ unknown zone $ZONE"; exit 1 ;;
 esac
 
-# 4. bcm-pack returns no warnings and the required slices are non-empty
+# 5. bcm-pack returns no warnings and the required slices are non-empty
 jq '{
   warnings,
   emitted_resource_events: (.slices.emitted_resource_events | length),
@@ -119,12 +154,12 @@ jq '{
 
 If any prerequisite fails, stop and explain the gap clearly:
 
-| Failure                                       | Resolution                                                        |
-|-----------------------------------------------|-------------------------------------------------------------------|
-| `process/{cap}/` missing                      | run `/process <CAPABILITY_ID>` first                              |
-| `.sln` missing                                | run `/code TASK-NNN` first (Path A scaffolds the microservice)    |
-| Zone is CHANNEL                               | this skill is non-CHANNEL only — no action                        |
-| `pack.warnings` non-empty / required slice empty | fix the upstream BCM in `banking-knowledge` (out of scope here) |
+| Failure                                              | Resolution                                                        |
+|------------------------------------------------------|-------------------------------------------------------------------|
+| `process/{cap}/` missing                             | run `/process <CAPABILITY_ID>` first                              |
+| Neither `.sln` nor `pyproject.toml` under `BACKEND_DIR` | run `/code TASK-NNN` first (Path A scaffolds the microservice) |
+| Zone is CHANNEL                                      | this skill is non-CHANNEL only — no action                        |
+| `pack.warnings` non-empty / required slice empty     | fix the upstream BCM in `banking-knowledge` (out of scope here)   |
 
 ---
 
@@ -159,6 +194,7 @@ Agent({
   description: "Contract harness for ${CAPABILITY_NAME}",
   prompt: """
    Mode: ${MODE}        # gen | validate
+   Stack:           ${LANG}              # dotnet | python — confirm on entry via §0.1
    Capability ID:   ${CAPABILITY_ID}
    Capability Name: ${CAPABILITY_NAME}
    Worktree root:   ${WORKTREE_ROOT}
@@ -170,26 +206,47 @@ Agent({
                                   api.yaml,schemas/*.schema.json}
      - bcm-pack pack ${CAPABILITY_ID} --deep --compact
 
-   Existing solution under ${BACKEND_DIR}:
-     - ${Namespace}.${CapabilityName}.sln
-     - src/${Namespace}.${CapabilityName}.{Domain,Application,Infrastructure,
-                                            Presentation,Contracts}/
+   Existing service under ${BACKEND_DIR}:
+     - .NET stack (LANG=dotnet):
+         ${Namespace}.${CapabilityName}.sln
+         src/${Namespace}.${CapabilityName}.{Domain,Application,Infrastructure,
+                                              Presentation,Contracts}/
+     - Python stack (LANG=python):
+         pyproject.toml + uv.lock
+         src/{namespace}_{capability_module}/{domain,application,infrastructure,
+                                                presentation,contracts}/
 
    Outputs you must produce (write):
-     - src/${Namespace}.${CapabilityName}.Contracts.Harness/   (new project)
+     - .NET: src/${Namespace}.${CapabilityName}.Contracts.Harness/    (new project)
+       Python: src/{namespace}_{capability_module}_contracts_harness/  (new package)
      - contracts/specs/openapi.yaml                            (OpenAPI 3.1 + x-lineage)
      - contracts/specs/asyncapi.yaml                           (AsyncAPI 2.6 + x-lineage)
      - contracts/specs/lineage.json                            (top-level lineage block)
      - contracts/specs/harness-report.md                       (validation verdict)
 
-   Solution wiring:
-     - dotnet sln add src/${Namespace}.${CapabilityName}.Contracts.Harness
-     - Edit Presentation Program.cs to mount /openapi.yaml, /asyncapi.yaml,
-       /contracts/lineage endpoints (do not rewrite the file).
-     - Edit Presentation .csproj to copy contracts/specs/* into bin output.
-     - Add an MSBuild target on the Presentation project that invokes the
-       harness `validate` command BeforeTargets="Build", failing the build
-       on drift.
+   Stack-specific wiring:
+     - .NET:
+         * dotnet sln add src/${Namespace}.${CapabilityName}.Contracts.Harness
+         * Edit Presentation Program.cs to mount /openapi.yaml, /asyncapi.yaml,
+           /contracts/lineage endpoints (do not rewrite the file).
+         * Edit Presentation .csproj to copy contracts/specs/* into bin output.
+         * Add an MSBuild target on the Presentation project that invokes the
+           harness `validate` command BeforeTargets="Build", failing the
+           build on drift.
+     - Python:
+         * Append the harness package to [tool.hatch.build.targets.wheel].packages
+           in pyproject.toml.
+         * Add a [project.scripts] entry for the harness CLI
+           ({namespace}-{capability-kebab}-harness).
+         * Add a [project.optional-dependencies] `harness` extra with
+           PyYAML / jsonschema / openapi-spec-validator / deepdiff.
+         * Edit src/{namespace}_{capability_module}/presentation/app.py to
+           mount FastAPI routes for /openapi.yaml, /asyncapi.yaml,
+           /contracts/lineage (do not rewrite the file).
+         * Add tests/test_contracts_harness.py — a pytest gate that calls
+           the harness `validate` subcommand and fails on drift (this is
+           the Python equivalent of the MSBuild ContractsHarness target).
+         * Edit Dockerfile to `COPY contracts/ ./contracts/`.
 
    Hard rules:
      - process/${CAPABILITY_ID}/ is READ-ONLY. The PreToolUse hook
@@ -199,21 +256,29 @@ Agent({
        an x-lineage block resolving to a process source + a bcm-pack source.
      - Spec ↔ runtime alignment: every controller action / consumer must
        map to an OpenAPI / AsyncAPI operation, and vice versa.
+       (.NET: Assembly.LoadFrom + reflection. Python: import create_app()
+       in a subprocess + walk app.routes / aio-pika queue declarations.)
      - Strict TECH-STRAT-001 conformance: routing keys are <EVT.…>.<RVT.…>,
        only RVT.* are autonomous bus messages, exchange-per-L2.
+     - The two emitted spec files are stack-agnostic — same capability ↔
+       byte-identical openapi.yaml / asyncapi.yaml across .NET and Python
+       implementations (modulo the servers.url port and generated.at).
 
    Failure handling:
      - If a closure check fails, return a structured failure report listing
        the gap (dangling process_source, missing controller, BCM warning).
-       Do not auto-fix the microservice — that's implement-capability's
-       remediation loop.
+       Do not auto-fix the microservice — that's the implementation
+       agent's remediation loop (implement-capability or
+       implement-capability-python depending on stack).
+     - If the on-disk stack contradicts the LANG hint above, abort and
+       report — likely a /code routing bug.
      - If process_folder_guard rejects a write, you targeted process/ by
        mistake. Stop and report.
 
    Final output:
      - contracts/specs/{openapi.yaml,asyncapi.yaml,lineage.json,harness-report.md}
-     - Tell the caller (this skill) the per-source coverage counts and the
-       drift verdict.
+     - Tell the caller (this skill) the resolved stack, the per-source
+       coverage counts, and the drift verdict.
   """
 })
 ```
@@ -243,13 +308,14 @@ Once the agent completes, summarise its report:
 If the agent returned a failure report, surface the gap exactly as it came
 back, and offer the right remediation:
 
-| Gap reported                                 | Remediation                                          |
-|----------------------------------------------|------------------------------------------------------|
-| Dangling `x-lineage.process.*` reference     | re-run `/process <CAPABILITY_ID>` to amend the model |
-| Dangling `x-lineage.bcm.*` reference         | fix BCM upstream in `banking-knowledge`              |
-| Missing controller for an OpenAPI path       | re-run `/code TASK-NNN` — implement-capability missed an action |
-| Missing consumer for an AsyncAPI subscribe   | re-run `/code TASK-NNN` — bus subscription not wired |
-| Drift between generated and committed specs  | run `/harness-backend <CAPABILITY_ID>` (default mode) and commit the diff |
+| Gap reported                                       | Remediation                                                                                       |
+|----------------------------------------------------|---------------------------------------------------------------------------------------------------|
+| Dangling `x-lineage.process.*` reference           | re-run `/process <CAPABILITY_ID>` to amend the model                                              |
+| Dangling `x-lineage.bcm.*` reference               | fix BCM upstream in `banking-knowledge`                                                           |
+| Missing HTTP route for an OpenAPI path             | re-run `/code TASK-NNN` — implement-capability(-python) missed a controller / FastAPI route       |
+| Missing consumer for an AsyncAPI subscribe         | re-run `/code TASK-NNN` — bus subscription not wired (MassTransit on .NET / aio-pika on Python)   |
+| Drift between generated and committed specs        | run `/harness-backend <CAPABILITY_ID>` (default mode) and commit the diff                          |
+| `LANG` hint contradicts on-disk layout              | fix the TECH-TACT ADR or the `/code` language routing (`bcm-pack` tactical_stack[0].tags)         |
 
 ---
 
