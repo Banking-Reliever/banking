@@ -45,6 +45,39 @@ class MintAnchorRequest(BaseModel):
     contact_details: ContactDetailsModel | None = None
 
 
+# ─── CMD.UPDATE_ANCHOR ─────────────────────────────────────────────────
+#
+# Note on sticky-PII (INV.BEN.003): the canonical wire schema is
+# CMD.SUP.002.BEN.UPDATE_ANCHOR.schema.json — additionalProperties=false +
+# minProperties=2 (command_id + at least one other). To preserve the
+# absent-vs-explicit-null distinction at the application boundary, the
+# presentation layer DOES NOT parse the body into this Pydantic model —
+# it inspects the raw dict and builds an UpdateFields VO directly. The
+# Pydantic model here exists ONLY to generate accurate OpenAPI documentation.
+
+
+class _ContactDetailsUpdateModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    email: str | None = None
+    phone: str | None = None
+    postal_address: PostalAddressModel | None = None
+
+
+class UpdateAnchorRequest(BaseModel):
+    """OpenAPI documentation only. Sticky-PII parsing uses the raw dict."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    command_id: str = Field(
+        ..., description="UUIDv7 — caller-supplied command id (30-day idempotency window)."
+    )
+    last_name: str | None = Field(default=None, min_length=1, max_length=200)
+    first_name: str | None = Field(default=None, min_length=1, max_length=200)
+    date_of_birth: date | None = None
+    contact_details: _ContactDetailsUpdateModel | None = None
+
+
 class BeneficiaryAnchorResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

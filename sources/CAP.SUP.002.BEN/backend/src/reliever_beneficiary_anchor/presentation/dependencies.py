@@ -11,7 +11,11 @@ if TYPE_CHECKING:
     from psycopg_pool import AsyncConnectionPool
     from aio_pika.abc import AbstractRobustConnection
 
-    from ..application.handlers import GetAnchorHandler, MintAnchorHandler
+    from ..application.handlers import (
+        GetAnchorHandler,
+        MintAnchorHandler,
+        UpdateAnchorHandler,
+    )
     from ..application.ports import SchemaValidator
     from ..infrastructure.persistence.unit_of_work import PostgresUnitOfWorkFactory
     from ..infrastructure.messaging.publisher import AioPikaPublisher
@@ -27,9 +31,11 @@ class AppState:
     outbox_relay: "OutboxRelay | None"
     projection_consumer: "ProjectionConsumer | None"
     mint_validator: "SchemaValidator"
+    update_validator: "SchemaValidator"
     rvt_validator: "SchemaValidator"
     uow_factory: "PostgresUnitOfWorkFactory"
     mint_handler: "MintAnchorHandler"
+    update_handler: "UpdateAnchorHandler"
     get_handler: "GetAnchorHandler"
 
 
