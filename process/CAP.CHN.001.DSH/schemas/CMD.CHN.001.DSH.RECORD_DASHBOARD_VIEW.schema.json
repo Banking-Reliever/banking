@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://reliever.example.com/process/CAP.CHN.001.DSH/CMD.CHN.001.DSH.RECORD_DASHBOARD_VIEW/0.1.0/schema.json",
-  "x-process-version": "0.1.0",
+  "x-process-version": "0.2.0",
   "x-process-role": "command-payload",
   "x-process-capability": "CAP.CHN.001.DSH",
   "x-process-command": "CMD.CHN.001.DSH.RECORD_DASHBOARD_VIEW",

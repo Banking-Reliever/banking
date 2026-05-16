@@ -1,11 +1,13 @@
 meta:
   capability: CAP.CHN.001.DSH
   layer: process-modelling
-  version: 0.1.0
+  version: 0.2.0
   governing_adrs:
     - ADR-BCM-FUNC-0009     # L2 breakdown of CAP.CHN.001 — Beneficiary Journey
     - ADR-BCM-URBA-0009     # Definition of an event-driven capability
+    - ADR-BCM-URBA-0010     # L2 capabilities as the urbanisation pivot
     - ADR-TECH-STRAT-001    # Bus topology rules (Rule 3 — payload form is domain-event-DDD)
+    - ADR-TECH-STRAT-007    # Identifier strategy — UUIDv7, immutable anchors
     - ADR-TECH-TACT-001     # Tactical stack — vanilla-js, BFF, etag, polling, pii-exclusion
 
 # ──────────────────────────────────────────────────────────────
@@ -115,12 +117,13 @@ aggregates:
           Allowed fields are case_id (an opaque participation identifier),
           tier code, numeric score, envelope amounts, category labels, and
           ISO timestamps. Beneficiary names, contact details, and any field
-          carried by OBJ.REF.001.BENEFICIARY_RECORD MUST NOT enter the
+          carried by OBJ.SUP.002.BENEFICIARY_RECORD MUST NOT enter the
           aggregate, the projection, or the emitted RVT payload.
         rationale: >-
           ADR-TECH-TACT-001 mandates `pii-exclusion` for the channel layer.
-          PII resolution is delegated to consumers via CAP.REF.001.BEN
-          look-ups when needed.
+          PII resolution is delegated to consumers via CAP.SUP.002.BEN
+          look-ups when needed (beneficiary identity anchor was relocated
+          from CAP.REF.001 to CAP.SUP.002 per ADR-BCM-FUNC-0016).
 
       - id: INV.DSH.002
         rule: >-

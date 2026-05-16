@@ -244,9 +244,11 @@ Three flows together cover every behaviour of this capability:
 | ADR | Role |
 |---|---|
 | `ADR-BCM-FUNC-0009` | L2 breakdown of CAP.CHN.001 — defines emitted/consumed events for the beneficiary journey |
-| `ADR-BCM-URBA-0003` | One Capability = One Responsibility |
+| `ADR-BCM-FUNC-0016` | Relocated the beneficiary identity anchor from CAP.REF.001 to CAP.SUP.002 — every PII-resolution reference now points to CAP.SUP.002.BEN |
 | `ADR-BCM-URBA-0009` | Definition of an event-driven capability |
 | `ADR-BCM-URBA-0010` | L2 capabilities as the urbanisation pivot |
 | `ADR-TECH-STRAT-001` | Bus rules (exchange-per-L2, routing-key convention, design-time schema governance) — NORMATIVE |
 | `ADR-TECH-STRAT-003` | API contract strategy (REST/HTTP, BFF per channel, ETag) |
+| `ADR-TECH-STRAT-007` | Identifier strategy — UUIDv7, immutable anchors |
+| `ADR-TECH-STRAT-008` | Capability as multi-faceted information producer |
 | `ADR-TECH-TACT-001` | Tactical stack — vanilla-JS frontend, BFF, ETag, polling, local-storage, **PII exclusion** |

@@ -1,7 +1,7 @@
 meta:
   capability: CAP.CHN.001.DSH
   layer: process-modelling
-  version: 0.1.0
+  version: 0.2.0
   derivation: >-
     This file is the synthesised HTTP/RPC surface of CAP.CHN.001.DSH. It is
     DERIVED from commands.yaml + read-models.yaml — the api_binding fields
