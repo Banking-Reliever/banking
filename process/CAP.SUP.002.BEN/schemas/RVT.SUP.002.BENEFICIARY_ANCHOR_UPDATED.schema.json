@@ -118,6 +118,31 @@
       "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
       "description": "UUIDv7 (RFC 9562 §5.7)."
     },
+    "Actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "subject"],
+      "description": "Principal that issued the command which produced this RVT. Derived at the producer from the authentication context per ADR-TECH-STRAT-003 (REST bearer-token JWT). System-emitted events (e.g. outbox replay, scheduled jobs) use kind=system. Service-to-service calls authenticated via a service principal use kind=service with the capability id as subject.",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["human", "service", "system"],
+          "description": "Classifier — drives audit / observability filters and lets PRJ.ANCHOR_HISTORY distinguish operator actions from automated ones."
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "kind=human: UUIDv7 of the user (the JWT `sub` claim). kind=service: capability id of the caller (e.g. CAP.SUP.001.RET). kind=system: a stable token identifying the system process (e.g. `system:outbox-replay`, `system:scheduler:retention-purge`)."
+        },
+        "on_behalf_of": {
+          "type": ["string", "null"],
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "Optional UUIDv7 of the end-user a system / service acted for (e.g. PSEUDONYMISE issued by CAP.SUP.001.RET on behalf of the data subject). Null when the action is purely administrative."
+        }
+      }
+    },
     "ContactDetails": {
       "type": "object",
       "additionalProperties": false,
@@ -140,13 +165,14 @@
     "Envelope": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["message_id", "schema_version", "emitted_at", "emitting_capability", "correlation_id"],
+      "required": ["message_id", "schema_version", "emitted_at", "emitting_capability", "correlation_id", "actor"],
       "properties": {
         "message_id":          { "$ref": "#/$defs/Uuidv7", "description": "UUIDv7 of THIS bus message (per ADR-TECH-STRAT-007 Rule 4)." },
         "schema_version":      { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$", "description": "SemVer of this RVT schema." },
         "emitted_at":          { "type": "string", "format": "date-time", "description": "Wall-clock timestamp at the producer outbox." },
         "emitting_capability": { "type": "string", "const": "CAP.SUP.002.BEN" },
         "correlation_id":      { "$ref": "#/$defs/Uuidv7", "description": "UUIDv7 of the originating business operation; equals internal_id for events whose root operation is anchor-scoped." },
+        "actor":               { "$ref": "#/$defs/Actor", "description": "Principal that issued the command which produced this RVT (per ADR-TECH-STRAT-003). Sourced into PRJ.ANCHOR_HISTORY.actor by the projection consumer." },
         "causation_id":        { "$ref": "#/$defs/Uuidv7", "description": "UUIDv7 of the immediate cause (the command_id of the accepted command)." }
       }
     }

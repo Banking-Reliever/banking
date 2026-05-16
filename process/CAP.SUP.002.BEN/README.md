@@ -9,6 +9,32 @@
 > re-roadmaps and re-implementations of the same FUNC ADR. The
 > `roadmap/CAP.SUP.002.BEN/` folder consumes it.
 
+## Delta v0.2.0 (2026-05-16)
+
+Add `actor` to the RVT envelope and tighten `PRJ.ANCHOR_HISTORY.fed_by`
+with explicit per-field sourcing.
+
+| File | Change |
+|---|---|
+| `schemas/RVT.SUP.002.BENEFICIARY_ANCHOR_UPDATED.schema.json` | Added required `envelope.actor` field with shape `{kind: human \| service \| system, subject: string, on_behalf_of?: string}`. New `Actor` $def. |
+| `bus.yaml` | Bumped to v0.2.0. Added `ADR-TECH-STRAT-003` to `governing_adrs`. New `publication.envelope` block documenting the agreed shape, including the new `actor` field. |
+| `read-models.yaml` | Bumped to v0.2.0. Added `ADR-TECH-STRAT-003` to `governing_adrs`. Restructured `PRJ.ANCHOR_HISTORY.fed_by` from a flat RVT list to an `[{rvt, sources}]` form that maps each projection column to its precise wire-format source (`payload.*` or `envelope.actor`). Sharpened `update_strategy` text to flag that `actor.subject` is itself audit-grade personal data with the same 7-year retention. The `actor` projection column keeps its name — implementation chooses JSONB vs decomposed storage. |
+
+No stable identifier was renamed (`AGG.IDENTITY_ANCHOR`, the 5 commands,
+`POL.ON_RIGHT_EXERCISED` placeholder, `PRJ.ANCHOR_DIRECTORY` /
+`ANCHOR_HISTORY`, `QRY.GET_ANCHOR` / `GET_ANCHOR_HISTORY` are all
+preserved). The only wire-format change is the new required envelope
+field, which is safe to add today because no live producer or consumer
+exists for `CAP.SUP.002.BEN` yet (only the stub bundle under
+`sources/CAP.SUP.002.BEN/stub/` from TASK-001 — see follow-up note below).
+
+**Follow-up needed (out of scope for this PR)**: the stub for
+TASK-001 (`sources/CAP.SUP.002.BEN/stub/`) currently emits payloads
+that do not carry `envelope.actor`. A small `/fix` against the open
+TASK-001 (or a `/code` re-run with the new schema baseline) is required
+to bring the stub into conformance. Suggested stub default:
+`{kind: "system", subject: "system:stub-publisher"}`.
+
 ## Migration note (2026-05-15)
 
 This capability was previously modelled at `process/CAP.REF.001.BEN/`
@@ -69,10 +95,10 @@ is canonical and must NOT be duplicated here:
 | `commands.yaml` | CMD.* — five verbs (`MINT_ANCHOR`, `UPDATE_ANCHOR`, `ARCHIVE_ANCHOR`, `RESTORE_ANCHOR`, `PSEUDONYMISE_ANCHOR`), preconditions, idempotency strategy, the aggregate that handles each |
 | `aggregates.yaml` | AGG.SUP.002.BEN.IDENTITY_ANCHOR — single per-beneficiary aggregate keyed on a server-minted UUIDv7 internal_id; sticky-PII rule on UPDATE; full-snapshot semantics on every emitted event; PSEUDONYMISE wipes PII via crypto-shredding (per ADR-TECH-TACT-002) and is irreversible |
 | `policies.yaml` | **Empty** — no upstream subscriptions in BCM v1. The placeholder for the future `POL.ON_RIGHT_EXERCISED` is documented inline |
-| `read-models.yaml` | PRJ.* — anchor directory + PII-free anchor history; QRY.* — get-by-internal_id + history |
+| `read-models.yaml` | PRJ.* — anchor directory + PII-free anchor history; QRY.* — get-by-internal_id + history. v0.2.0: `PRJ.ANCHOR_HISTORY.fed_by` now carries explicit per-field sourcing including `actor: envelope.actor` |
 | `api.yaml` | Derived REST surface (commands → POST/PATCH, queries → GET) |
-| `bus.yaml` | Exchange `sup.002.ben-events`, single routing key (`EVT.<...>.RVT.<...>` form per ADR-TECH-STRAT-001 Rule 4), no subscriptions, broad consumer list (every L2 needing identity) |
-| `schemas/` | JSON Schemas Draft 2020-12 — five `CMD.*` (command payloads) and one `RVT.*` (resource-event payload, full-snapshot semantics with `transition_kind` discriminator and a conditional shape that nulls PII for the PSEUDONYMISED case) |
+| `bus.yaml` | Exchange `sup.002.ben-events`, single routing key (`EVT.<...>.RVT.<...>` form per ADR-TECH-STRAT-001 Rule 4), no subscriptions, broad consumer list (every L2 needing identity). v0.2.0: explicit `publication.envelope` block including the new `actor` field |
+| `schemas/` | JSON Schemas Draft 2020-12 — five `CMD.*` (command payloads) and one `RVT.*` (resource-event payload, full-snapshot semantics with `transition_kind` discriminator, a conditional shape that nulls PII for the PSEUDONYMISED case, and a UUIDv7 envelope with a required `actor` object since v0.2.0) |
 
 ## Scenario walkthroughs
 

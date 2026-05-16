@@ -1,9 +1,10 @@
 meta:
   capability: CAP.SUP.002.BEN
   layer: process-modelling
-  version: 0.1.0
+  version: 0.2.0
   governing_adrs:
     - ADR-BCM-FUNC-0016
+    - ADR-TECH-STRAT-003  # API contract strategy — JWT-borne actor (envelope.actor sourced from `sub` claim)
     - ADR-TECH-STRAT-004  # dual referential access — the QRY API is the synchronous access path
     - ADR-TECH-STRAT-007  # internal_id (UUIDv7) is the sole lookup key
     - ADR-TECH-STRAT-008  # publication model — REST is one of the two access paths
@@ -59,21 +60,40 @@ read_models:
   - id: PRJ.SUP.002.BEN.ANCHOR_HISTORY
     name: Anchor transition history (audit trail)
     fed_by:
-      - RVT.SUP.002.BENEFICIARY_ANCHOR_UPDATED
+      - rvt: RVT.SUP.002.BENEFICIARY_ANCHOR_UPDATED
+        # Explicit per-field sourcing — every projection column resolves to
+        # a wire-format field on the RVT (payload OR envelope). This is the
+        # contract the projection consumer implements; if the RVT schema
+        # ever drops one of these fields the projection is no longer
+        # populable and /process must be re-run.
+        sources:
+          internal_id:       payload.internal_id
+          revision:          payload.revision
+          transition_kind:   payload.transition_kind
+          command_id:        payload.command_id          # may be null only for system-emitted events
+          right_exercise_id: payload.right_exercise_id   # set only for PSEUDONYMISED
+          actor:             envelope.actor              # object {kind, subject, on_behalf_of?} — see RVT envelope schema
+          occurred_at:       payload.occurred_at
     update_strategy: >-
       Append-only — one row per received RVT, keyed by (internal_id,
-      revision). Does NOT carry PII fields (only the transition_kind, the
-      command_id, the actor, and the wall-clock timestamp), so the audit
-      trail survives a PSEUDONYMISE transition without re-creating an
-      Article-17 violation.
+      revision). Does NOT carry PII payload fields (only the
+      transition_kind, the command_id, the actor object, and the
+      wall-clock timestamp), so the audit trail survives a PSEUDONYMISE
+      transition without re-creating an Article-17 violation. Note: the
+      actor object IS audit-grade personal data when actor.kind == "human"
+      (actor.subject is the user's UUIDv7) — the projection inherits the
+      7-year retention floor of any identified-user audit log, but does NOT
+      inherit the data-subject PSEUDONYMISE obligation
+      (right-to-be-forgotten on the beneficiary does not erase the audit
+      lineage of the operators / DPO who handled the request).
     fields:
       - { name: internal_id,       kind: identity }
       - { name: revision,          kind: snapshot,  description: "Composite primary key with internal_id" }
       - { name: transition_kind,   kind: snapshot,  description: "MINTED | UPDATED | ARCHIVED | RESTORED | PSEUDONYMISED" }
-      - { name: command_id,        kind: snapshot,  nullable: true, description: "Caller-supplied command_id; null only for system-emitted events" }
-      - { name: right_exercise_id, kind: snapshot,  nullable: true, description: "Set only for PSEUDONYMISED transitions" }
-      - { name: actor,             kind: snapshot,  description: "Authenticated principal that issued the command (subject claim from the JWT, per ADR-TECH-STRAT-003)" }
-      - { name: occurred_at,       kind: snapshot }
+      - { name: command_id,        kind: snapshot,  nullable: true, description: "Caller-supplied command_id; null only for system-emitted events. Sourced from RVT payload." }
+      - { name: right_exercise_id, kind: snapshot,  nullable: true, description: "Set only for PSEUDONYMISED transitions. Sourced from RVT payload." }
+      - { name: actor,             kind: snapshot,  description: "Object {kind, subject, on_behalf_of?} — principal that issued the command. Sourced from envelope.actor (per ADR-TECH-STRAT-003). Implementation may store as JSONB or as three decomposed columns — the model is neutral on that choice." }
+      - { name: occurred_at,       kind: snapshot,  description: "Wall-clock timestamp of the transition at the aggregate. Sourced from RVT payload." }
     consistency: eventual
     retention: 7y
     retention_rationale: >-
