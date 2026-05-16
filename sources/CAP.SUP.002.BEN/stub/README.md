@@ -5,6 +5,15 @@
 > Owns nothing: every wire format and HTTP shape it exposes is read from
 > `process/CAP.SUP.002.BEN/` (read-only).
 
+> **⚠ Partial supersession (TASK-002 merged).** The **MINT** path
+> (`POST /anchors`) and the **GET** path (`GET /anchors/{internal_id}`) are
+> now served by the real microservice under
+> [`../backend/`](../backend/README.md). This stub remains useful for the
+> **UPDATED / ARCHIVED / RESTORED / PSEUDONYMISED** transitions until
+> TASK-003 … TASK-005 land. Downstream consumers should target the real
+> service for MINT + GET and continue using this stub for the lifecycle
+> verbs they need before the corresponding task ships.
+
 This is a **development stub** — it materialises the consumer-facing surface
 of `CAP.SUP.002.BEN` (the canonical Beneficiary Identity Anchor) so that
 downstream consumer capabilities (SCO, ENR, ENV, DSH, VIE, B2B.FLW, AUD, RET,
