@@ -3,13 +3,17 @@ task_id: TASK-002
 capability_id: CAP.SUP.002.BEN
 capability_name: Beneficiary Identity Anchor
 epic: Epic 2 — Foundation (anchor minting and synchronous lookup)
-status: todo
+status: in_review
 priority: high
 depends_on: []
 task_type: full-microservice
 loop_count: 0
 max_loops: 10
+pr_url: https://github.com/Banking-Reliever/banking/pull/15
 ---
+
+> **Started on:** 2026-05-16
+> **Submitted for review on:** 2026-05-16
 
 # TASK-002 — Foundation: mint anchor (UUIDv7) and serve synchronous lookup
 
