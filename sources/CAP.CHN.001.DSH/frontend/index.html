@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>Tableau de bord — Bénéficiaire</title>
+  <link rel="stylesheet" href="./app.css" />
+</head>
+<body>
+  <header class="app-header" role="banner">
+    <div class="app-header__title">
+      <h1>Tableau de bord</h1>
+      <p class="app-header__subtitle">Votre situation, mise à jour en temps réel</p>
+    </div>
+    <span
+      id="branch-badge"
+      class="branch-badge"
+      data-testid="branch-badge"
+      title="Slug de la branche Git (worktree dev)"
+    >feat-task-002-bff-foundation-subscriptions-aggregate</span>
+  </header>
+
+  <main class="app-main" role="main">
+    <!-- ── Loading overlay (visible at startup) ── -->
+    <div id="loading" class="overlay overlay--loading" data-testid="loading-overlay">
+      <div class="overlay__inner">
+        <div class="spinner" aria-hidden="true"></div>
+        <p class="overlay__message">Chargement…</p>
+      </div>
+    </div>
+
+    <!-- ── Consent gate (DOM scaffold; enforcement deferred to TASK-003) ── -->
+    <div
+      id="consent-gate"
+      class="overlay overlay--consent hidden"
+      data-testid="consent-gate"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="consent-title"
+    >
+      <div class="overlay__inner">
+        <h2 id="consent-title">Consentement requis</h2>
+        <p id="consent-message" class="overlay__message">
+          Pour afficher votre tableau de bord, votre consentement est nécessaire.
+        </p>
+        <button type="button" class="btn btn--primary" onclick="window.App.retryConsent()">
+          Mettre à jour mon consentement
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Empty-state placeholder ── -->
+    <!-- Rendered on 200-with-null-fields and on 404. NEVER surfaces a raw 404. -->
+    <section
+      id="empty-state"
+      class="empty-state hidden"
+      data-testid="empty-state"
+      aria-live="polite"
+    >
+      <div class="empty-state__inner">
+        <div class="empty-state__icon" aria-hidden="true">⌛</div>
+        <h2 class="empty-state__title" data-i18n="emptyState.title">
+          Première synchronisation en cours…
+        </h2>
+        <p class="empty-state__hint" data-i18n="emptyState.hint">
+          Votre tableau de bord apparaîtra dès que vos premières données seront disponibles.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── Dashboard body ── -->
+    <!--
+      DOM order is part of the dignity rule (INV-level constraint from
+      ADR-BCM-FUNC-0009 + ADR-TECH-TACT-001): progression BEFORE restrictions.
+      Both sections are intentionally empty for TASK-002 — TASK-003 fills them.
+      The order is asserted by the test suite; do not flip it.
+    -->
+    <div id="dashboard" class="dashboard hidden" data-testid="dashboard">
+      <section
+        id="progression-section"
+        class="section section--progression"
+        data-testid="progression-section"
+        aria-labelledby="progression-heading"
+      >
+        <h2 id="progression-heading" class="section__title">Votre progression</h2>
+        <!-- TASK-003 will render: current tier, score, next tier projection -->
+      </section>
+
+      <section
+        id="restrictions-section"
+        class="section section--restrictions"
+        data-testid="restrictions-section"
+        aria-labelledby="restrictions-heading"
+      >
+        <h2 id="restrictions-heading" class="section__title">Vos enveloppes</h2>
+        <!-- TASK-003 will render: open envelopes + restricted/blocked categories -->
+      </section>
+    </div>
+
+    <!-- ── Error toast ── -->
+    <div
+      id="error-toast"
+      class="toast toast--error hidden"
+      data-testid="error-toast"
+      role="status"
+      aria-live="polite"
+    >
+      <span id="error-toast-message" class="toast__message"></span>
+      <button type="button" class="toast__close" onclick="window.App.dismissError()" aria-label="Fermer">
+        ×
+      </button>
+    </div>
+  </main>
+
+  <footer class="app-footer" role="contentinfo">
+    <small>
+      <span data-testid="poll-indicator" id="poll-indicator" class="poll-indicator" aria-live="polite">
+        En attente…
+      </span>
+      <span class="footer-spacer">·</span>
+      <span>Mise à jour automatique toutes les 5 secondes</span>
+    </small>
+  </footer>
+
+  <!-- Vanilla ES modules — no bundler, no third-party library. -->
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
