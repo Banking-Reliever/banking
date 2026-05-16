@@ -1,9 +1,10 @@
 meta:
   capability: CAP.SUP.002.BEN
   layer: process-modelling
-  version: 0.1.0
+  version: 0.2.0
   governing_adrs:
     - ADR-TECH-STRAT-001  # Dual-rail event infrastructure — NORMATIVE
+    - ADR-TECH-STRAT-003  # API contract strategy — JWT-borne actor sourced into envelope.actor
     - ADR-TECH-STRAT-004  # dual-referential-access — bus replication is one of the two access paths
     - ADR-TECH-STRAT-007  # internal_id (UUIDv7) is the correlation key
     - ADR-TECH-STRAT-008  # information publication model — capability as multi-faceted producer
@@ -55,6 +56,22 @@ publication:
         For PSEUDONYMISED transitions, the four PII fields are crypto-shredded
         null markers — consumers MUST wipe their local cache for that
         internal_id while preserving the internal_id reference itself.
+
+  envelope:
+    # The exact shape lives in schemas/RVT.SUP.002.BENEFICIARY_ANCHOR_UPDATED.schema.json
+    # ($defs.Envelope). This block declares the agreed envelope fields at the
+    # process layer so reviewers see the full bus contract in one place.
+    message_id_kind:    uuidv7      # per ADR-TECH-STRAT-007 Rule 4
+    correlation_id_kind: uuidv7     # set to internal_id for anchor-scoped events
+    causation_id_kind:  uuidv7      # set to command_id of the accepted command
+    schema_version_kind: semver
+    actor:                          # added v0.2.0 — sourced into PRJ.ANCHOR_HISTORY.actor
+      shape: { kind: enum[human, service, system], subject: string, on_behalf_of: optional string }
+      source: >-
+        Derived at the producer from the authentication context per
+        ADR-TECH-STRAT-003. JWT `sub` claim for human actors; service
+        principal (= capability id) for service-to-service; a stable
+        `system:*` token for outbox replay / scheduled jobs.
 
   correlation_key: internal_id
   identity_resolution: >-
