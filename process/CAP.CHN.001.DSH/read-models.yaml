@@ -1,10 +1,11 @@
 meta:
   capability: CAP.CHN.001.DSH
   layer: process-modelling
-  version: 0.1.0
+  version: 0.2.0
   governing_adrs:
     - ADR-BCM-FUNC-0009
     - ADR-TECH-STRAT-003   # ETag, BFF per channel
+    - ADR-TECH-STRAT-008   # Capability as multi-faceted information producer
     - ADR-TECH-TACT-001    # vanilla-js polling, etag, local-storage, pii-exclusion
 
 # ──────────────────────────────────────────────────────────────

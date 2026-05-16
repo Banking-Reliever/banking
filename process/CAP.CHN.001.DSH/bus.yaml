@@ -1,9 +1,11 @@
 meta:
   capability: CAP.CHN.001.DSH
   layer: process-modelling
-  version: 0.1.0
+  version: 0.2.0
   governing_adrs:
     - ADR-TECH-STRAT-001  # Dual-rail event infrastructure — NORMATIVE
+    - ADR-TECH-STRAT-007  # Identifier strategy — UUIDv7, immutable anchors
+    - ADR-TECH-STRAT-008  # Capability as multi-faceted information producer
 
 # ──────────────────────────────────────────────────────────────
 # Bus topology — the operational rail (RabbitMQ topic exchange)
@@ -36,9 +38,10 @@ publication:
   identity_resolution: >-
     The producer (this BFF) ships ONLY case_id and a small PII-free snapshot
     (current tier code, current score). Downstream consumers (e.g. data
-    analytics) resolve case_id → OBJ.REF.001.BENEFICIARY_RECORD.internal_id
-    via CAP.REF.001.BEN if needed. INV.DSH.001 forbids any PII from entering
-    the wire payload.
+    analytics) resolve case_id → OBJ.SUP.002.BENEFICIARY_RECORD.internal_id
+    via CAP.SUP.002.BEN if needed (beneficiary identity anchor was relocated
+    from CAP.REF.001 to CAP.SUP.002 per ADR-BCM-FUNC-0016). INV.DSH.001
+    forbids any PII from entering the wire payload.
 
 # ──────────────────────────────────────────────────────────────
 # Subscription side — events consumed from upstream capabilities.
