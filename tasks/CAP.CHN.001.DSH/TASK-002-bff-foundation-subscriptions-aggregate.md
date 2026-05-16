@@ -3,7 +3,7 @@ task_id: TASK-002
 capability_id: CAP.CHN.001.DSH
 capability_name: Beneficiary Dashboard
 epic: Epic 1 — BFF foundation, subscription bindings, dashboard aggregate
-status: in_review
+status: done
 priority: high
 depends_on: [CAP.BSP.001.SCO/TASK-001, CAP.BSP.001.TIE/TASK-001, CAP.BSP.004.ENV/TASK-001]
 task_type: full-microservice
