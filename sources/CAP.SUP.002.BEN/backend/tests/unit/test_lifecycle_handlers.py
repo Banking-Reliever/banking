@@ -55,13 +55,13 @@ from reliever_beneficiary_anchor.infrastructure.schema_validation.loader import 
 class _InMemoryAnchorRepo(AnchorRepository):
     def __init__(self) -> None:
         # internal_id -> anchor instance (the SAME instance, so mutation
-        # by ``load_for_update`` is observable in the test factory).
+        # by ``get`` is observable in the test factory).
         self.rows: dict[str, IdentityAnchor] = {}
 
     async def insert(self, anchor: IdentityAnchor) -> None:
         self.rows[str(anchor.internal_id)] = anchor
 
-    async def load_for_update(self, internal_id: str) -> IdentityAnchor | None:
+    async def get(self, internal_id: str) -> IdentityAnchor | None:
         return self.rows.get(internal_id)
 
     async def update(self, anchor: IdentityAnchor) -> None:

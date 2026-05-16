@@ -16,6 +16,7 @@ if TYPE_CHECKING:
         GetAnchorHandler,
         MintAnchorHandler,
         RestoreAnchorHandler,
+        UpdateAnchorHandler,
     )
     from ..application.ports import SchemaValidator
     from ..infrastructure.persistence.unit_of_work import PostgresUnitOfWorkFactory
@@ -32,11 +33,13 @@ class AppState:
     outbox_relay: "OutboxRelay | None"
     projection_consumer: "ProjectionConsumer | None"
     mint_validator: "SchemaValidator"
+    update_validator: "SchemaValidator"
     archive_validator: "SchemaValidator"
     restore_validator: "SchemaValidator"
     rvt_validator: "SchemaValidator"
     uow_factory: "PostgresUnitOfWorkFactory"
     mint_handler: "MintAnchorHandler"
+    update_handler: "UpdateAnchorHandler"
     archive_handler: "ArchiveAnchorHandler"
     restore_handler: "RestoreAnchorHandler"
     get_handler: "GetAnchorHandler"

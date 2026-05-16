@@ -14,11 +14,10 @@ from psycopg_pool import AsyncConnectionPool
 
 from ..application.handlers import (
     ArchiveAnchorHandler,
-    EXCHANGE_NAME,
     GetAnchorHandler,
     MintAnchorHandler,
     RestoreAnchorHandler,
-    ROUTING_KEY,
+    UpdateAnchorHandler,
 )
 from ..infrastructure.messaging.outbox_relay import OutboxRelay
 from ..infrastructure.messaging.projection_consumer import ProjectionConsumer
@@ -55,11 +54,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         log.info("startup.begin")
 
-        # 1. Validators — fail-fast if a schema is missing/malformed.
         validators = build_validators_bundle(settings.process_schemas_dir)
         log.info("schemas.loaded", dir=str(settings.process_schemas_dir))
 
-        # 2. Postgres pool.
         pool = AsyncConnectionPool(
             settings.pg_dsn,
             min_size=settings.pg_min_pool,
@@ -70,19 +67,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         await pool.wait()
         log.info("pg.pool_open", dsn=_redact_dsn(settings.pg_dsn))
 
-        # 3. Migrations.
         if settings.run_migrations_on_startup:
             async with pool.connection() as conn:
                 await conn.set_autocommit(True)
                 await apply_migrations(conn, settings.migrations_dir)
             log.info("migrations.applied")
 
-        # 4. RabbitMQ connection.
         amqp_conn = await aio_pika.connect_robust(settings.amqp_url)
         publisher = AioPikaPublisher(amqp_conn, settings.exchange_name)
         await publisher.ensure_exchange()
 
-        # 5. Outbox relay.
         outbox_relay: OutboxRelay | None = None
         if settings.run_outbox_relay:
             outbox_relay = OutboxRelay(
@@ -93,7 +87,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
             await outbox_relay.start()
 
-        # 6. Projection consumer.
         projection_consumer: ProjectionConsumer | None = None
         if settings.run_projection_consumer:
             writer = PostgresAnchorDirectoryWriter(pool)
@@ -107,21 +100,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
             await projection_consumer.start()
 
-        # 7. Application services.
         reader = PostgresAnchorDirectoryReader(pool)
         uow_factory = PostgresUnitOfWorkFactory(pool)
-        mint_handler = MintAnchorHandler(
-            uow_factory=uow_factory,
-            rvt_validator=validators.rvt,
-        )
-        archive_handler = ArchiveAnchorHandler(
-            uow_factory=uow_factory,
-            rvt_validator=validators.rvt,
-        )
-        restore_handler = RestoreAnchorHandler(
-            uow_factory=uow_factory,
-            rvt_validator=validators.rvt,
-        )
+        mint_handler = MintAnchorHandler(uow_factory=uow_factory, rvt_validator=validators.rvt)
+        update_handler = UpdateAnchorHandler(uow_factory=uow_factory, rvt_validator=validators.rvt)
+        archive_handler = ArchiveAnchorHandler(uow_factory=uow_factory, rvt_validator=validators.rvt)
+        restore_handler = RestoreAnchorHandler(uow_factory=uow_factory, rvt_validator=validators.rvt)
         get_handler = GetAnchorHandler(reader=reader)
 
         app.state.runtime = AppState(
@@ -130,12 +114,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             publisher=publisher,
             outbox_relay=outbox_relay,
             projection_consumer=projection_consumer,
-            mint_validator=validators.mint_command,
-            archive_validator=validators.archive_command,
-            restore_validator=validators.restore_command,
+            mint_validator=validators.mint,
+            update_validator=validators.update,
+            archive_validator=validators.archive,
+            restore_validator=validators.restore,
             rvt_validator=validators.rvt,
             uow_factory=uow_factory,
             mint_handler=mint_handler,
+            update_handler=update_handler,
             archive_handler=archive_handler,
             restore_handler=restore_handler,
             get_handler=get_handler,
@@ -160,7 +146,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(
         title="CAP.SUP.002.BEN — Beneficiary Identity Anchor",
         version="0.1.0",
-        description="The canonical anchor for beneficiary identity in Reliever (MINT + GET + ARCHIVE + RESTORE).",
+        description="The canonical anchor for beneficiary identity in Reliever (MINT + UPDATE + GET + ARCHIVE + RESTORE).",
         lifespan=lifespan,
     )
     app.include_router(anchors_router)
@@ -169,10 +155,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
 
 def _redact_dsn(dsn: str) -> str:
-    # Hide the password section for logs — best-effort.
     import re
+
     return re.sub(r"://([^:]+):([^@]+)@", r"://\1:***@", dsn)
 
 
-# uvicorn entry point: ``uvicorn reliever_beneficiary_anchor.presentation.app:app``
 app = create_app()

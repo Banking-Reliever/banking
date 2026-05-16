@@ -1,30 +1,25 @@
-"""AGG.SUP.002.BEN.IDENTITY_ANCHOR — the consistency boundary for one anchor.
-
-This module is the canonical place where the invariants of the aggregate
-are enforced. The application layer orchestrates persistence and outbox
-writes around the aggregate, but it cannot reach inside the aggregate to
-mutate state directly — every transition goes through a method here.
-
-TASK-002 implements MINT. TASK-004 adds ARCHIVE / RESTORE. UPDATE lands at
-TASK-003 (parallel branch). PSEUDONYMISE lands at TASK-005.
-"""
+"""AGG.SUP.002.BEN.IDENTITY_ANCHOR consistency boundary."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
-from typing import Union
+from typing import TYPE_CHECKING
 
 from uuid_extensions import uuid7
 
 from .errors import (
     AnchorAlreadyArchived,
+    AnchorArchived,
     AnchorNotArchived,
     AnchorPseudonymised,
     IdentityFieldsMissing,
+    InternalIdImmutable,
     InvalidReason,
+    NoFieldsToUpdate,
 )
-from .events import AnchorArchived, AnchorMinted, AnchorRestored
+from .events import AnchorArchived as AnchorArchivedEvent
+from .events import AnchorMinted, AnchorRestored, AnchorUpdated, TransitionEvent
 from .value_objects import (
     Actor,
     AnchorStatus,
@@ -34,7 +29,9 @@ from .value_objects import (
     Pii,
 )
 
-# Canonical archive reasons — mirror process/.../CMD.ARCHIVE_ANCHOR.schema.json.
+if TYPE_CHECKING:  # pragma: no cover
+    from ..application.dto import UpdateFields
+
 ARCHIVE_REASONS: frozenset[str] = frozenset(
     {
         "PROGRAMME_EXIT_SUCCESS",
@@ -43,16 +40,7 @@ ARCHIVE_REASONS: frozenset[str] = frozenset(
         "ADMINISTRATIVE_ARCHIVAL",
     }
 )
-
-# Canonical restore reasons — mirror process/.../CMD.RESTORE_ANCHOR.schema.json.
-RESTORE_REASONS: frozenset[str] = frozenset(
-    {"ARCHIVED_IN_ERROR", "REINSTATED_AFTER_REVIEW"}
-)
-
-# Union of every domain event the aggregate may emit. ``pull_pending_events``
-# returns ``list[PendingEvent]`` to give the application layer a single,
-# discriminated-union return type.
-PendingEvent = Union[AnchorMinted, AnchorArchived, AnchorRestored]
+RESTORE_REASONS: frozenset[str] = frozenset({"ARCHIVED_IN_ERROR", "REINSTATED_AFTER_REVIEW"})
 
 
 def _now_utc() -> datetime:
@@ -60,14 +48,11 @@ def _now_utc() -> datetime:
 
 
 def _mint_uuidv7() -> str:
-    """RFC-9562 §5.7 UUIDv7. Wall-clock prefixed, k-sortable, version=7."""
     return str(uuid7())
 
 
 @dataclass(slots=True)
 class IdentityAnchor:
-    """The aggregate root. Holds state + enforces invariants."""
-
     internal_id: InternalId
     pii: Pii
     anchor_status: AnchorStatus
@@ -76,11 +61,7 @@ class IdentityAnchor:
     pseudonymized_at: datetime | None = None
     last_processed_command_id: str | None = None
     last_processed_client_request_id: str | None = None
-    # Pending domain events buffered for the application layer to translate
-    # into outbox rows. Cleared once persisted.
-    _pending_events: list[PendingEvent] = field(default_factory=list)
-
-    # ─── Factory — MINT_ANCHOR ─────────────────────────────────────────
+    _pending_events: list[TransitionEvent] = field(default_factory=list)
 
     @classmethod
     def mint(
@@ -93,18 +74,6 @@ class IdentityAnchor:
         contact_details: ContactDetails | None,
         actor: Actor,
     ) -> "IdentityAnchor":
-        """Mint a new anchor and buffer the MINTED domain event.
-
-        Enforces:
-          - INV.BEN.001 — server mints UUIDv7 (no caller-supplied id reaches here)
-          - INV.BEN.007 — emits exactly one event carrying the full post-state
-          - INV.BEN.008 — caller-side; idempotency is enforced at the application
-            boundary against the idempotency_keys table.
-
-        Raises ``IdentityFieldsMissing`` (PRE.002) if any required field is
-        missing or empty.
-        """
-        # PRE.002 — required identity fields.
         missing: list[str] = []
         if not last_name:
             missing.append("last_name")
@@ -115,11 +84,8 @@ class IdentityAnchor:
         if missing:
             raise IdentityFieldsMissing(missing)
 
-        # INV.BEN.001 — server mints. The aggregate is the only legitimate
-        # source of internal_id. No caller-supplied id flows into this method.
         internal_id = InternalId(_mint_uuidv7())
         now = _now_utc()
-
         anchor = cls(
             internal_id=internal_id,
             pii=Pii(
@@ -135,14 +101,12 @@ class IdentityAnchor:
             last_processed_command_id=None,
             last_processed_client_request_id=str(client_request_id),
         )
-
-        # INV.BEN.007 — emit ONE event per transition with the full snapshot.
         anchor._pending_events.append(
             AnchorMinted(
                 internal_id=internal_id,
-                last_name=last_name,  # type: ignore[arg-type] — guarded above
-                first_name=first_name,  # type: ignore[arg-type]
-                date_of_birth=date_of_birth,  # type: ignore[arg-type]
+                last_name=last_name,
+                first_name=first_name,
+                date_of_birth=date_of_birth,
                 contact_details=contact_details,
                 creation_date=anchor.creation_date,
                 revision=anchor.revision,
@@ -154,7 +118,83 @@ class IdentityAnchor:
         )
         return anchor
 
-    # ─── Transition — ARCHIVE_ANCHOR ───────────────────────────────────
+    @classmethod
+    def hydrate(
+        cls,
+        *,
+        internal_id: str,
+        last_name: str | None,
+        first_name: str | None,
+        date_of_birth: date | None,
+        contact_details: ContactDetails | None,
+        anchor_status: AnchorStatus,
+        creation_date: date,
+        revision: int,
+        pseudonymized_at: datetime | None = None,
+        last_processed_command_id: str | None = None,
+        last_processed_client_request_id: str | None = None,
+    ) -> "IdentityAnchor":
+        return cls(
+            internal_id=InternalId(internal_id),
+            pii=Pii(
+                last_name=last_name,
+                first_name=first_name,
+                date_of_birth=date_of_birth,
+                contact_details=contact_details,
+            ),
+            anchor_status=anchor_status,
+            creation_date=creation_date,
+            revision=revision,
+            pseudonymized_at=pseudonymized_at,
+            last_processed_command_id=last_processed_command_id,
+            last_processed_client_request_id=last_processed_client_request_id,
+        )
+
+    def update(self, *, command_id: str, fields: "UpdateFields", actor: Actor) -> None:
+        if self.anchor_status == "ARCHIVED":
+            raise AnchorArchived(str(self.internal_id))
+        if self.anchor_status == "PSEUDONYMISED":
+            raise AnchorPseudonymised(str(self.internal_id))
+        assert self.anchor_status == "ACTIVE"
+
+        if fields.attempts_internal_id_mutation:
+            raise InternalIdImmutable()
+        if not fields.has_any_mutation:
+            raise NoFieldsToUpdate()
+
+        new_last_name = fields.merge_last_name(self.pii.last_name)
+        new_first_name = fields.merge_first_name(self.pii.first_name)
+        new_dob = fields.merge_date_of_birth(self.pii.date_of_birth)
+        new_contact = fields.merge_contact_details(self.pii.contact_details)
+
+        assert new_last_name is not None
+        assert new_first_name is not None
+        assert new_dob is not None
+
+        now = _now_utc()
+        self.pii = Pii(
+            last_name=new_last_name,
+            first_name=new_first_name,
+            date_of_birth=new_dob,
+            contact_details=new_contact,
+        )
+        self.revision += 1
+        self.last_processed_command_id = command_id
+        self._pending_events.append(
+            AnchorUpdated(
+                internal_id=self.internal_id,
+                last_name=new_last_name,
+                first_name=new_first_name,
+                date_of_birth=new_dob,
+                contact_details=new_contact,
+                creation_date=self.creation_date,
+                revision=self.revision,
+                transition_kind="UPDATED",
+                command_id=command_id,
+                occurred_at=now,
+                actor=actor,
+            )
+        )
 
     def archive(
         self,
@@ -164,13 +204,6 @@ class IdentityAnchor:
         actor: Actor,
         comment: str | None = None,
     ) -> None:
-        """Flip ACTIVE → ARCHIVED (INV.BEN.004) and buffer the ARCHIVED event.
-
-        Refuses (raises ``AnchorAlreadyArchived``) if the anchor is already
-        ARCHIVED, and (``AnchorPseudonymised``) if the anchor is in the
-        terminal PSEUDONYMISED state. PII fields are NOT mutated
-        (INV.BEN.002 — internal_id and PII immutable across ARCHIVE).
-        """
         if self.anchor_status == "PSEUDONYMISED":
             raise AnchorPseudonymised(str(self.internal_id))
         if self.anchor_status == "ARCHIVED":
@@ -178,13 +211,11 @@ class IdentityAnchor:
         if reason not in ARCHIVE_REASONS:
             raise InvalidReason("ARCHIVE_ANCHOR", reason)
 
-        # State transition. PII and creation_date are sticky (INV.BEN.002).
         self.anchor_status = "ARCHIVED"
         self.revision += 1
         self.last_processed_command_id = command_id
-
         self._pending_events.append(
-            AnchorArchived(
+            AnchorArchivedEvent(
                 internal_id=self.internal_id,
                 last_name=self.pii.last_name,
                 first_name=self.pii.first_name,
@@ -201,8 +232,6 @@ class IdentityAnchor:
             )
         )
 
-    # ─── Transition — RESTORE_ANCHOR ───────────────────────────────────
-
     def restore(
         self,
         *,
@@ -211,12 +240,6 @@ class IdentityAnchor:
         actor: Actor,
         comment: str | None = None,
     ) -> None:
-        """Flip ARCHIVED → ACTIVE (INV.BEN.005) and buffer the RESTORED event.
-
-        Refuses (raises ``AnchorNotArchived``) if the anchor is ACTIVE, and
-        (``AnchorPseudonymised``) if it is PSEUDONYMISED. PII fields are NOT
-        mutated.
-        """
         if self.anchor_status == "PSEUDONYMISED":
             raise AnchorPseudonymised(str(self.internal_id))
         if self.anchor_status != "ARCHIVED":
@@ -227,7 +250,6 @@ class IdentityAnchor:
         self.anchor_status = "ACTIVE"
         self.revision += 1
         self.last_processed_command_id = command_id
-
         self._pending_events.append(
             AnchorRestored(
                 internal_id=self.internal_id,
@@ -246,9 +268,10 @@ class IdentityAnchor:
             )
         )
 
-    # ─── Pending events ────────────────────────────────────────────────
-
-    def pull_pending_events(self) -> list[PendingEvent]:
+    def pull_pending_events(self) -> list[TransitionEvent]:
         events = list(self._pending_events)
         self._pending_events.clear()
         return events
+
+
+__all__ = ["IdentityAnchor", "ARCHIVE_REASONS", "RESTORE_REASONS"]

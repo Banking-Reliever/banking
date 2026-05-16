@@ -45,10 +45,29 @@ class MintAnchorRequest(BaseModel):
     contact_details: ContactDetailsModel | None = None
 
 
-class ArchiveAnchorRequest(BaseModel):
-    """POST /anchors/{internal_id}/archive body. ``internal_id`` is the
-    path parameter — not part of the body."""
+class _ContactDetailsUpdateModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
 
+    email: str | None = None
+    phone: str | None = None
+    postal_address: PostalAddressModel | None = None
+
+
+class UpdateAnchorRequest(BaseModel):
+    """OpenAPI documentation only. Sticky-PII parsing uses the raw dict."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    command_id: str = Field(
+        ..., description="UUIDv7 — caller-supplied command id (30-day idempotency window)."
+    )
+    last_name: str | None = Field(default=None, min_length=1, max_length=200)
+    first_name: str | None = Field(default=None, min_length=1, max_length=200)
+    date_of_birth: date | None = None
+    contact_details: _ContactDetailsUpdateModel | None = None
+
+
+class ArchiveAnchorRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     command_id: str = Field(
@@ -67,9 +86,6 @@ class ArchiveAnchorRequest(BaseModel):
 
 
 class RestoreAnchorRequest(BaseModel):
-    """POST /anchors/{internal_id}/restore body. ``internal_id`` is the
-    path parameter — not part of the body."""
-
     model_config = ConfigDict(extra="forbid")
 
     command_id: str = Field(
@@ -103,4 +119,4 @@ class BeneficiaryAnchorResponse(BaseModel):
 class ErrorResponse(BaseModel):
     error_code: str
     message: str
-    anchor: BeneficiaryAnchorResponse | None = None  # populated for idempotent replay
+    anchor: BeneficiaryAnchorResponse | None = None
