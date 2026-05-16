@@ -22,6 +22,43 @@ repeating until the Definition of Done is fully satisfied.
 
 ---
 
+## Sentinel — acquire before writing TASK cards
+
+A PreToolUse hook (`tasks-folder-guard.py`) rejects every Write/Edit/MultiEdit/
+NotebookEdit call targeting `tasks/<CAP>/TASK-*.md` unless the shared
+task-pipeline sentinel `/tmp/.claude-task-pipeline.active` is present and
+≤30 min old. This skill is on the allowlist (together with `/task`,
+`/task-refinement`, `/launch-task`, `/fix`, `/continue-work`, and
+`/pr-merge-watcher`). The implementation agents this skill spawns
+(`implement-capability`, `implement-capability-python`, `create-bff`,
+`code-web-frontend`) never touch TASK cards directly — they return verdicts
+that this skill applies (loop_count, max_loops, pr_url, stalled_reason,
+status transitions).
+
+Before the first TASK-card write:
+
+```bash
+touch /tmp/.claude-task-pipeline.active
+```
+
+At the very end (success or graceful abort):
+
+```bash
+rm -f /tmp/.claude-task-pipeline.active
+```
+
+A `/code` session typically spans more than 30 minutes — re-`touch` the
+sentinel just before each TASK-card edit (especially after a long
+sub-agent invocation, after the test skill completes, and before the
+final status transition to `in_review`/`stalled`). A stale sentinel grants
+write access to the next agent — explicit `rm -f` on exit is preferred.
+
+> BOARD.md is **not** guarded by this sentinel. `/code` reflects its
+> changes by editing the TASK card and then invoking `/sort-task`, which
+> holds the separate `tasks/BOARD.md` sentinel.
+
+---
+
 ## Hard rule — `process/{capability-id}/` is read-only
 
 The `process/{capability-id}/` folder (aggregates, commands, policies, read-models,

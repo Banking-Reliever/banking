@@ -27,6 +27,41 @@ You **never** duplicate the board scan logic — that is the exclusive responsib
 
 ---
 
+## Sentinel — acquire before writing TASK cards
+
+A PreToolUse hook (`tasks-folder-guard.py`) rejects every Write/Edit/MultiEdit/
+NotebookEdit call targeting `tasks/<CAP>/TASK-*.md` unless the shared
+task-pipeline sentinel `/tmp/.claude-task-pipeline.active` is present and
+≤30 min old. This skill is on the allowlist (together with `/task`,
+`/task-refinement`, `/code`, `/fix`, `/continue-work`, and
+`/pr-merge-watcher`). The agents this skill spawns (`code` sub-agents in
+isolated worktrees) never touch TASK cards directly from this orchestrator —
+each spawned `code` session acquires its own sentinel.
+
+Before the first TASK-card write (status transitions, etc.):
+
+```bash
+touch /tmp/.claude-task-pipeline.active
+```
+
+At the very end (success or graceful abort):
+
+```bash
+rm -f /tmp/.claude-task-pipeline.active
+```
+
+If the orchestration spans more than ~25 minutes between TASK-card writes
+(e.g. while waiting for `/sort-task` to complete or between two manual
+launches), re-`touch` the sentinel just before the next write to refresh
+its freshness window. A stale sentinel grants write access to the next
+agent — explicit `rm -f` on exit is preferred.
+
+> BOARD.md is **not** guarded by this sentinel. `/launch-task` reflects its
+> changes by editing TASK cards and then invoking `/sort-task`, which holds
+> the separate `tasks/BOARD.md` sentinel.
+
+---
+
 ## Hard rule — `process/{capability-id}/` is read-only
 
 Every worktree this skill creates under `/tmp/kanban-worktrees/TASK-NNN-*/`

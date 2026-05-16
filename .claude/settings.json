@@ -18,6 +18,11 @@
             "type": "command",
             "command": "python3 /home/yoann/sources/banking/.claude/hooks/roadmap-folder-guard.py",
             "statusMessage": "Vérification roadmap/ (lecture seule)..."
+          },
+          {
+            "type": "command",
+            "command": "python3 /home/yoann/sources/banking/.claude/hooks/tasks-folder-guard.py",
+            "statusMessage": "Vérification tasks/ (TASK cards & BOARD.md)..."
           }
         ]
       }

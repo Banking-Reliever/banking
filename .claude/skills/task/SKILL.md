@@ -20,6 +20,37 @@ implement-capability agent) to work independently — without needing to ask que
 
 ---
 
+## Sentinel — acquire before writing TASK cards
+
+A PreToolUse hook (`tasks-folder-guard.py`) rejects every Write/Edit/MultiEdit/
+NotebookEdit call targeting `tasks/<CAP>/TASK-*.md` unless the shared
+task-pipeline sentinel `/tmp/.claude-task-pipeline.active` is present and
+≤30 min old. This skill is on the allowlist (together with `/task-refinement`,
+`/launch-task`, `/code`, `/fix`, `/continue-work`, and `/pr-merge-watcher`).
+The agents these skills spawn (`implement-capability`, `create-bff`,
+`code-web-frontend`, `test-business-capability`, `test-app`,
+`harness-backend`) never touch TASK cards directly — they return verdicts
+that the orchestrating skill applies.
+
+Before the first TASK-card write:
+
+```bash
+touch /tmp/.claude-task-pipeline.active
+```
+
+At the very end (success or graceful abort):
+
+```bash
+rm -f /tmp/.claude-task-pipeline.active
+```
+
+If the work spans more than ~25 minutes between TASK-card writes (e.g. a
+long sub-agent invocation), re-`touch` the sentinel just before the next
+write to refresh its freshness window. A stale sentinel grants write
+access to the next agent — explicit `rm -f` on exit is preferred.
+
+---
+
 ## Hard rule — `process/{capability-id}/` is read-only
 
 This skill reads `process/{capability-id}/` (aggregates, commands, policies,

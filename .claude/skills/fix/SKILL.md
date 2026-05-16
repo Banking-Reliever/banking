@@ -32,6 +32,41 @@ PR** — you push to the existing branch so its open PR updates in place.
 
 ---
 
+## Sentinel — acquire before writing TASK cards
+
+A PreToolUse hook (`tasks-folder-guard.py`) rejects every Write/Edit/MultiEdit/
+NotebookEdit call targeting `tasks/<CAP>/TASK-*.md` unless the shared
+task-pipeline sentinel `/tmp/.claude-task-pipeline.active` is present and
+≤30 min old. This skill is on the allowlist (together with `/task`,
+`/task-refinement`, `/launch-task`, `/code`, `/continue-work`, and
+`/pr-merge-watcher`). The implementation agents this skill spawns never
+touch TASK cards directly — they return verdicts that this skill applies
+(loop_count, pr_url, fix_pr_urls, stalled_reason, status transitions).
+
+Before the first TASK-card write:
+
+```bash
+touch /tmp/.claude-task-pipeline.active
+```
+
+At the very end (success or graceful abort):
+
+```bash
+rm -f /tmp/.claude-task-pipeline.active
+```
+
+A `/fix` session typically spans more than 30 minutes — re-`touch` the
+sentinel just before each TASK-card edit (after the remediation agent
+returns, after the test skill completes, and before the final status
+transition). A stale sentinel grants write access to the next agent —
+explicit `rm -f` on exit is preferred.
+
+> BOARD.md is **not** guarded by this sentinel. `/fix` reflects its
+> changes by editing the TASK card and then invoking `/sort-task`, which
+> holds the separate `tasks/BOARD.md` sentinel.
+
+---
+
 ## Hard rule — `process/{capability-id}/` is read-only
 
 A fix never touches `process/{capability-id}/`. The folder is the contract;
