@@ -209,11 +209,11 @@ Epic 1 (foundation) ────────────────────
                                   [gated by upstream]
 ```
 
-**Critical path**: Epic 1 → Epic 2 → Epic 5.
+**Critical path**: Epic 1 → Epic 2 → (Epic 3 ∥ Epic 4) → Epic 5. Epic 5's entry condition explicitly requires all of Epics 1–4 delivered, so the path through them is unavoidable; the parallelism between 3 and 4 is the only schedule compression available.
 
 **Parallelisable**: Epics 3 and 4 are independent of each other and can run concurrently after Epic 2. Both are small (S) so the wave gain is modest, but parallelism is real.
 
-**Epic 5** is outside the internal critical path — it is triggered by upstream producers becoming real, not by anything this roadmap can control directly. The dashboard is functionally complete on stubs after Epic 4; Epic 5 is the production-readiness epic.
+**Epic 5** sits on the critical path **internally** (it consumes the outputs of all four prior epics) but is **externally gated** by upstream producers becoming real (SCO Flow B, real TIE engine, real ENV engine). The dashboard is functionally complete on stubs after Epic 4; Epic 5 is the production-readiness epic and cannot start before the upstream gate clears.
 
 ---
 
