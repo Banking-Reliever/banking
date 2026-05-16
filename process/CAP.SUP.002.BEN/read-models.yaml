@@ -24,10 +24,9 @@ meta:
 #     fields, so it survives PSEUDONYMISE intact and serves the
 #     audit + GDPR-compliance use cases.
 #
-# The prior CAP.REF.001.BEN model also exposed a secondary
-# lookup-by-external_id query. external_id is gone from the new
-# model (per ADR-BCM-FUNC-0016), so that QRY does not exist here
-# — see Open Question #2 in aggregates.yaml.
+# The model exposes no secondary lookup query — internal_id is the
+# sole resolution key (per ADR-BCM-FUNC-0016). See Open Question #2
+# in aggregates.yaml for the downstream-consumer migration note.
 # ──────────────────────────────────────────────────────────────
 
 read_models:

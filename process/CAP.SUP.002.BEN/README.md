@@ -252,19 +252,19 @@ notes) so reviewers can see the structural gaps in one place.
    `POL.SUP.002.BEN.ON_RIGHT_EXERCISED` (the placeholder body is
    documented inline in `policies.yaml`).
 
-2. **`external_id` is gone from the model.** The prior
-   `CAP.REF.001.BEN` exposed a `QRY.GET_BENEFICIARY_BY_EXTERNAL_ID` and
-   used `external_id` (the upstream candidacy reference) as the
-   idempotency key for `REGISTER`. `ADR-BCM-FUNC-0016` removes both:
-   - Idempotency on MINT now flows through a **caller-supplied UUIDv7
+2. **`internal_id` is the sole resolution key.** Per
+   `ADR-BCM-FUNC-0016`, identity is owned by this capability alone — the
+   aggregate accepts no caller-supplied identifier on MINT and the model
+   exposes no secondary lookup query:
+   - Idempotency on MINT flows through a **caller-supplied UUIDv7
      `client_request_id`** with a 30-day window.
-   - There is **no secondary lookup by external_id**.
-   Downstream consumers that previously relied on either path must adapt:
-   they observe the `MINTED` RVT, key their local cache on `internal_id`,
-   and use their own correlation field on the way in. Confirm with each
-   consumer (`CAP.BSP.001.SCO`, `CAP.BSP.002.ENR`, `CAP.BSP.004.ENV`)
-   that this does not break a necessary lookup; if it does, surface it as
-   a new BCM business-event before re-modelling.
+   - There is **no secondary lookup**; downstream consumers resolve a
+     beneficiary by `internal_id` only.
+   Downstream consumers observe the `MINTED` RVT, key their local cache
+   on `internal_id`, and use their own correlation field on the way in.
+   Confirm with each consumer (`CAP.BSP.001.SCO`, `CAP.BSP.002.ENR`,
+   `CAP.BSP.004.ENV`) that this does not break a necessary lookup; if it
+   does, surface it as a new BCM business-event before re-modelling.
 
 3. **Crypto-shredding mechanics are an implementation detail.** The
    `PSEUDONYMISE_ANCHOR` invariant (INV.BEN.006) only constrains the
