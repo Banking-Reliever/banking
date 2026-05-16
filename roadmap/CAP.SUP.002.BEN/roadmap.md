@@ -262,7 +262,7 @@ exposes the new feed):
 |------|-------------|--------|------------|
 | **Crypto-shredding mechanics are subtle** — getting the pgcrypto + Vault transit interaction right (per-anchor key vs per-zone key, key rotation, recovery semantics) is non-trivial and easy to get wrong in ways that *look* correct but leave PII recoverable | M | H | Make Epic 5 the most heavily tested epic; mandate a database-level inspection in the DoD; involve DPO + IT Security in the test design (joint custody is on the box) |
 | **First Python service in the repo** — `implement-capability-python` will be exercised end-to-end for the first time on a non-trivial capability. Tooling gaps (test harness, contract harness, BFF integration) are likely to surface late | M | M | Sequence Epic 1 as a low-stakes shake-down of the Python toolchain; surface tooling gaps to the implementation pipeline before Epic 2 starts |
-| **`external_id` removal breaks downstream lookup paths** — consumers that previously looked up beneficiaries by `external_id` (the upstream candidacy reference) have no replacement. Depending on what the consumer was using `external_id` for, the answer may be "use your own correlation field on MINT" or "we need a new BCM event" | M | M | Confirm with each downstream consumer (`CAP.BSP.001.SCO`, `CAP.BSP.002.ENR`, `CAP.BSP.004.ENV`) before Epic 2 ships; if any consumer needs an alternate lookup, route it back through banking-knowledge as a new BCM event before extending this roadmap |
+| **Downstream lookup paths from the prior model have no replacement** — consumers that previously resolved a beneficiary via a secondary lookup key minted upstream now have no equivalent path. The answer for each consumer is either "use your own correlation field on MINT" or "we need a new BCM event" | M | M | Confirm with each downstream consumer (`CAP.BSP.001.SCO`, `CAP.BSP.002.ENR`, `CAP.BSP.004.ENV`) before Epic 2 ships; if any consumer needs an alternate lookup, route it back through banking-knowledge as a new BCM event before extending this roadmap |
 | **`PSEUDONYMISE` is HTTP-only in v1** — `CAP.SUP.001.RET` calls it via REST rather than via a bus subscription. If the call fails or is missed, the right-to-be-forgotten request is not honoured. The BCM does not yet expose the consumed event chain | L | H | Open Question #1 — track until BCM is updated; defensive: require synchronous success from `CAP.SUP.001.RET` before the right is closed; future Epic 7 (event-driven trigger) when BCM grows the chain |
 | **Joint-custody governance overhead** — IT Security and DPO co-own the capability. Any DoD checkbox that touches PII or pseudonymisation needs sign-off from both, which can slow the loop | M | L | Surface PII-touching DoD items explicitly in the TASK files; pre-align on the DoD with both owners at the start of Epic 5 |
 
@@ -303,9 +303,11 @@ Suggested wave plan:
   default in the process model (GDPR + AML floor). If the DPO requires
   shorter retention or periodic purge of old `MINTED` / `UPDATED` rows,
   this becomes a follow-up FUNC ADR + a delta `/process` pass.
-- **OQ-4** — **`external_id` removal**. The previous model had it as the
-  REGISTER idempotency key and exposed a secondary lookup. Both are gone
-  in this model. Confirm with downstream consumers before Epic 2 ships.
+- **OQ-4** — **Secondary lookup removal from the prior model**. The
+  previous model exposed an upstream-key-based idempotency on REGISTER and
+  a secondary lookup endpoint. Both are gone in this model — idempotency
+  now flows through a caller-supplied UUIDv7 `client_request_id`. Confirm
+  with downstream consumers before Epic 2 ships.
 - **OQ-5** — **Orphaned downstream artefacts from the move**. After PR #7
   merged, `tasks/CAP.REF.001.BEN/` (5 tasks from the old model) and any
   prior `roadmap/CAP.REF.001.BEN/roadmap.md` (if it exists) are
