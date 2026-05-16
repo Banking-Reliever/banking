@@ -3,13 +3,29 @@ task_id: TASK-001
 capability_id: CAP.CHN.001.DSH
 capability_name: Beneficiary Dashboard
 epic: Epic 0 — Contract and Development Stub
-status: todo
+status: done
 priority: high
 depends_on: []
 task_type: contract-stub
 loop_count: 0
 max_loops: 10
+superseded_by: TASK-002
+superseded_reason: |
+  Sequencing inversion — TASK-002 (Epic 1, real BFF foundation) shipped first
+  (PR #17, in review on 2026-05-16). TASK-002 writes to the same canonical
+  paths (src/chn/CAP.CHN.001.DSH-bff/ and sources/CAP.CHN.001.DSH/frontend/)
+  with the production-shape implementation, which subsumes the canned stub
+  this task would have produced. The decommissioning clause already baked
+  into TASK-001's DoD ("the stub bundle's README states that the stub is
+  retired once Epic 1 ships the real BFF foundation") is satisfied
+  transitively: the real BFF + frontend serve the same contract surface
+  with real data instead of canned data, so there is no consumer-visible
+  regression and no remaining reason to scaffold the stub bundle.
 ---
+
+> **Superseded on:** 2026-05-16 — closed as `done` by `/launch-task` after the user
+> elected to skip scaffolding because PR #17 (TASK-002 real BFF + frontend) was
+> already in flight on the same paths.
 
 # TASK-001 — Contract and development stub for the Beneficiary Dashboard BFF + frontend
 
