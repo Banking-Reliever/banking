@@ -44,6 +44,11 @@ ACTIVE → ARCHIVED → PSEUDONYMISED). Owned canonical concept:
 - **Process Modelling layer** (read-only contract for this roadmap):
   `process/CAP.SUP.002.BEN/` — 1 aggregate (`AGG.IDENTITY_ANCHOR`),
   5 commands, 0 policies (v1), 2 read-models, 2 queries, 1 emitted RVT.
+  Mixed file versions: `bus.yaml` and `read-models.yaml` are at **v0.2.0**
+  (REST/JWT actor + multi-faceted-producer framing, UUIDv7 envelope on
+  every message); `aggregates.yaml`, `commands.yaml`, `policies.yaml`,
+  `api.yaml` still at v0.1.0 — semantically aligned, no contract drift,
+  next `/process` pass can level them up.
 
 ## Implementation Epics
 
@@ -308,20 +313,25 @@ Suggested wave plan:
   a secondary lookup endpoint. Both are gone in this model — idempotency
   now flows through a caller-supplied UUIDv7 `client_request_id`. Confirm
   with downstream consumers before Epic 2 ships.
-- **OQ-5** — **Orphaned downstream artefacts from the move**. After PR #7
-  merged, `tasks/CAP.REF.001.BEN/` (5 tasks from the old model) and any
-  prior `roadmap/CAP.REF.001.BEN/roadmap.md` (if it exists) are
-  superseded by this roadmap. Recommend deleting them via a small
-  housekeeping commit when Epic 1's task is generated, so the kanban
-  board does not show ghost tasks against a defunct capability.
+- **OQ-5** — *Resolved 2026-05-16*. The orphaned `tasks/CAP.REF.001.BEN/`
+  tasks from the prior model were removed; no `roadmap/CAP.REF.001.BEN/`
+  ever existed in this checkout. The kanban no longer shows ghost tasks
+  against the defunct capability.
 
 ## Knowledge Source
 
 - `bcm-pack` ref: `main` (default)
 - Capability pack mode: `--deep --compact`
-- Pack date: 2026-05-15
+- Pack date: 2026-05-16
 - Process model ref: `process/CAP.SUP.002.BEN/` on `main` (PR #7 merged)
+  — mixed v0.1.0 / v0.2.0 file versions (see Strategic Alignment).
 - This roadmap supersedes the implicit roadmap of the prior
-  `CAP.REF.001.BEN` model (no committed `roadmap/CAP.REF.001.BEN/roadmap.md`
-  exists in this checkout, but the 5 tasks under
-  `tasks/CAP.REF.001.BEN/` are an implicit roadmap and are superseded).
+  `CAP.REF.001.BEN` model. The 5 orphan tasks under
+  `tasks/CAP.REF.001.BEN/` have since been removed; no
+  `roadmap/CAP.REF.001.BEN/roadmap.md` ever existed.
+- Implementation progress: `TASK-001` (Epic 1, contract-stub) is **done**
+  — PR #9 merged in commit `aee0b67` on `2026-05-15`; remediation
+  cycle captured under `pr_url` + `fix_pr_urls` in the TASK file.
+  `TASK-002..006` exist (mirroring Epics 2-6); `TASK-002` is `needs_info`
+  on `OQ.BEN.002` (`external_id` removal cross-consumer check),
+  `TASK-003..006` are `blocked` on `TASK-002`.
