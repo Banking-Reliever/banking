@@ -49,7 +49,9 @@ CHANNEL-zone capability — implemented as a **.NET 10 Backend-For-Frontend** pl
 - Upstream contract stubs available for the three subscriptions:
   - `CAP.BSP.001.SCO` — stub publishing `RVT.CURRENT_SCORE_RECOMPUTED` (already merged: TASK-001 done via PR #2).
   - `CAP.BSP.001.TIE` — stub publishing `RVT.TIER_UPGRADE_RECORDED` (already merged: TASK-001 of CAP.BSP.001.TIE done via PR #1).
-  - `CAP.BSP.004.ENV` — stub publishing `RVT.CONSUMPTION_RECORDED` (status: producer roadmap exists, stub TASK pending).
+  - `CAP.BSP.004.ENV` — stub publishing `RVT.CONSUMPTION_RECORDED` (already merged: TASK-001 of `CAP.BSP.004.ENV` done via PR #6).
+
+All three upstream contract stubs are merged on `main` as of 2026-05-16 — Epic 1's upstream-readiness gate is fully met today.
 
 **Exit condition (DoD)**:
 - The BFF (`src/chn/CAP.CHN.001.DSH-bff/`) is runnable via `dotnet run`; it declares queues `chn.001.dsh.q.score-recomputed`, `chn.001.dsh.q.tier-upgrade-recorded`, `chn.001.dsh.q.envelope-consumption-recorded` bound to the three upstream topic exchanges with the routing-key patterns from `process/CAP.CHN.001.DSH/bus.yaml`.
@@ -124,8 +126,9 @@ CHANNEL-zone capability — implemented as a **.NET 10 Backend-For-Frontend** pl
 - `CMD.RECORD_DASHBOARD_VIEW` (`POST /cases/{case_id}/dashboard-views`) accepts a `client_request_id` (UUIDv7 idempotency key, 5-minute window).
 - 30-second per-`case_id` debounce (`INV.DSH.004`): a second call within 30 s of the previous *accepted* view returns 200 `VIEW_DEBOUNCED` without emitting; outside the window returns 201 and emits.
 - When an emission fires, `RVT.CHN.001.DASHBOARD_VIEWED` is published onto exchange `chn.001.dsh-events` via the transactional outbox (`ADR-TECH-STRAT-001` Rule 3 — at-least-once).
-- The emitted payload carries the UUIDv7 envelope (`message_id`, `correlation_id = case_id`, `causation_id = client_request_id`, `schema_version`) per `ADR-TECH-STRAT-007` Rule 4.
-- The payload is PII-free (`INV.DSH.001`): `case_id` + `viewed_at` + `client_app_version` (semantic version only) — no actor PII, no device fingerprint.
+- The emitted payload conforms to `process/CAP.CHN.001.DSH/schemas/RVT.CHN.001.DASHBOARD_VIEWED.schema.json`. Required fields: `event_id` (the resource event's own identifier — downstream idempotency anchor), `occurred_at` (server-side wall-clock when the BFF accepted the underlying `RECORD_DASHBOARD_VIEW` command), `case_id` (correlation key, opaque participation case identifier). Optional snapshot fields: `current_tier_code`, `current_score` (the values displayed at the moment of consultation — pseudonymous behavioural data, not PII; null when the aggregate has not yet received the corresponding upstream event). Optional `client_context` block: `app_version`, `device_class` (semantic labels only — no device fingerprint, no PII).
+- The bus-message envelope around the payload carries the UUIDv7 IDs (`message_id`, `correlation_id = case_id`, `causation_id = client_request_id`, `schema_version`) per `ADR-TECH-STRAT-007` Rule 4.
+- PII-exclusion (`INV.DSH.001`) verified at schema-validation time: the JSON Schema's `additionalProperties: false` plus the absence of any `last_name` / `first_name` / `date_of_birth` / raw contact-detail field guarantees the wire format stays PII-free. Identity resolution to `OBJ.SUP.002.BENEFICIARY_RECORD.internal_id` remains delegated to consumers via `CAP.SUP.002.BEN`.
 - The frontend fires the call on first paint and on each manual pull-to-refresh; `localStorage` carries `client_request_id` across reloads so accidental retries are idempotent.
 - An end-to-end test asserts that opening the dashboard once results in exactly one `RVT.DASHBOARD_VIEWED` on the bus; opening it twice within 5 s results in still exactly one.
 
