@@ -13,6 +13,11 @@
             "type": "command",
             "command": "python3 /home/yoann/sources/banking/.claude/hooks/process-folder-guard.py",
             "statusMessage": "Vérification process/ (lecture seule)..."
+          },
+          {
+            "type": "command",
+            "command": "python3 /home/yoann/sources/banking/.claude/hooks/roadmap-folder-guard.py",
+            "statusMessage": "Vérification roadmap/ (lecture seule)..."
           }
         ]
       }
