@@ -3,13 +3,17 @@ task_id: TASK-004
 capability_id: CAP.SUP.002.BEN
 capability_name: Beneficiary Identity Anchor
 epic: Epic 4 — Anchor lifecycle (archive / restore)
-status: todo
+status: in_review
 priority: medium
 depends_on: [TASK-002]
 task_type: full-microservice
 loop_count: 0
 max_loops: 10
+pr_url: https://github.com/Banking-Reliever/banking/pull/18
 ---
+
+> **Started on:** 2026-05-16
+> **Submitted for review on:** 2026-05-16
 
 # TASK-004 — Anchor lifecycle: archive and restore
 
