@@ -7,6 +7,7 @@ Fail-fast at startup if any schema is missing or malformed.
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,8 @@ from ...application.ports import SchemaValidator
 
 # Resolved at startup from settings.PROCESS_SCHEMAS_DIR.
 MINT_ANCHOR_SCHEMA_FILE = "CMD.SUP.002.BEN.MINT_ANCHOR.schema.json"
+ARCHIVE_ANCHOR_SCHEMA_FILE = "CMD.SUP.002.BEN.ARCHIVE_ANCHOR.schema.json"
+RESTORE_ANCHOR_SCHEMA_FILE = "CMD.SUP.002.BEN.RESTORE_ANCHOR.schema.json"
 RVT_BENEFICIARY_ANCHOR_UPDATED_SCHEMA_FILE = "RVT.SUP.002.BENEFICIARY_ANCHOR_UPDATED.schema.json"
 
 
@@ -45,16 +48,60 @@ def load_schema(schemas_dir: Path, filename: str) -> dict[str, Any]:
         return json.load(f)
 
 
-def build_validators(schemas_dir: Path) -> tuple[JsonSchemaValidator, JsonSchemaValidator]:
-    """Return (mint_cmd_validator, rvt_validator). Fail-fast on any issue."""
+@dataclass(frozen=True, slots=True)
+class Validators:
+    """Bundle of every JSON Schema validator the service consumes.
+
+    Built once at startup, stored on ``AppState`` and injected into the
+    handlers / routers. Each member is a ``JsonSchemaValidator`` —
+    swappable in tests via the ``SchemaValidator`` Protocol.
+    """
+
+    mint_command: JsonSchemaValidator
+    archive_command: JsonSchemaValidator
+    restore_command: JsonSchemaValidator
+    rvt: JsonSchemaValidator
+
+
+def build_validators_bundle(schemas_dir: Path) -> Validators:
+    """Return the canonical ``Validators`` bundle. Fail-fast on any issue.
+
+    Loads:
+      - CMD.MINT_ANCHOR
+      - CMD.ARCHIVE_ANCHOR
+      - CMD.RESTORE_ANCHOR
+      - RVT.BENEFICIARY_ANCHOR_UPDATED
+    """
     mint = load_schema(schemas_dir, MINT_ANCHOR_SCHEMA_FILE)
+    archive = load_schema(schemas_dir, ARCHIVE_ANCHOR_SCHEMA_FILE)
+    restore = load_schema(schemas_dir, RESTORE_ANCHOR_SCHEMA_FILE)
     rvt = load_schema(schemas_dir, RVT_BENEFICIARY_ANCHOR_UPDATED_SCHEMA_FILE)
-    return JsonSchemaValidator(mint), JsonSchemaValidator(rvt)
+    return Validators(
+        mint_command=JsonSchemaValidator(mint),
+        archive_command=JsonSchemaValidator(archive),
+        restore_command=JsonSchemaValidator(restore),
+        rvt=JsonSchemaValidator(rvt),
+    )
+
+
+def build_validators(schemas_dir: Path) -> tuple[JsonSchemaValidator, JsonSchemaValidator]:
+    """Legacy 2-tuple factory — returns ``(mint_cmd_validator, rvt_validator)``.
+
+    Kept for backwards compatibility with TASK-002 tests and code paths that
+    pre-date the lifecycle commands. New code should call
+    ``build_validators_bundle`` and read fields off ``Validators``.
+    """
+    bundle = build_validators_bundle(schemas_dir)
+    return bundle.mint_command, bundle.rvt
 
 
 __all__ = [
     "JsonSchemaValidator",
+    "Validators",
     "build_validators",
+    "build_validators_bundle",
     "MINT_ANCHOR_SCHEMA_FILE",
+    "ARCHIVE_ANCHOR_SCHEMA_FILE",
+    "RESTORE_ANCHOR_SCHEMA_FILE",
     "RVT_BENEFICIARY_ANCHOR_UPDATED_SCHEMA_FILE",
 ]

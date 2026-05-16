@@ -22,6 +22,7 @@ from ...application.ports import (
     UnitOfWorkFactory,
 )
 from ...domain.aggregate import IdentityAnchor
+from ...domain.value_objects import ContactDetails, InternalId, Pii
 
 
 # ─── Repositories scoped to a single transaction ───────────────────────
@@ -56,6 +57,77 @@ class PostgresAnchorRepository(AnchorRepository):
                     anchor.revision,
                     anchor.last_processed_command_id,
                     anchor.last_processed_client_request_id,
+                ),
+            )
+
+    async def load_for_update(self, internal_id: str) -> IdentityAnchor | None:
+        """Acquire a row-level lock on the anchor row for the duration of
+        the surrounding transaction. Returns ``None`` if no row matches.
+        """
+        async with self._conn.cursor(row_factory=dict_row) as cur:
+            await cur.execute(
+                """
+                SELECT internal_id, last_name, first_name, date_of_birth, contact_details,
+                       anchor_status, creation_date, pseudonymized_at, revision,
+                       last_processed_command_id, last_processed_client_request_id
+                FROM anchor
+                WHERE internal_id = %s
+                FOR UPDATE
+                """,
+                (internal_id,),
+            )
+            row = await cur.fetchone()
+            if row is None:
+                return None
+        contact_data = row.get("contact_details")
+        if isinstance(contact_data, str):
+            contact_data = json.loads(contact_data)
+        return IdentityAnchor(
+            internal_id=InternalId(str(row["internal_id"])),
+            pii=Pii(
+                last_name=row.get("last_name"),
+                first_name=row.get("first_name"),
+                date_of_birth=row.get("date_of_birth"),
+                contact_details=ContactDetails.from_dict(contact_data) if contact_data is not None else None,
+            ),
+            anchor_status=row["anchor_status"],
+            creation_date=row["creation_date"],
+            revision=int(row["revision"]),
+            pseudonymized_at=row.get("pseudonymized_at"),
+            last_processed_command_id=(
+                str(row["last_processed_command_id"])
+                if row.get("last_processed_command_id") is not None
+                else None
+            ),
+            last_processed_client_request_id=(
+                str(row["last_processed_client_request_id"])
+                if row.get("last_processed_client_request_id") is not None
+                else None
+            ),
+        )
+
+    async def update(self, anchor: IdentityAnchor) -> None:
+        """Persist the post-transition state. Mutates only the status /
+        revision / pseudonymized_at / last_processed_command_id columns —
+        PII columns are deliberately left untouched (INV.BEN.002).
+        """
+        async with self._conn.cursor() as cur:
+            await cur.execute(
+                """
+                UPDATE anchor
+                SET anchor_status              = %s,
+                    revision                   = %s,
+                    pseudonymized_at           = %s,
+                    last_processed_command_id  = %s,
+                    updated_at                 = NOW()
+                WHERE internal_id = %s
+                """,
+                (
+                    anchor.anchor_status,
+                    anchor.revision,
+                    anchor.pseudonymized_at,
+                    anchor.last_processed_command_id,
+                    str(anchor.internal_id),
                 ),
             )
 

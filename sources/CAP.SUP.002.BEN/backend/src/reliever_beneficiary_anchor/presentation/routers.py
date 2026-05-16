@@ -17,23 +17,38 @@ import structlog
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 
-from ..application.dto import MintAnchorCommandDto
-from ..application.handlers import GetAnchorHandler, MintAnchorHandler, MintResult
+from ..application.dto import (
+    ArchiveAnchorCommandDto,
+    MintAnchorCommandDto,
+    RestoreAnchorCommandDto,
+)
+from ..application.handlers import (
+    GetAnchorHandler,
+    LifecycleResult,
+    MintAnchorHandler,
+    MintResult,
+)
 from ..domain.errors import (
+    AnchorAlreadyArchived,
+    AnchorNotArchived,
     AnchorNotFound,
+    AnchorPseudonymised,
     CallerSuppliedInternalId,
     DomainError,
     IdentityFieldsMissing,
+    InvalidReason,
 )
 from ..domain.value_objects import ContactDetails, PostalAddress
 from ..infrastructure.persistence.projection import compute_etag
 from ..infrastructure.security.jwt import actor_from_bearer
 from .dependencies import AppState, get_state
 from .dto import (
+    ArchiveAnchorRequest,
     BeneficiaryAnchorResponse,
     ContactDetailsModel,
     ErrorResponse,
     MintAnchorRequest,
+    RestoreAnchorRequest,
 )
 
 log = structlog.get_logger()
@@ -225,12 +240,232 @@ def _etag_matches(if_none_match: str, our_etag: str) -> bool:
     return any(_normalise(t) == ours for t in if_none_match.split(","))
 
 
+# ─── CMD.ARCHIVE_ANCHOR ───────────────────────────────────────────────
+
+
+@router.post(
+    "/anchors/{internal_id}/archive",
+    tags=["commands"],
+    summary="Archive a beneficiary identity anchor (ACTIVE → ARCHIVED)",
+    response_model=None,
+    responses={
+        200: {
+            "model": BeneficiaryAnchorResponse,
+            "description": "Anchor archived (or idempotent re-call — COMMAND_ALREADY_PROCESSED).",
+        },
+        400: {"model": ErrorResponse, "description": "INVALID_PAYLOAD (missing/invalid reason)."},
+        404: {"model": ErrorResponse, "description": "ANCHOR_NOT_FOUND."},
+        409: {
+            "model": ErrorResponse,
+            "description": "ANCHOR_ALREADY_ARCHIVED or ANCHOR_PSEUDONYMISED.",
+        },
+    },
+)
+async def archive_anchor(
+    internal_id: str,
+    body: dict[str, Any],
+    request: Request,
+    authorization: str | None = Header(default=None),
+    state: AppState = Depends(get_state),
+) -> Response:
+    return await _handle_lifecycle(
+        kind="ARCHIVE",
+        internal_id=internal_id,
+        body=body,
+        authorization=authorization,
+        state=state,
+    )
+
+
+# ─── CMD.RESTORE_ANCHOR ───────────────────────────────────────────────
+
+
+@router.post(
+    "/anchors/{internal_id}/restore",
+    tags=["commands"],
+    summary="Restore an archived identity anchor (ARCHIVED → ACTIVE)",
+    response_model=None,
+    responses={
+        200: {
+            "model": BeneficiaryAnchorResponse,
+            "description": "Anchor restored (or idempotent re-call — COMMAND_ALREADY_PROCESSED).",
+        },
+        400: {"model": ErrorResponse, "description": "INVALID_PAYLOAD (missing/invalid reason)."},
+        404: {"model": ErrorResponse, "description": "ANCHOR_NOT_FOUND."},
+        409: {
+            "model": ErrorResponse,
+            "description": "ANCHOR_NOT_ARCHIVED or ANCHOR_PSEUDONYMISED.",
+        },
+    },
+)
+async def restore_anchor(
+    internal_id: str,
+    body: dict[str, Any],
+    request: Request,
+    authorization: str | None = Header(default=None),
+    state: AppState = Depends(get_state),
+) -> Response:
+    return await _handle_lifecycle(
+        kind="RESTORE",
+        internal_id=internal_id,
+        body=body,
+        authorization=authorization,
+        state=state,
+    )
+
+
+async def _handle_lifecycle(
+    *,
+    kind: str,
+    internal_id: str,
+    body: dict[str, Any],
+    authorization: str | None,
+    state: AppState,
+) -> Response:
+    """Shared pipeline for ARCHIVE / RESTORE.
+
+    Steps:
+      1. Path-param ``internal_id`` is validated as a UUIDv7. An ill-formed
+         id maps to 404 ANCHOR_NOT_FOUND (consistent with QRY.GET_ANCHOR).
+      2. Body is validated against the canonical CMD schema — missing /
+         invalid ``reason`` returns 400.
+      3. Body is parsed into a typed Pydantic model.
+      4. Handler is invoked; domain errors are mapped to HTTP per the
+         table in the docstring of ``install_exception_handlers``.
+    """
+    if not _UUIDV7_RE.match(internal_id):
+        return JSONResponse(
+            status_code=404,
+            content={
+                "error_code": "ANCHOR_NOT_FOUND",
+                "message": f"No anchor found for internal_id={internal_id}.",
+            },
+        )
+
+    if kind == "ARCHIVE":
+        cmd_validator = state.archive_validator
+        request_model = ArchiveAnchorRequest
+        handler = state.archive_handler
+        cmd_factory = lambda r, actor: ArchiveAnchorCommandDto(  # noqa: E731
+            internal_id=internal_id,
+            command_id=r.command_id,
+            reason=r.reason,
+            actor=actor,
+            comment=r.comment,
+        )
+    else:
+        cmd_validator = state.restore_validator
+        request_model = RestoreAnchorRequest
+        handler = state.restore_handler
+        cmd_factory = lambda r, actor: RestoreAnchorCommandDto(  # noqa: E731
+            internal_id=internal_id,
+            command_id=r.command_id,
+            reason=r.reason,
+            actor=actor,
+            comment=r.comment,
+        )
+
+    # JSON Schema validation — canonical contract.
+    try:
+        cmd_validator.validate_payload(body)
+    except jsonschema.ValidationError as exc:
+        return JSONResponse(
+            status_code=400,
+            content={"error_code": "INVALID_PAYLOAD", "message": exc.message},
+        )
+
+    # Pydantic parse — typed shape.
+    try:
+        req = request_model.model_validate(body)
+    except Exception as exc:  # noqa: BLE001
+        return JSONResponse(
+            status_code=400,
+            content={"error_code": "INVALID_PAYLOAD", "message": str(exc)},
+        )
+
+    actor = actor_from_bearer(authorization)
+    cmd = cmd_factory(req, actor)
+
+    try:
+        result: LifecycleResult = await handler.handle(cmd)
+    except AnchorNotFound as exc:
+        return JSONResponse(
+            status_code=404,
+            content={"error_code": exc.code, "message": exc.message},
+        )
+    except (AnchorAlreadyArchived, AnchorNotArchived, AnchorPseudonymised) as exc:
+        return JSONResponse(
+            status_code=409,
+            content={"error_code": exc.code, "message": exc.message},
+        )
+    except InvalidReason as exc:
+        return JSONResponse(
+            status_code=400,
+            content={"error_code": exc.code, "message": exc.message},
+        )
+
+    payload = result.anchor.to_dict()
+    if result.idempotent_replay:
+        return JSONResponse(
+            status_code=200,
+            content={"error_code": result.error_code, "anchor": payload},
+        )
+    return JSONResponse(status_code=200, content=payload)
+
+
 # ─── Domain error handler — uncaught ``DomainError`` → 500 with code ──
 
 
 def install_exception_handlers(app) -> None:  # noqa: ANN001
+    """Map uncaught domain errors to HTTP responses.
+
+    Routing table:
+      - CallerSuppliedInternalId          → 400
+      - AnchorNotFound                    → 404
+      - AnchorAlreadyArchived             → 409
+      - AnchorNotArchived                 → 409
+      - AnchorPseudonymised               → 409
+      - InvalidReason                     → 400
+      - any other DomainError             → 400 (fallback)
+    """
+
     @app.exception_handler(CallerSuppliedInternalId)
     async def _h_caller(_: Request, exc: CallerSuppliedInternalId):
+        return JSONResponse(
+            status_code=400,
+            content={"error_code": exc.code, "message": exc.message},
+        )
+
+    @app.exception_handler(AnchorNotFound)
+    async def _h_not_found(_: Request, exc: AnchorNotFound):
+        return JSONResponse(
+            status_code=404,
+            content={"error_code": exc.code, "message": exc.message},
+        )
+
+    @app.exception_handler(AnchorAlreadyArchived)
+    async def _h_already_archived(_: Request, exc: AnchorAlreadyArchived):
+        return JSONResponse(
+            status_code=409,
+            content={"error_code": exc.code, "message": exc.message},
+        )
+
+    @app.exception_handler(AnchorNotArchived)
+    async def _h_not_archived(_: Request, exc: AnchorNotArchived):
+        return JSONResponse(
+            status_code=409,
+            content={"error_code": exc.code, "message": exc.message},
+        )
+
+    @app.exception_handler(AnchorPseudonymised)
+    async def _h_pseudonymised(_: Request, exc: AnchorPseudonymised):
+        return JSONResponse(
+            status_code=409,
+            content={"error_code": exc.code, "message": exc.message},
+        )
+
+    @app.exception_handler(InvalidReason)
+    async def _h_invalid_reason(_: Request, exc: InvalidReason):
         return JSONResponse(
             status_code=400,
             content={"error_code": exc.code, "message": exc.message},

@@ -33,6 +33,32 @@ class MintAnchorCommandDto:
 
 
 @dataclass(frozen=True, slots=True)
+class ArchiveAnchorCommandDto:
+    """Input payload of CMD.ARCHIVE_ANCHOR — already validated against
+    the canonical schema at the presentation boundary.
+    """
+
+    internal_id: str
+    command_id: str
+    reason: str  # one of ARCHIVE_REASONS in the aggregate
+    actor: Actor
+    comment: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class RestoreAnchorCommandDto:
+    """Input payload of CMD.RESTORE_ANCHOR — already validated against
+    the canonical schema at the presentation boundary.
+    """
+
+    internal_id: str
+    command_id: str
+    reason: str  # one of RESTORE_REASONS in the aggregate
+    actor: Actor
+    comment: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class BeneficiaryAnchorDto:
     """Canonical wire-format BeneficiaryAnchor — matches the QRY.GET_ANCHOR
     response and the 201 response of POST /anchors.

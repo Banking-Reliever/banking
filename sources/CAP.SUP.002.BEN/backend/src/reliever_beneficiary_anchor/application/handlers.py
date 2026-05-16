@@ -16,9 +16,14 @@ from uuid_extensions import uuid7
 
 from ..domain.aggregate import IdentityAnchor
 from ..domain.errors import AnchorNotFound, DomainError
-from ..domain.events import AnchorMinted
+from ..domain.events import AnchorArchived, AnchorMinted, AnchorRestored
 from ..domain.value_objects import Actor, ClientRequestId
-from .dto import BeneficiaryAnchorDto, MintAnchorCommandDto
+from .dto import (
+    ArchiveAnchorCommandDto,
+    BeneficiaryAnchorDto,
+    MintAnchorCommandDto,
+    RestoreAnchorCommandDto,
+)
 from .ports import (
     AnchorDirectoryReader,
     SchemaValidator,
@@ -33,6 +38,11 @@ ROUTING_KEY = f"{BUSINESS_EVENT_NAME}.{RVT_EVENT_NAME}"
 SCHEMA_ID = "https://reliever.banking/process/CAP.SUP.002.BEN/schemas/RVT.SUP.002.BENEFICIARY_ANCHOR_UPDATED.schema.json"
 SCHEMA_VERSION = "0.1.0"
 EMITTING_CAPABILITY = "CAP.SUP.002.BEN"
+
+# ─── Idempotency scopes (one per accepted command) ────────────────────
+IDEMPOTENCY_SCOPE_MINT = "MINT_ANCHOR"
+IDEMPOTENCY_SCOPE_ARCHIVE = "ARCHIVE_ANCHOR"
+IDEMPOTENCY_SCOPE_RESTORE = "RESTORE_ANCHOR"
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,7 +67,7 @@ def _mint_uuidv7() -> str:
 
 def _build_rvt_payload(event: AnchorMinted, actor: Actor) -> dict[str, Any]:
     """Translate a domain ``AnchorMinted`` event into the wire-format
-    ``RVT.SUP.002.BENEFICIARY_ANCHOR_UPDATED`` payload.
+    ``RVT.SUP.002.BENEFICIARY_ANCHOR_UPDATED`` payload (transition_kind: MINTED).
 
     Validated against the canonical JSON Schema before the outbox row is
     written (fail-fast on contract drift).
@@ -89,6 +99,51 @@ def _build_rvt_payload(event: AnchorMinted, actor: Actor) -> dict[str, Any]:
     return payload
 
 
+def _build_lifecycle_rvt_payload(
+    event: AnchorArchived | AnchorRestored,
+    actor: Actor,
+) -> dict[str, Any]:
+    """Translate an ``AnchorArchived`` / ``AnchorRestored`` event into the
+    wire-format RVT payload.
+
+    ``anchor_status`` is derived from ``transition_kind`` per the
+    canonical RVT schema's ``allOf`` discriminator (ARCHIVED → ARCHIVED,
+    RESTORED → ACTIVE).
+    """
+    if event.transition_kind == "ARCHIVED":
+        anchor_status = "ARCHIVED"
+    elif event.transition_kind == "RESTORED":
+        anchor_status = "ACTIVE"
+    else:  # defensive — should never happen with a typed event union
+        raise ValueError(f"Unsupported lifecycle transition: {event.transition_kind}")
+
+    payload: dict[str, Any] = {
+        "envelope": {
+            "message_id": _mint_uuidv7(),
+            "schema_version": SCHEMA_VERSION,
+            "emitted_at": _now_utc().isoformat(),
+            "emitting_capability": EMITTING_CAPABILITY,
+            "correlation_id": str(event.internal_id),
+            "causation_id": event.command_id,
+            "actor": actor.to_dict(),
+        },
+        "internal_id": str(event.internal_id),
+        "last_name": event.last_name,
+        "first_name": event.first_name,
+        "date_of_birth": event.date_of_birth.isoformat() if event.date_of_birth else None,
+        "contact_details": event.contact_details.to_dict() if event.contact_details else None,
+        "anchor_status": anchor_status,
+        "creation_date": event.creation_date.isoformat(),
+        "pseudonymized_at": None,
+        "revision": event.revision,
+        "transition_kind": event.transition_kind,
+        "command_id": event.command_id,
+        "right_exercise_id": None,
+        "occurred_at": event.occurred_at.isoformat(),
+    }
+    return payload
+
+
 class MintAnchorHandler:
     def __init__(
         self,
@@ -100,7 +155,7 @@ class MintAnchorHandler:
         self._rvt_validator = rvt_validator
 
     async def handle(self, cmd: MintAnchorCommandDto) -> MintResult:
-        scope = "MINT_ANCHOR"
+        scope = IDEMPOTENCY_SCOPE_MINT
 
         # ─── Idempotency check (INV.BEN.008) ──────────────────────────
         async with self._uow_factory() as uow:
@@ -251,13 +306,247 @@ def _row_to_dto(row: dict[str, Any]) -> BeneficiaryAnchorDto:
     )
 
 
+# ─── Lifecycle commands — ARCHIVE / RESTORE ──────────────────────────
+
+
+@dataclass(frozen=True, slots=True)
+class LifecycleResult:
+    """Result of CMD.ARCHIVE_ANCHOR / CMD.RESTORE_ANCHOR.
+
+    ``http_status`` is always 200 (the transition is observable through the
+    returned snapshot). ``idempotent_replay`` is True when the handler short-
+    circuited on a known command_id (within the 30-day window).
+    """
+
+    anchor: BeneficiaryAnchorDto
+    http_status: int
+    idempotent_replay: bool
+    error_code: str | None = None
+
+
+def _anchor_to_dto(anchor: IdentityAnchor) -> BeneficiaryAnchorDto:
+    return BeneficiaryAnchorDto(
+        internal_id=str(anchor.internal_id),
+        last_name=anchor.pii.last_name,
+        first_name=anchor.pii.first_name,
+        date_of_birth=anchor.pii.date_of_birth,
+        contact_details=(
+            anchor.pii.contact_details.to_dict()
+            if anchor.pii.contact_details
+            else None
+        ),
+        anchor_status=anchor.anchor_status,
+        creation_date=anchor.creation_date,
+        pseudonymized_at=anchor.pseudonymized_at,
+        revision=anchor.revision,
+    )
+
+
+class ArchiveAnchorHandler:
+    """Handle CMD.ARCHIVE_ANCHOR — flip ACTIVE → ARCHIVED in a single
+    Postgres transaction. Atomically writes the anchor mutation, the
+    outbox row, and the idempotency row.
+    """
+
+    def __init__(
+        self,
+        *,
+        uow_factory: UnitOfWorkFactory,
+        rvt_validator: SchemaValidator,
+    ) -> None:
+        self._uow_factory = uow_factory
+        self._rvt_validator = rvt_validator
+
+    async def handle(self, cmd: ArchiveAnchorCommandDto) -> LifecycleResult:
+        scope = IDEMPOTENCY_SCOPE_ARCHIVE
+
+        # Idempotency fast-path (pre-tx peek) — short-circuit before
+        # acquiring a row lock if the command_id is already known.
+        async with self._uow_factory() as uow:
+            prior = await uow.idempotency.get(scope=scope, key=cmd.command_id)
+            if prior is not None:
+                stored: dict[str, Any] = prior["response_body"]
+                return LifecycleResult(
+                    anchor=_deserialize_anchor(stored),
+                    http_status=200,
+                    idempotent_replay=True,
+                    error_code="COMMAND_ALREADY_PROCESSED",
+                )
+
+        # Real transition — single transaction.
+        async with self._uow_factory() as uow:
+            # Re-check inside the tx — closes the racy window where two
+            # POSTs arrive with the same command_id.
+            prior = await uow.idempotency.get(scope=scope, key=cmd.command_id)
+            if prior is not None:
+                stored = prior["response_body"]
+                await uow.rollback()
+                return LifecycleResult(
+                    anchor=_deserialize_anchor(stored),
+                    http_status=200,
+                    idempotent_replay=True,
+                    error_code="COMMAND_ALREADY_PROCESSED",
+                )
+
+            anchor = await uow.anchors.load_for_update(cmd.internal_id)
+            if anchor is None:
+                await uow.rollback()
+                raise AnchorNotFound(cmd.internal_id)
+
+            # Domain-layer state check — raises AnchorAlreadyArchived /
+            # AnchorPseudonymised / InvalidReason as appropriate.
+            anchor.archive(
+                reason=cmd.reason,
+                command_id=cmd.command_id,
+                actor=cmd.actor,
+                comment=cmd.comment,
+            )
+
+            await uow.anchors.update(anchor)
+
+            events = anchor.pull_pending_events()
+            assert len(events) == 1, "AGG must emit exactly one event per transition (INV.BEN.007)"
+            event = events[0]
+            assert isinstance(event, AnchorArchived)
+
+            payload = _build_lifecycle_rvt_payload(event, cmd.actor)
+            self._rvt_validator.validate_payload(payload)
+
+            message_id = payload["envelope"]["message_id"]
+            await uow.outbox.append(
+                message_id=message_id,
+                correlation_id=str(event.internal_id),
+                causation_id=event.command_id,
+                schema_id=SCHEMA_ID,
+                schema_version=SCHEMA_VERSION,
+                routing_key=ROUTING_KEY,
+                exchange=EXCHANGE_NAME,
+                occurred_at=event.occurred_at,
+                actor=cmd.actor.to_dict(),
+                payload=payload,
+            )
+
+            dto = _anchor_to_dto(anchor)
+            await uow.idempotency.remember(
+                scope=scope,
+                key=cmd.command_id,
+                internal_id=str(anchor.internal_id),
+                response_body=dto.to_dict(),
+                response_code=200,
+            )
+
+            await uow.commit()
+            return LifecycleResult(
+                anchor=dto, http_status=200, idempotent_replay=False
+            )
+
+
+class RestoreAnchorHandler:
+    """Handle CMD.RESTORE_ANCHOR — flip ARCHIVED → ACTIVE in a single
+    Postgres transaction.
+    """
+
+    def __init__(
+        self,
+        *,
+        uow_factory: UnitOfWorkFactory,
+        rvt_validator: SchemaValidator,
+    ) -> None:
+        self._uow_factory = uow_factory
+        self._rvt_validator = rvt_validator
+
+    async def handle(self, cmd: RestoreAnchorCommandDto) -> LifecycleResult:
+        scope = IDEMPOTENCY_SCOPE_RESTORE
+
+        async with self._uow_factory() as uow:
+            prior = await uow.idempotency.get(scope=scope, key=cmd.command_id)
+            if prior is not None:
+                stored: dict[str, Any] = prior["response_body"]
+                return LifecycleResult(
+                    anchor=_deserialize_anchor(stored),
+                    http_status=200,
+                    idempotent_replay=True,
+                    error_code="COMMAND_ALREADY_PROCESSED",
+                )
+
+        async with self._uow_factory() as uow:
+            prior = await uow.idempotency.get(scope=scope, key=cmd.command_id)
+            if prior is not None:
+                stored = prior["response_body"]
+                await uow.rollback()
+                return LifecycleResult(
+                    anchor=_deserialize_anchor(stored),
+                    http_status=200,
+                    idempotent_replay=True,
+                    error_code="COMMAND_ALREADY_PROCESSED",
+                )
+
+            anchor = await uow.anchors.load_for_update(cmd.internal_id)
+            if anchor is None:
+                await uow.rollback()
+                raise AnchorNotFound(cmd.internal_id)
+
+            # Domain-layer state check — raises AnchorNotArchived /
+            # AnchorPseudonymised / InvalidReason as appropriate.
+            anchor.restore(
+                reason=cmd.reason,
+                command_id=cmd.command_id,
+                actor=cmd.actor,
+                comment=cmd.comment,
+            )
+
+            await uow.anchors.update(anchor)
+
+            events = anchor.pull_pending_events()
+            assert len(events) == 1, "AGG must emit exactly one event per transition (INV.BEN.007)"
+            event = events[0]
+            assert isinstance(event, AnchorRestored)
+
+            payload = _build_lifecycle_rvt_payload(event, cmd.actor)
+            self._rvt_validator.validate_payload(payload)
+
+            message_id = payload["envelope"]["message_id"]
+            await uow.outbox.append(
+                message_id=message_id,
+                correlation_id=str(event.internal_id),
+                causation_id=event.command_id,
+                schema_id=SCHEMA_ID,
+                schema_version=SCHEMA_VERSION,
+                routing_key=ROUTING_KEY,
+                exchange=EXCHANGE_NAME,
+                occurred_at=event.occurred_at,
+                actor=cmd.actor.to_dict(),
+                payload=payload,
+            )
+
+            dto = _anchor_to_dto(anchor)
+            await uow.idempotency.remember(
+                scope=scope,
+                key=cmd.command_id,
+                internal_id=str(anchor.internal_id),
+                response_body=dto.to_dict(),
+                response_code=200,
+            )
+
+            await uow.commit()
+            return LifecycleResult(
+                anchor=dto, http_status=200, idempotent_replay=False
+            )
+
+
 __all__ = [
     "MintAnchorHandler",
+    "ArchiveAnchorHandler",
+    "RestoreAnchorHandler",
     "GetAnchorHandler",
     "MintResult",
+    "LifecycleResult",
     "EXCHANGE_NAME",
     "ROUTING_KEY",
     "SCHEMA_ID",
     "SCHEMA_VERSION",
     "EMITTING_CAPABILITY",
+    "IDEMPOTENCY_SCOPE_MINT",
+    "IDEMPOTENCY_SCOPE_ARCHIVE",
+    "IDEMPOTENCY_SCOPE_RESTORE",
 ]

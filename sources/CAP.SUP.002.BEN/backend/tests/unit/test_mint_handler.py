@@ -34,6 +34,21 @@ class _InMemoryAnchorRepo(AnchorRepository):
     async def insert(self, anchor: IdentityAnchor) -> None:
         self.rows.append(anchor)
 
+    async def load_for_update(self, internal_id: str) -> IdentityAnchor | None:
+        # Not exercised by the MINT path — MINT inserts a brand-new aggregate.
+        for a in self.rows:
+            if str(a.internal_id) == internal_id:
+                return a
+        return None
+
+    async def update(self, anchor: IdentityAnchor) -> None:
+        # Not exercised by the MINT path; provided so the abstract base is
+        # implementable in tests that share this in-memory repo.
+        for i, a in enumerate(self.rows):
+            if str(a.internal_id) == str(anchor.internal_id):
+                self.rows[i] = anchor
+                return
+
 
 class _InMemoryOutboxRepo(OutboxRepository):
     def __init__(self) -> None:

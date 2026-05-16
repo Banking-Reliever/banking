@@ -45,6 +45,47 @@ class MintAnchorRequest(BaseModel):
     contact_details: ContactDetailsModel | None = None
 
 
+class ArchiveAnchorRequest(BaseModel):
+    """POST /anchors/{internal_id}/archive body. ``internal_id`` is the
+    path parameter — not part of the body."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    command_id: str = Field(
+        ...,
+        description="UUIDv7 — caller-supplied idempotency anchor (30-day window).",
+    )
+    reason: str = Field(
+        ...,
+        description=(
+            "Canonical archival reason. One of: PROGRAMME_EXIT_SUCCESS, "
+            "PROGRAMME_EXIT_DROPOUT, PROGRAMME_EXIT_TRANSFER, "
+            "ADMINISTRATIVE_ARCHIVAL."
+        ),
+    )
+    comment: str | None = Field(default=None, max_length=1000)
+
+
+class RestoreAnchorRequest(BaseModel):
+    """POST /anchors/{internal_id}/restore body. ``internal_id`` is the
+    path parameter — not part of the body."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    command_id: str = Field(
+        ...,
+        description="UUIDv7 — caller-supplied idempotency anchor (30-day window).",
+    )
+    reason: str = Field(
+        ...,
+        description=(
+            "Canonical restore reason. One of: ARCHIVED_IN_ERROR, "
+            "REINSTATED_AFTER_REVIEW."
+        ),
+    )
+    comment: str | None = Field(default=None, max_length=1000)
+
+
 class BeneficiaryAnchorResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

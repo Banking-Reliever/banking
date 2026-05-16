@@ -11,7 +11,6 @@ from datetime import datetime
 from typing import Any
 
 from ..domain.aggregate import IdentityAnchor
-from ..domain.events import AnchorMinted
 
 
 class UnitOfWork(ABC):
@@ -54,6 +53,25 @@ class AnchorRepository(ABC):
     @abstractmethod
     async def insert(self, anchor: IdentityAnchor) -> None:
         ...
+
+    @abstractmethod
+    async def load_for_update(self, internal_id: str) -> IdentityAnchor | None:
+        """Load the aggregate row under ``SELECT ... FOR UPDATE`` semantics.
+
+        Returns ``None`` on miss. The caller is expected to hold an open
+        transaction on the same connection and to either commit or roll back
+        before releasing the row lock.
+        """
+
+    @abstractmethod
+    async def update(self, anchor: IdentityAnchor) -> None:
+        """Persist the post-transition state of a previously-loaded aggregate.
+
+        Writes ``anchor_status``, ``revision``, ``pseudonymized_at``,
+        ``last_processed_command_id`` and refreshes ``updated_at``. The PII
+        columns are NOT touched by ARCHIVE / RESTORE — defending INV.BEN.002
+        at the persistence boundary.
+        """
 
 
 class OutboxRepository(ABC):
